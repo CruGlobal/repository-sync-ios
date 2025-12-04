@@ -1,0 +1,15 @@
+name: Build Library
+
+on:
+  push:
+    branches: [ main ]
+    
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    uses: CruGlobal/godtools-swift/.github/workflows/shared-spm-build.yml@master

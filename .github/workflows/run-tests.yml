@@ -1,0 +1,21 @@
+name: Run Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  run_tests_and_code_coverage:
+    uses: CruGlobal/godtools-swift/.github/workflows/shared-spm-run-tests.yml@master
+    with:
+      xcodebuild-test-scheme: RepositorySync
+    secrets:
+      codecov_token: ${{ secrets.CODECOV_TOKEN }}
