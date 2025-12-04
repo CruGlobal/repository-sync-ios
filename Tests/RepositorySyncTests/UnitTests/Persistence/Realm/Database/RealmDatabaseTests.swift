@@ -19,9 +19,13 @@ struct RealmDatabaseTests {
     @Test()
     func getObjectById() async throws {
         
-        let database = try getDatabase()
+        let directoryName: String = getUniqueDirectoryName()
+        
+        let database = try getDatabase(directoryName: directoryName)
         
         let object: MockRealmObject? = try database.getObject(id: "0")
+        
+        try deleteDatabaseDirectory(directoryName: directoryName)
         
         #expect(object != nil)
     }
@@ -29,13 +33,17 @@ struct RealmDatabaseTests {
     @Test()
     func getObjectByFilter() async throws {
         
-        let database = try getDatabase()
+        let directoryName: String = getUniqueDirectoryName()
+        
+        let database = try getDatabase(directoryName: directoryName)
         
         let predicate = NSPredicate(format: "\(#keyPath(MockRealmObject.position)) == %@", NSNumber(value: 0))
         
         let query = RealmDatabaseQuery.filter(filter: predicate)
         
         let objects: [MockRealmObject] = try database.getObjects(query: query)
+        
+        try deleteDatabaseDirectory(directoryName: directoryName)
         
         #expect(objects.count == 1)
         #expect(objects.first?.id == "0")
@@ -44,7 +52,9 @@ struct RealmDatabaseTests {
     @Test()
     func getObjectsBySortAscendingTrue() async throws {
         
-        let database = try getDatabase()
+        let directoryName: String = getUniqueDirectoryName()
+        
+        let database = try getDatabase(directoryName: directoryName)
                 
         let query = RealmDatabaseQuery.sort(byKeyPath: SortByKeyPath(keyPath: #keyPath(MockRealmObject.position), ascending: true))
         
@@ -52,13 +62,17 @@ struct RealmDatabaseTests {
         
         let objectPositions: [Int] = objects.map { $0.position }
         
+        try deleteDatabaseDirectory(directoryName: directoryName)
+        
         #expect(objectPositions == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     }
     
     @Test()
     func getObjectsBySortAscendingFalse() async throws {
         
-        let database = try getDatabase()
+        let directoryName: String = getUniqueDirectoryName()
+        
+        let database = try getDatabase(directoryName: directoryName)
                 
         let query = RealmDatabaseQuery.sort(byKeyPath: SortByKeyPath(keyPath: #keyPath(MockRealmObject.position), ascending: false))
         
@@ -66,13 +80,17 @@ struct RealmDatabaseTests {
         
         let objectPositions: [Int] = objects.map { $0.position }
         
+        try deleteDatabaseDirectory(directoryName: directoryName)
+        
         #expect(objectPositions == [9, 8, 7, 6, 5, 4, 3, 2, 1, 0])
     }
     
     @Test()
     func getObjectByFilterAndSort() async throws {
         
-        let database = try getDatabase()
+        let directoryName: String = getUniqueDirectoryName()
+        
+        let database = try getDatabase(directoryName: directoryName)
         
         let isEvenPosition = NSPredicate(format: "\(#keyPath(MockRealmObject.isEvenPosition)) == %@", NSNumber(value: true))
         
@@ -85,13 +103,17 @@ struct RealmDatabaseTests {
         
         let objectPositions: [Int] = objects.map { $0.position }
         
+        try deleteDatabaseDirectory(directoryName: directoryName)
+        
         #expect(objectPositions == [8, 6, 4, 2, 0])
     }
     
     @Test()
     func writeToExistingObjects() async throws {
         
-        let database = try getDatabase()
+        let directoryName: String = getUniqueDirectoryName()
+        
+        let database = try getDatabase(directoryName: directoryName)
         
         try database.writeObjects(writeClosure: { realm in
             
@@ -114,6 +136,8 @@ struct RealmDatabaseTests {
         
         let objects: [MockRealmObject] = try database.getObjects(query: nil)
         
+        try deleteDatabaseDirectory(directoryName: directoryName)
+        
         #expect(objects.first?.position == -9999)
         #expect(objects.last?.position == -9999)
     }
@@ -123,7 +147,9 @@ struct RealmDatabaseTests {
         
         var cancellables: Set<AnyCancellable> = Set()
         
-        let database = try getDatabase()
+        let directoryName: String = getUniqueDirectoryName()
+        
+        let database = try getDatabase(directoryName: directoryName)
         
         var sinkCount: Int = 0
         
@@ -173,6 +199,8 @@ struct RealmDatabaseTests {
         
         let objects: [MockRealmObject] = try database.getObjects(query: nil)
         
+        try deleteDatabaseDirectory(directoryName: directoryName)
+        
         #expect(objects.first?.position == -9999)
         #expect(objects.last?.position == -9999)
     }
@@ -180,7 +208,9 @@ struct RealmDatabaseTests {
     @Test()
     func deleteObject() async throws {
         
-        let database = try getDatabase()
+        let directoryName: String = getUniqueDirectoryName()
+        
+        let database = try getDatabase(directoryName: directoryName)
         
         let objectId: String = "0"
         
@@ -194,13 +224,17 @@ struct RealmDatabaseTests {
             
         let objectAfterDelete: MockRealmObject? = try database.getObject(id: objectId)
         
+        try deleteDatabaseDirectory(directoryName: directoryName)
+        
         #expect(objectAfterDelete == nil)
     }
     
     @Test()
     func deleteAllObjects() async throws {
         
-        let database = try getDatabase()
+        let directoryName: String = getUniqueDirectoryName()
+        
+        let database = try getDatabase(directoryName: directoryName)
                 
         let currentObjects: [MockRealmObject] = try database.getObjects(query: nil)
                 
@@ -215,14 +249,23 @@ struct RealmDatabaseTests {
         
         let objectsAfterDelete: [MockRealmObject] = try database.getObjects(query: nil)
                 
+        try deleteDatabaseDirectory(directoryName: directoryName)
+        
         #expect(objectsAfterDelete.count == 0)
     }
 }
 
 extension RealmDatabaseTests {
     
-    private func getDatabase() throws -> RealmDatabase {
-        
-        return try MockRealmDatabase.createDatabase(ids: allObjectIds)
+    private func getUniqueDirectoryName() -> String {
+        return UUID().uuidString
+    }
+    
+    private func getDatabase(directoryName: String) throws -> RealmDatabase {
+        return try MockRealmDatabase().createDatabase(directoryName: directoryName, ids: allObjectIds)
+    }
+    
+    private func deleteDatabaseDirectory(directoryName: String) throws {
+        try MockRealmDatabase().deleteDatabase(directoryName: directoryName)
     }
 }

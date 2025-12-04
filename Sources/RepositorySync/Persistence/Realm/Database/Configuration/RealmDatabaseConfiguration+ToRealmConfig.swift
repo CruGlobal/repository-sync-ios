@@ -8,6 +8,7 @@
 
 import Foundation
 import RealmSwift
+import Realm
 
 extension RealmDatabaseConfiguration {
     
@@ -17,17 +18,29 @@ extension RealmDatabaseConfiguration {
         
         switch cacheType {
             
-        case .disk(let fileName, let migrationBlock):
+        case .disk(let fileLocation, let migrationBlock):
             
-            realmConfig = Realm.Configuration()
-            realmConfig.fileURL = realmConfig.fileURL?.deletingLastPathComponent().appendingPathComponent(fileName)
-            realmConfig.schemaVersion = schemaVersion
-            realmConfig.migrationBlock = migrationBlock
+            let fileUrl: URL
+            
+            switch fileLocation {
+            case .fileName( let name):
+                fileUrl = URL(fileURLWithPath: RLMRealmPathForFile(name), isDirectory: false)
+            case .fileUrl(let url):
+                fileUrl = url
+            }
+            
+            realmConfig = Realm.Configuration(
+                fileURL: fileUrl,
+                schemaVersion: schemaVersion,
+                migrationBlock: migrationBlock
+            )
         
         case .inMemory(let identifier):
             
-            realmConfig = Realm.Configuration(inMemoryIdentifier: identifier)
-            realmConfig.schemaVersion = schemaVersion
+            realmConfig = Realm.Configuration(
+                inMemoryIdentifier: identifier,
+                schemaVersion: schemaVersion
+            )
         }
         
         return realmConfig

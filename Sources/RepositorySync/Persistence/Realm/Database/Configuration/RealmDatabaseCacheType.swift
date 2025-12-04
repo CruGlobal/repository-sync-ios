@@ -11,6 +11,6 @@ import RealmSwift
 
 public enum RealmDatabaseCacheType {
     
-    case disk(fileName: String, migrationBlock: MigrationBlock)
+    case disk(fileLocation: RealmDatabaseFileLocation, migrationBlock: MigrationBlock)
     case inMemory(identifier: String)
 }

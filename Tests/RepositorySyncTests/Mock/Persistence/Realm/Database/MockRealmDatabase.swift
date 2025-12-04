@@ -12,18 +12,38 @@ import RealmSwift
 
 class MockRealmDatabase {
     
-    private static let defaultIds: [Int] = [0, 1, 2, 3, 4]
+    private let fileManager: FileManager = FileManager.default
+    private let defaultIds: [Int] = [0, 1, 2, 3, 4]
     
-    static func createDatabase(ids: [Int]? = nil) throws -> RealmDatabase {
+    init() {
+        
+    }
+    
+    private func getDirectory(directoryName: String) -> URL {
+        
+        return fileManager.temporaryDirectory
+            .appendingPathComponent(directoryName)
+    }
+    
+    private func getFileUrl(directoryName: String) -> URL {
+        
+        return getDirectory(directoryName: directoryName)
+            .appendingPathComponent("realm_tests")
+            .appendingPathExtension("realm")
+    }
+    
+    func createDatabase(directoryName: String, ids: [Int]? = nil) throws -> RealmDatabase {
+        
+        try _ = fileManager.createDirectoryIfNotExists(directoryUrl: getDirectory(directoryName: directoryName))
         
         let config = RealmDatabaseConfiguration(
-            cacheType: .disk(fileName: UUID().uuidString, migrationBlock: { migration, oldSchemaVersion in
+            cacheType: .disk(fileLocation: .fileUrl(url: getFileUrl(directoryName: directoryName)), migrationBlock: { migration, oldSchemaVersion in
             // migration
         }), schemaVersion: 1)
         
         let realmDatabase = RealmDatabase(databaseConfiguration: config)
                 
-        let idsToCreate: [Int] = ids ?? Self.defaultIds
+        let idsToCreate: [Int] = ids ?? defaultIds
         
         var objects: [MockRealmObject] = Array()
         
@@ -44,5 +64,10 @@ class MockRealmDatabase {
         }, updatePolicy: .modified)
         
         return realmDatabase
+    }
+    
+    func deleteDatabase(directoryName: String) throws {
+        
+        try fileManager.removeUrl(url: getDirectory(directoryName: directoryName))
     }
 }
