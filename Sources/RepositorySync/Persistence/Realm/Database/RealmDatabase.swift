@@ -49,9 +49,9 @@ open class RealmDatabase {
         return nil
     }
     
-    public func openRealm() -> Realm {
+    public func openRealm() throws -> Realm {
         
-        return realmInstanceCreator.createRealm()
+        return try realmInstanceCreator.createRealm()
     }
     
     public func background(async: @escaping ((_ realm: Realm) -> Void)) {
@@ -64,9 +64,9 @@ open class RealmDatabase {
 
 extension RealmDatabase {
     
-    public func getObject<T: IdentifiableRealmObject>(id: String) -> T? {
+    public func getObject<T: IdentifiableRealmObject>(id: String) throws -> T? {
           
-        let realm: Realm = openRealm()
+        let realm: Realm = try openRealm()
         
         return getObject(realm: realm, id: id)
     }
@@ -78,9 +78,11 @@ extension RealmDatabase {
         return realmObject
     }
     
-    public func getObjects<T: IdentifiableRealmObject>(query: RealmDatabaseQuery?) -> [T] {
+    public func getObjects<T: IdentifiableRealmObject>(query: RealmDatabaseQuery?) throws -> [T] {
         
-        return getObjects(realm: openRealm(), query: query)
+        let realm: Realm = try openRealm()
+        
+        return getObjects(realm: realm, query: query)
     }
     
     public func getObjects<T: IdentifiableRealmObject>(realm: Realm, query: RealmDatabaseQuery?) -> [T] {
@@ -88,9 +90,11 @@ extension RealmDatabase {
         return Array(getObjectsResults(realm: realm, query: query))
     }
     
-    public func getObjectsResults<T: IdentifiableRealmObject>(query: RealmDatabaseQuery?) -> Results<T> {
+    public func getObjectsResults<T: IdentifiableRealmObject>(query: RealmDatabaseQuery?)  throws -> Results<T> {
         
-        return getObjectsResults(realm: openRealm(), query: query)
+        let realm: Realm = try openRealm()
+        
+        return getObjectsResults(realm: realm, query: query)
     }
     
     public func getObjectsResults<T: IdentifiableRealmObject>(realm: Realm, query: RealmDatabaseQuery?) -> Results<T> {
@@ -179,7 +183,7 @@ extension RealmDatabase {
     
     public func deleteAllObjects() throws {
         
-        let realm: Realm = openRealm()
+        let realm: Realm = try openRealm()
         
         try deleteAllObjects(realm: realm)
     }

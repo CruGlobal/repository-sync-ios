@@ -21,7 +21,7 @@ struct RealmDatabaseTests {
         
         let database = try getDatabase()
         
-        let object: MockRealmObject? = database.getObject(id: "0")
+        let object: MockRealmObject? = try database.getObject(id: "0")
         
         #expect(object != nil)
     }
@@ -35,7 +35,7 @@ struct RealmDatabaseTests {
         
         let query = RealmDatabaseQuery.filter(filter: predicate)
         
-        let objects: [MockRealmObject] = database.getObjects(query: query)
+        let objects: [MockRealmObject] = try database.getObjects(query: query)
         
         #expect(objects.count == 1)
         #expect(objects.first?.id == "0")
@@ -48,7 +48,7 @@ struct RealmDatabaseTests {
                 
         let query = RealmDatabaseQuery.sort(byKeyPath: SortByKeyPath(keyPath: #keyPath(MockRealmObject.position), ascending: true))
         
-        let objects: [MockRealmObject] = Array(database.getObjectsResults(query: query))
+        let objects: [MockRealmObject] = Array(try database.getObjectsResults(query: query))
         
         let objectPositions: [Int] = objects.map { $0.position }
         
@@ -62,7 +62,7 @@ struct RealmDatabaseTests {
                 
         let query = RealmDatabaseQuery.sort(byKeyPath: SortByKeyPath(keyPath: #keyPath(MockRealmObject.position), ascending: false))
         
-        let objects: [MockRealmObject] = database.getObjects(query: query)
+        let objects: [MockRealmObject] = try database.getObjects(query: query)
         
         let objectPositions: [Int] = objects.map { $0.position }
         
@@ -81,7 +81,7 @@ struct RealmDatabaseTests {
             sortByKeyPath: SortByKeyPath(keyPath: #keyPath(MockRealmObject.position), ascending: false)
         )
         
-        let objects: [MockRealmObject] = database.getObjects(query: query)
+        let objects: [MockRealmObject] = try database.getObjects(query: query)
         
         let objectPositions: [Int] = objects.map { $0.position }
         
@@ -95,7 +95,14 @@ struct RealmDatabaseTests {
         
         try database.writeObjects(writeClosure: { realm in
             
-            let objects: [MockRealmObject] = database.getObjects(query: nil)
+            let objects: [MockRealmObject]
+            
+            do {
+                objects = try database.getObjects(query: nil)
+            }
+            catch let error {
+                objects = Array()
+            }
             
             for object in objects {
                 object.position = -9999
@@ -105,7 +112,7 @@ struct RealmDatabaseTests {
             
         }, updatePolicy: .modified)
         
-        let objects: [MockRealmObject] = database.getObjects(query: nil)
+        let objects: [MockRealmObject] = try database.getObjects(query: nil)
         
         #expect(objects.first?.position == -9999)
         #expect(objects.last?.position == -9999)
@@ -131,8 +138,15 @@ struct RealmDatabaseTests {
                 
                 database.writeObjectsPublisher(writeClosure: { realm in
                     
-                    let objects: [MockRealmObject] = database.getObjects(query: nil)
+                    let objects: [MockRealmObject]
                     
+                    do {
+                        objects = try database.getObjects(query: nil)
+                    }
+                    catch let error {
+                        objects = Array()
+                    }
+                                        
                     for object in objects {
                         object.position = -9999
                     }
@@ -157,7 +171,7 @@ struct RealmDatabaseTests {
             }
         }
         
-        let objects: [MockRealmObject] = database.getObjects(query: nil)
+        let objects: [MockRealmObject] = try database.getObjects(query: nil)
         
         #expect(objects.first?.position == -9999)
         #expect(objects.last?.position == -9999)
@@ -170,7 +184,7 @@ struct RealmDatabaseTests {
         
         let objectId: String = "0"
         
-        let object: MockRealmObject? = database.getObject(id: objectId)
+        let object: MockRealmObject? = try database.getObject(id: objectId)
         
         #expect(object != nil)
         
@@ -178,7 +192,7 @@ struct RealmDatabaseTests {
             try database.deleteObjects(objects: [object])
         }
             
-        let objectAfterDelete: MockRealmObject? = database.getObject(id: objectId)
+        let objectAfterDelete: MockRealmObject? = try database.getObject(id: objectId)
         
         #expect(objectAfterDelete == nil)
     }
@@ -188,7 +202,7 @@ struct RealmDatabaseTests {
         
         let database = try getDatabase()
                 
-        let currentObjects: [MockRealmObject] = database.getObjects(query: nil)
+        let currentObjects: [MockRealmObject] = try database.getObjects(query: nil)
                 
         #expect(currentObjects.count > 0)
         
@@ -199,7 +213,7 @@ struct RealmDatabaseTests {
             throw error
         }
         
-        let objectsAfterDelete: [MockRealmObject] = database.getObjects(query: nil)
+        let objectsAfterDelete: [MockRealmObject] = try database.getObjects(query: nil)
                 
         #expect(objectsAfterDelete.count == 0)
     }

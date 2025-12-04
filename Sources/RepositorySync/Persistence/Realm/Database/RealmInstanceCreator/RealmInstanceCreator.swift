@@ -25,13 +25,13 @@ public final class RealmInstanceCreator {
         }
     }
     
-    public func createRealm() -> Realm {
+    public func createRealm() throws -> Realm {
         
         if let sharedRealm = sharedRealm {
             return sharedRealm
         }
         
-        return try! Realm(configuration: config)
+        return try Realm(configuration: config)
     }
     
     public func createBackgroundRealm(async: @escaping ((_ realm: Realm) -> Void)) {

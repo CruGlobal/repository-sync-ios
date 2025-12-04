@@ -27,14 +27,26 @@ public final class RealmPersistence<DataModelType, ExternalObjectType, PersistOb
 
 extension RealmPersistence {
     
-    public func observeCollectionChangesPublisher() -> AnyPublisher<Void, Never> {
+    public func observeCollectionChangesPublisher() -> AnyPublisher<Void, Error> {
         
-        return observeRealmCollectionChangesPublisher(
-            observeOnRealm: realmDatabase.openRealm()
-        )
+        do {
+            
+            let realm: Realm = try realmDatabase.openRealm()
+            
+            return observeCollectionChangesOnRealmPublisher(
+                observeOnRealm: realm
+            )
+            .setFailureType(to: Error.self)
+            .eraseToAnyPublisher()
+        }
+        catch let error {
+            
+            return Fail(error: error)
+                .eraseToAnyPublisher()
+        }
     }
     
-    private func observeRealmCollectionChangesPublisher(observeOnRealm: Realm) -> AnyPublisher<Void, Never> {
+    public func observeCollectionChangesOnRealmPublisher(observeOnRealm: Realm) -> AnyPublisher<Void, Never> {
                 
         return observeOnRealm
             .objects(PersistObjectType.self)

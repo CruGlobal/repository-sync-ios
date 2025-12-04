@@ -14,7 +14,7 @@ public protocol RepositorySyncPersistence<DataModelType, ExternalObjectType> {
     associatedtype DataModelType
     associatedtype ExternalObjectType
     
-    func observeCollectionChangesPublisher() -> AnyPublisher<Void, Never>
+    func observeCollectionChangesPublisher() -> AnyPublisher<Void, Error>
 //    func getObjectCount() -> Int
 //    func getObject(id: String) -> DataModelType?
 //    func getObjects() -> [DataModelType]
