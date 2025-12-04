@@ -2,7 +2,7 @@
 //  FileManager+Extensions.swift
 //  RepositorySync
 //
-//  Created by Levi Eggert on 7/30/25.
+//  Created by Levi Eggert on 12/04/25.
 //  Copyright © 2025 Cru. All rights reserved.
 //
 
@@ -10,7 +10,11 @@ import Foundation
 
 extension FileManager {
     
-    func createDirectoryIfNotExists(directoryUrl: URL) throws -> URL {
+    public func getDirectoryExists(directoryUrl: URL) -> Bool {
+        return fileExists(atPath: directoryUrl.path)
+    }
+    
+    public func createDirectoryIfNotExists(directoryUrl: URL) throws -> URL {
         
         guard !fileExists(atPath: directoryUrl.path) else {
             return directoryUrl
@@ -25,7 +29,7 @@ extension FileManager {
         return directoryUrl
     }
     
-    func removeUrl(url: URL) throws {
+    public func removeUrl(url: URL) throws {
         try removeItem(at: url)
     }
 }
