@@ -1,0 +1,30 @@
+name: Create Version
+
+on:
+  workflow_dispatch:
+    inputs:
+      versionIncrementType:
+        description: 'Version Increment Type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - manual
+      manualVersionNumber:
+        description: 'Manually Enter Version Number (Requires manual Version Increment Type)'
+        required: false
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  create_version:
+    uses: CruGlobal/godtools-swift/.github/workflows/shared-spm-create-version.yml@master
+    with:
+      version-increment-type: ${{ inputs.versionIncrementType }}
+      manual-version-number: ${{ inputs.manualVersionNumber }}
