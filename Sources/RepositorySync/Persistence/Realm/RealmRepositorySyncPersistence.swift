@@ -1,5 +1,5 @@
 //
-//  RealmPersistence.swift
+//  RealmRepositorySyncPersistence.swift
 //  RepositorySync
 //
 //  Created by Levi Eggert on 12/3/25.
@@ -10,11 +10,10 @@ import Foundation
 import RealmSwift
 import Combine
 
-public final class RealmPersistence<DataModelType, ExternalObjectType, PersistObjectType: IdentifiableRealmObject>: RepositorySyncPersistence {
+open class RealmRepositorySyncPersistence<DataModelType, ExternalObjectType, PersistObjectType: IdentifiableRealmObject>: RepositorySyncPersistence {
     
-    private let dataModelMapping: any RepositorySyncMapping<DataModelType, ExternalObjectType, PersistObjectType>
-    
-    let realmDatabase: RealmDatabase
+    public let realmDatabase: RealmDatabase
+    public let dataModelMapping: any RepositorySyncMapping<DataModelType, ExternalObjectType, PersistObjectType>
     
     init(realmDatabase: RealmDatabase, dataModelMapping: any RepositorySyncMapping<DataModelType, ExternalObjectType, PersistObjectType>) {
         
@@ -25,7 +24,7 @@ public final class RealmPersistence<DataModelType, ExternalObjectType, PersistOb
 
 // MARK: - Observe
 
-extension RealmPersistence {
+extension RealmRepositorySyncPersistence {
     
     public func observeCollectionChangesPublisher() -> AnyPublisher<Void, Error> {
         

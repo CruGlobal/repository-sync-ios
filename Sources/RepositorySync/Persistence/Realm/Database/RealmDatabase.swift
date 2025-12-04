@@ -10,7 +10,7 @@ import Foundation
 import RealmSwift
 import Combine
 
-open class RealmDatabase {
+public final class RealmDatabase {
     
     private let databaseConfiguration: RealmDatabaseConfiguration
     private let config: Realm.Configuration
