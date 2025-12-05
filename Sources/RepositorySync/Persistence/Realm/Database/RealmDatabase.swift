@@ -8,23 +8,41 @@
 
 import Foundation
 import RealmSwift
+import Realm
 import Combine
 
 public final class RealmDatabase {
     
-    private let databaseConfiguration: RealmDatabaseConfiguration
+    private let backgroundQueue: DispatchQueue = DispatchQueue(label: "realm.background_queue")
     private let config: Realm.Configuration
-    private let realmInstanceCreator: RealmInstanceCreator
+    private let fileUrl: URL
     
-    public init(databaseConfiguration: RealmDatabaseConfiguration, realmInstanceCreationType: RealmInstanceCreationType = .alwaysCreatesANewRealmInstance) {
+    public init(fileName: String, schemaVersion: UInt64, migrationBlock: @escaping MigrationBlock) {
         
-        self.databaseConfiguration = databaseConfiguration
-        config = databaseConfiguration.toRealmConfig()
-        realmInstanceCreator = RealmInstanceCreator(config: config, creationType: realmInstanceCreationType)
+        fileUrl = URL(fileURLWithPath: RLMRealmPathForFile(fileName), isDirectory: false)
+        
+        config = Realm.Configuration(
+            fileURL: fileUrl,
+            schemaVersion: schemaVersion,
+            migrationBlock: migrationBlock
+        )
         
         _ = checkForUnsupportedFileFormatVersionAndDeleteRealmFilesIfNeeded(config: config)
     }
     
+    public init(fileUrl: URL, schemaVersion: UInt64, migrationBlock: @escaping MigrationBlock) {
+        
+        self.fileUrl = fileUrl
+        
+        config = Realm.Configuration(
+            fileURL: fileUrl,
+            schemaVersion: schemaVersion,
+            migrationBlock: migrationBlock
+        )
+        
+        _ = checkForUnsupportedFileFormatVersionAndDeleteRealmFilesIfNeeded(config: config)
+    }
+
     private func checkForUnsupportedFileFormatVersionAndDeleteRealmFilesIfNeeded(config: Realm.Configuration) -> Error? {
         
         do {
@@ -51,12 +69,27 @@ public final class RealmDatabase {
     
     public func openRealm() throws -> Realm {
         
-        return try realmInstanceCreator.createRealm()
+        return try Realm(configuration: config)
     }
     
     public func background(async: @escaping ((_ realm: Realm) -> Void)) {
         
-        realmInstanceCreator.createBackgroundRealm(async: async)
+        backgroundQueue.async {
+            autoreleasepool {
+                
+                let realm: Realm
+               
+                do {
+                    realm = try Realm(configuration: self.config)
+                }
+                catch let error {
+                    assertionFailure("RealmDatabase: Did fail to initialize background realm with error: \(error.localizedDescription) ")
+                    realm = try! Realm(configuration: self.config)
+                }
+                
+                async(realm)
+            }
+        }
     }
 }
 

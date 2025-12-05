@@ -55,12 +55,11 @@ public class MockRealmDatabase {
         
         try _ = fileManager.createDirectoryIfNotExists(directoryUrl: getDirectory(directoryName: directoryName))
         
-        let config = RealmDatabaseConfiguration(
-            cacheType: .disk(fileLocation: .fileUrl(url: getFileUrl(directoryName: directoryName)), migrationBlock: { migration, oldSchemaVersion in
-            // migration
-        }), schemaVersion: 1)
-        
-        let database = RealmDatabase(databaseConfiguration: config)
+        let database = RealmDatabase(
+            fileUrl: getFileUrl(directoryName: directoryName),
+            schemaVersion: 1) { migration, oldSchemaVersion in
+                
+            }
         
         let realm: Realm = try database.openRealm()
                 
