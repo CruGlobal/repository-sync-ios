@@ -52,14 +52,18 @@ extension RealmRepositorySyncPersistence {
     
     public func getObjectCount() throws -> Int {
         
-        let results: Results<PersistObjectType> = try database.getObjectsResults(query: nil)
+        let realm: Realm = try database.openRealm()
+        
+        let results: Results<PersistObjectType> = database.getObjectsResults(realm: realm, query: nil)
         
         return results.count
     }
     
     public func getObject(id: String) throws -> DataModelType? {
         
-        let realmObject: PersistObjectType? = try database.getObject(id: id)
+        let realm: Realm = try database.openRealm()
+        
+        let realmObject: PersistObjectType? = database.getObject(realm: realm, id: id)
         
         guard let realmObject = realmObject, let dataModel = dataModelMapping.toDataModel(persistObject: realmObject) else {
             return nil
@@ -75,7 +79,9 @@ extension RealmRepositorySyncPersistence {
     
     public func getObjects(query: RealmDatabaseQuery? = nil) throws -> [DataModelType] {
         
-        let objects: [PersistObjectType] = try database.getObjects(query: query)
+        let realm: Realm = try database.openRealm()
+        
+        let objects: [PersistObjectType] = database.getObjects(realm: realm, query: query)
         
         let dataModels: [DataModelType] = objects.compactMap { object in
             self.dataModelMapping.toDataModel(persistObject: object)
@@ -86,7 +92,9 @@ extension RealmRepositorySyncPersistence {
     
     public func getObjects(ids: [String]) throws -> [DataModelType] {
                 
-        let objects: [PersistObjectType] = try database.getObjects(ids: ids)
+        let realm: Realm = try database.openRealm()
+        
+        let objects: [PersistObjectType] = database.getObjects(realm: realm, ids: ids)
         
         let dataModels: [DataModelType] = objects.compactMap { object in
             self.dataModelMapping.toDataModel(persistObject: object)

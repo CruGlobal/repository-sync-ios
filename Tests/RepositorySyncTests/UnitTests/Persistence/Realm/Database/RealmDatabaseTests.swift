@@ -2,8 +2,8 @@
 //  RealmDatabaseTests.swift
 //  RepositorySync
 //
-//  Created by Levi Eggert on 3/20/20.
-//  Copyright © 2020 Cru. All rights reserved.
+//  Created by Levi Eggert on 7/30/25.
+//  Copyright © 2025 Cru. All rights reserved.
 //
 
 import Foundation
@@ -23,7 +23,9 @@ struct RealmDatabaseTests {
         
         let database = try getDatabase(directoryName: directoryName)
         
-        let object: MockRealmObject? = try database.getObject(id: "0")
+        let realm: Realm = try database.openRealm()
+        
+        let object: MockRealmObject? = database.getObject(realm: realm, id: "0")
         
         try deleteDatabaseDirectory(directoryName: directoryName)
         
@@ -37,11 +39,13 @@ struct RealmDatabaseTests {
         
         let database = try getDatabase(directoryName: directoryName)
         
+        let realm: Realm = try database.openRealm()
+        
         let predicate = NSPredicate(format: "\(#keyPath(MockRealmObject.position)) == %@", NSNumber(value: 0))
         
         let query = RealmDatabaseQuery.filter(filter: predicate)
         
-        let objects: [MockRealmObject] = try database.getObjects(query: query)
+        let objects: [MockRealmObject] = database.getObjects(realm: realm, query: query)
         
         try deleteDatabaseDirectory(directoryName: directoryName)
         
@@ -55,10 +59,12 @@ struct RealmDatabaseTests {
         let directoryName: String = getUniqueDirectoryName()
         
         let database = try getDatabase(directoryName: directoryName)
+        
+        let realm: Realm = try database.openRealm()
                 
         let query = RealmDatabaseQuery.sort(byKeyPath: SortByKeyPath(keyPath: #keyPath(MockRealmObject.position), ascending: true))
         
-        let objects: [MockRealmObject] = Array(try database.getObjectsResults(query: query))
+        let objects: [MockRealmObject] = Array(database.getObjectsResults(realm: realm, query: query))
         
         let objectPositions: [Int] = objects.map { $0.position }
         
@@ -73,10 +79,12 @@ struct RealmDatabaseTests {
         let directoryName: String = getUniqueDirectoryName()
         
         let database = try getDatabase(directoryName: directoryName)
+        
+        let realm: Realm = try database.openRealm()
                 
         let query = RealmDatabaseQuery.sort(byKeyPath: SortByKeyPath(keyPath: #keyPath(MockRealmObject.position), ascending: false))
         
-        let objects: [MockRealmObject] = try database.getObjects(query: query)
+        let objects: [MockRealmObject] = database.getObjects(realm: realm, query: query)
         
         let objectPositions: [Int] = objects.map { $0.position }
         
@@ -92,6 +100,8 @@ struct RealmDatabaseTests {
         
         let database = try getDatabase(directoryName: directoryName)
         
+        let realm: Realm = try database.openRealm()
+        
         let isEvenPosition = NSPredicate(format: "\(#keyPath(MockRealmObject.isEvenPosition)) == %@", NSNumber(value: true))
         
         let query = RealmDatabaseQuery(
@@ -99,7 +109,7 @@ struct RealmDatabaseTests {
             sortByKeyPath: SortByKeyPath(keyPath: #keyPath(MockRealmObject.position), ascending: false)
         )
         
-        let objects: [MockRealmObject] = try database.getObjects(query: query)
+        let objects: [MockRealmObject] = database.getObjects(realm: realm, query: query)
         
         let objectPositions: [Int] = objects.map { $0.position }
         
@@ -115,16 +125,11 @@ struct RealmDatabaseTests {
         
         let database = try getDatabase(directoryName: directoryName)
         
-        try database.writeObjects(writeClosure: { realm in
+        let realm: Realm = try database.openRealm()
+        
+        try database.writeObjects(realm: realm, writeClosure: { realm in
             
-            let objects: [MockRealmObject]
-            
-            do {
-                objects = try database.getObjects(query: nil)
-            }
-            catch let error {
-                objects = Array()
-            }
+            let objects: [MockRealmObject] = database.getObjects(realm: realm, query: nil)
             
             for object in objects {
                 object.position = -9999
@@ -134,12 +139,40 @@ struct RealmDatabaseTests {
             
         }, updatePolicy: .modified)
         
-        let objects: [MockRealmObject] = try database.getObjects(query: nil)
+        let objects: [MockRealmObject] = database.getObjects(realm: realm, query: nil)
         
         try deleteDatabaseDirectory(directoryName: directoryName)
         
         #expect(objects.first?.position == -9999)
         #expect(objects.last?.position == -9999)
+    }
+    
+    
+    @available(iOS 17.4, *)
+    @Test()
+    func writeNewObjects() async throws {
+        
+        let directoryName: String = getUniqueDirectoryName()
+        
+        let database = try getDatabase(directoryName: directoryName)
+        
+        let realm: Realm = try database.openRealm()
+        
+        let uniqueId: String = UUID().uuidString
+        
+        let newObjects: [MockRealmObject] = [
+            MockRealmObject.createObject(id: uniqueId)
+        ]
+        
+        try database.writeObjects(realm: realm, writeClosure: { realm in
+            return newObjects
+        }, updatePolicy: .modified)
+        
+        let object: MockRealmObject = try #require(database.getObject(realm: realm, id: uniqueId))
+        
+        try deleteDatabaseDirectory(directoryName: directoryName)
+        
+        #expect(object.id == uniqueId)
     }
     
     @Test()
@@ -164,15 +197,8 @@ struct RealmDatabaseTests {
                 
                 database.writeObjectsPublisher(writeClosure: { realm in
                     
-                    let objects: [MockRealmObject]
-                    
-                    do {
-                        objects = try database.getObjects(query: nil)
-                    }
-                    catch let error {
-                        objects = Array()
-                    }
-                                        
+                    let objects: [MockRealmObject] = database.getObjects(realm: realm, query: nil)
+                                    
                     for object in objects {
                         object.position = -9999
                     }
@@ -197,7 +223,9 @@ struct RealmDatabaseTests {
             }
         }
         
-        let objects: [MockRealmObject] = try database.getObjects(query: nil)
+        let realm: Realm = try database.openRealm()
+        
+        let objects: [MockRealmObject] = database.getObjects(realm: realm, query: nil)
         
         try deleteDatabaseDirectory(directoryName: directoryName)
         
@@ -212,17 +240,15 @@ struct RealmDatabaseTests {
         
         let database = try getDatabase(directoryName: directoryName)
         
+        let realm: Realm = try database.openRealm()
+        
         let objectId: String = "0"
         
-        let object: MockRealmObject? = try database.getObject(id: objectId)
+        let object: MockRealmObject = try #require(database.getObject(realm: realm, id: objectId))
         
-        #expect(object != nil)
-        
-        if let object = object {
-            try database.deleteObjects(objects: [object])
-        }
+        try database.deleteObjects(realm: realm, objects: [object])
             
-        let objectAfterDelete: MockRealmObject? = try database.getObject(id: objectId)
+        let objectAfterDelete: MockRealmObject? = database.getObject(realm: realm, id: objectId)
         
         try deleteDatabaseDirectory(directoryName: directoryName)
         
@@ -230,24 +256,21 @@ struct RealmDatabaseTests {
     }
     
     @Test()
-    func deleteAllObjects() async throws {
+    func deleteObjects() async throws {
         
         let directoryName: String = getUniqueDirectoryName()
         
         let database = try getDatabase(directoryName: directoryName)
+        
+        let realm: Realm = try database.openRealm()
                 
-        let currentObjects: [MockRealmObject] = try database.getObjects(query: nil)
+        let currentObjects: [MockRealmObject] = database.getObjects(realm: realm, query: nil)
                 
         #expect(currentObjects.count > 0)
         
-        do {
-            try database.deleteAllObjects()
-        }
-        catch let error {
-            throw error
-        }
+        try database.deleteObjects(realm: realm, objects: currentObjects)
         
-        let objectsAfterDelete: [MockRealmObject] = try database.getObjects(query: nil)
+        let objectsAfterDelete: [MockRealmObject] = database.getObjects(realm: realm, query: nil)
                 
         try deleteDatabaseDirectory(directoryName: directoryName)
         

@@ -33,7 +33,7 @@ public class SwiftDatabase {
             
             let inMemoryModelConfig = ModelConfiguration(
                 "shared_in_memory",
-                schema: schema,
+                schema: nil,
                 isStoredInMemoryOnly: true,
                 allowsSave: true,
                 groupContainer: .none,
@@ -76,15 +76,10 @@ extension SwiftDatabase {
         return query?.fetchDescriptor ?? FetchDescriptor<T>()
     }
     
-    public func getObjectCount<T: IdentifiableSwiftDataObject>(query: SwiftDatabaseQuery<T>?) throws -> Int {
+    public func getObjectCount<T: IdentifiableSwiftDataObject>(context: ModelContext, query: SwiftDatabaseQuery<T>?) throws -> Int {
         
-        return try openContext()
+        return try context
             .fetchCount(getFetchDescriptor(query: query))
-    }
-    
-    public func getObject<T: IdentifiableSwiftDataObject>(id: String) throws -> T? {
-        
-        return try getObject(context: openContext(), id: id)
     }
     
     public func getObject<T: IdentifiableSwiftDataObject>(context: ModelContext, id: String) throws -> T? {
@@ -98,11 +93,6 @@ extension SwiftDatabase {
         return try getObjects(context: context, query: query).first
     }
     
-    public func getObjects<T: IdentifiableSwiftDataObject>(ids: [String]) throws -> [T] {
-        
-        return try getObjects(context: openContext(), ids: ids)
-    }
-    
     public func getObjects<T: IdentifiableSwiftDataObject>(context: ModelContext, ids: [String]) throws -> [T] {
         
         let filter = #Predicate<T> { object in
@@ -112,11 +102,6 @@ extension SwiftDatabase {
         let query = SwiftDatabaseQuery.filter(filter: filter)
         
         return try getObjects(context: context, query: query)
-    }
-    
-    public func getObjects<T: IdentifiableSwiftDataObject>(query: SwiftDatabaseQuery<T>?) throws -> [T] {
-        
-        return try getObjects(context: openContext(), query: query)
     }
     
     public func getObjects<T: IdentifiableSwiftDataObject>(context: ModelContext, query: SwiftDatabaseQuery<T>?) throws -> [T] {
@@ -131,56 +116,18 @@ extension SwiftDatabase {
 
 @available(iOS 17.4, *)
 extension SwiftDatabase {
-    
-    public func writeObjects(writeClosure: ((_ context: ModelContext) -> [any IdentifiableSwiftDataObject]), shouldAddObjectsToDatabase: Bool = true) throws {
-        
-        let context: ModelContext = openContext()
-        
-        try writeObjects(
-            context: context,
-            writeClosure: writeClosure,
-            shouldAddObjectsToDatabase: shouldAddObjectsToDatabase
-        )
-    }
-    
-    public func writeObjectsPublisher(writeClosure: @escaping ((_ context: ModelContext) -> [any IdentifiableSwiftDataObject]), shouldAddObjectsToDatabase: Bool = true) -> AnyPublisher<Void, Error> {
-        
-        return Future { promise in
-            
-            DispatchQueue.global().async {
-                
-                do {
-                    
-                    let context: ModelContext = self.openContext()
-                    
-                    try self.writeObjects(
-                        context: context,
-                        writeClosure: writeClosure,
-                        shouldAddObjectsToDatabase: shouldAddObjectsToDatabase
-                    )
-                    
-                    promise(.success(Void()))
-                }
-                catch let error {
-                    promise(.failure(error))
-                }
-            }
+
+    public func writeObjects(context: ModelContext, objects: [any IdentifiableSwiftDataObject]) throws {
+
+        guard objects.count > 0 else {
+            return
         }
-        .eraseToAnyPublisher()
-    }
-    
-    public func writeObjects(context: ModelContext, writeClosure: ((_ context: ModelContext) -> [any IdentifiableSwiftDataObject]), shouldAddObjectsToDatabase: Bool = true) throws {
         
-        let objects: [any IdentifiableSwiftDataObject] = writeClosure(context)
-        
-        if shouldAddObjectsToDatabase, objects.count > 0 {
-            
-            for object in objects {
-                context.insert(object)
-            }
-            
-            try context.save()
+        for object in objects {
+            context.insert(object)
         }
+        
+        try context.save()
     }
 }
 
@@ -189,13 +136,16 @@ extension SwiftDatabase {
 @available(iOS 17.4, *)
 extension SwiftDatabase {
     
-    public func deleteAllObjects() throws {
+    public func deleteObjects(context: ModelContext, objects: [any IdentifiableSwiftDataObject]) throws {
         
-        if #available(iOS 18, *) {
-            try container.erase()
+        guard objects.count > 0 else {
+            return
         }
-        else {
-            container.deleteAllData()
+        
+        for object in objects {
+            context.delete(object)
         }
+        
+        try context.save()
     }
 }

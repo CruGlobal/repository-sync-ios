@@ -141,8 +141,11 @@ extension SwiftRepositorySyncPersistence {
     
     public func getObjectCount() throws -> Int {
         
+        let context: ModelContext = database.openContext()
+        
         return try database
             .getObjectCount(
+                context: context,
                 query: SwiftDatabaseQuery<PersistObjectType>(
                     fetchDescriptor: FetchDescriptor<PersistObjectType>()
                 )
@@ -151,7 +154,9 @@ extension SwiftRepositorySyncPersistence {
     
     public func getObject(id: String) throws -> DataModelType? {
         
-        let swiftObject: PersistObjectType? = try database.getObject(id: id)
+        let context: ModelContext = database.openContext()
+        
+        let swiftObject: PersistObjectType? = try database.getObject(context: context, id: id)
         
         guard let swiftObject = swiftObject, let dataModel = dataModelMapping.toDataModel(persistObject: swiftObject) else {
             return nil
@@ -167,7 +172,9 @@ extension SwiftRepositorySyncPersistence {
     
     public func getObjects(query: SwiftDatabaseQuery<PersistObjectType>? = nil) throws -> [DataModelType] {
         
-        let objects: [PersistObjectType] = try database.getObjects(query: query)
+        let context: ModelContext = database.openContext()
+        
+        let objects: [PersistObjectType] = try database.getObjects(context: context, query: query)
         
         let dataModels: [DataModelType] = objects.compactMap { object in
             self.dataModelMapping.toDataModel(persistObject: object)
@@ -178,7 +185,9 @@ extension SwiftRepositorySyncPersistence {
     
     public func getObjects(ids: [String]) throws -> [DataModelType] {
         
-        let objects: [PersistObjectType] = try database.getObjects(ids: ids)
+        let context: ModelContext = database.openContext()
+        
+        let objects: [PersistObjectType] = try database.getObjects(context: context, ids: ids)
         
         let dataModels: [DataModelType] = objects.compactMap { object in
             self.dataModelMapping.toDataModel(persistObject: object)

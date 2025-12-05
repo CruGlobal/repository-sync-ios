@@ -1,5 +1,5 @@
 //
-//  MockRealmDatabase.swift
+//  MockSwiftDatabase.swift
 //  RepositorySync
 //
 //  Created by Levi Eggert on 7/30/25.
@@ -7,10 +7,11 @@
 //
 
 import Foundation
-import RealmSwift
+import SwiftData
 @testable import RepositorySync
 
-public class MockRealmDatabase {
+@available(iOS 17.4, *)
+public class MockSwiftDatabase {
     
     private let fileManager: FileManager = FileManager.default
     private let defaultIds: [Int] = [0, 1, 2, 3, 4]
@@ -28,20 +29,20 @@ public class MockRealmDatabase {
     private func getFileUrl(directoryName: String) -> URL {
         
         return getDirectory(directoryName: directoryName)
-            .appendingPathComponent("realm_tests")
-            .appendingPathExtension("realm")
+            .appendingPathComponent("swift_tests")
+            .appendingPathExtension("sqlite")
     }
     
-    public func createDatabase(directoryName: String, ids: [Int]? = nil) throws -> RealmDatabase {
+    public func createDatabase(directoryName: String, ids: [Int]? = nil) throws -> SwiftDatabase {
         
         let idsToCreate: [Int] = ids ?? defaultIds
         
-        var objects: [MockRealmObject] = Array()
+        var objects: [MockSwiftObject] = Array()
         
         for id in idsToCreate {
             
             objects.append(
-                MockRealmObject.createObject(
+                MockSwiftObject.createObject(
                     id: String(id),
                     position: id
                 )
@@ -51,23 +52,30 @@ public class MockRealmDatabase {
         return try createDatabase(directoryName: directoryName, objects: objects)
     }
     
-    public func createDatabase(directoryName: String, objects: [MockRealmObject]) throws -> RealmDatabase {
+    public func createDatabase(directoryName: String, objects: [MockSwiftObject]) throws -> SwiftDatabase {
         
         try _ = fileManager.createDirectoryIfNotExists(directoryUrl: getDirectory(directoryName: directoryName))
         
-        let config = RealmDatabaseConfiguration(
-            cacheType: .disk(fileLocation: .fileUrl(url: getFileUrl(directoryName: directoryName)), migrationBlock: { migration, oldSchemaVersion in
-            // migration
-        }), schemaVersion: 1)
+        let url: URL = getFileUrl(directoryName: directoryName)
         
-        let database = RealmDatabase(databaseConfiguration: config)
+        let config = ModelConfiguration(
+            "swift_tests",
+            schema: nil,
+            url: url,
+            allowsSave: true,
+            cloudKitDatabase: .none
+        )
         
-        let realm: Realm = try database.openRealm()
-                
-        try database.writeObjects(realm: realm, writeClosure: { realm in
-            return objects
-        }, updatePolicy: .modified)
+        let database = SwiftDatabase(
+            modelConfiguration: config,
+            schema: Schema(versionedSchema: MockSwiftDatabaseSchema.self),
+            migrationPlan: nil
+        )
         
+        let context: ModelContext = database.openContext()
+        
+        try database.writeObjects(context: context, objects: objects)
+             
         return database
     }
     
