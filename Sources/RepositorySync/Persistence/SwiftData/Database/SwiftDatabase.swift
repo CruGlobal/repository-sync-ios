@@ -1,0 +1,201 @@
+//
+//  SwiftDatabase.swift
+//  godtools
+//
+//  Created by Levi Eggert on 9/19/25.
+//  Copyright © 2025 Cru. All rights reserved.
+//
+
+import Foundation
+import SwiftData
+import Combine
+
+@available(iOS 17.4, *)
+public class SwiftDatabase {
+    
+    private let container: ModelContainer
+    
+    public let configName: String
+    
+    public init(modelConfiguration: ModelConfiguration, schema: Schema, migrationPlan: (any SchemaMigrationPlan.Type)?) {
+                
+        do {
+            
+            container = try Self.createContainer(
+                modelConfiguration: modelConfiguration,
+                schema: schema,
+                migrationPlan: migrationPlan
+            )
+        }
+        catch let error {
+            
+            assertionFailure("\n SwiftData init container error: \(error.localizedDescription)")
+            
+            let inMemoryModelConfig = ModelConfiguration(
+                "shared_in_memory",
+                schema: schema,
+                isStoredInMemoryOnly: true,
+                allowsSave: true,
+                groupContainer: .none,
+                cloudKitDatabase: .none
+            )
+            
+            container = try! Self.createContainer(
+                modelConfiguration: inMemoryModelConfig,
+                schema: schema,
+                migrationPlan: nil
+            )
+        }
+        
+        configName = modelConfiguration.name
+    }
+    
+    private static func createContainer(modelConfiguration: ModelConfiguration, schema: Schema, migrationPlan: (any SchemaMigrationPlan.Type)?) throws -> ModelContainer {
+        
+        return try ModelContainer(
+            for: schema,
+            migrationPlan: migrationPlan,
+            configurations: modelConfiguration
+        )
+    }
+    
+    public func openContext(autosaveEnabled: Bool = false) -> ModelContext {
+        let context = ModelContext(container)
+        context.autosaveEnabled = autosaveEnabled
+        return context
+    }
+}
+
+// MARK: - Read
+
+@available(iOS 17.4, *)
+extension SwiftDatabase {
+    
+    public func getFetchDescriptor<T: IdentifiableSwiftDataObject>(query: SwiftDatabaseQuery<T>?) -> FetchDescriptor<T> {
+        
+        return query?.fetchDescriptor ?? FetchDescriptor<T>()
+    }
+    
+    public func getObjectCount<T: IdentifiableSwiftDataObject>(query: SwiftDatabaseQuery<T>?) throws -> Int {
+        
+        return try openContext()
+            .fetchCount(getFetchDescriptor(query: query))
+    }
+    
+    public func getObject<T: IdentifiableSwiftDataObject>(id: String) throws -> T? {
+        
+        return try getObject(context: openContext(), id: id)
+    }
+    
+    public func getObject<T: IdentifiableSwiftDataObject>(context: ModelContext, id: String) throws -> T? {
+        
+        let idPredicate = #Predicate<T> { object in
+            object.id == id
+        }
+        
+        let query = SwiftDatabaseQuery.filter(filter: idPredicate)
+        
+        return try getObjects(context: context, query: query).first
+    }
+    
+    public func getObjects<T: IdentifiableSwiftDataObject>(ids: [String]) throws -> [T] {
+        
+        return try getObjects(context: openContext(), ids: ids)
+    }
+    
+    public func getObjects<T: IdentifiableSwiftDataObject>(context: ModelContext, ids: [String]) throws -> [T] {
+        
+        let filter = #Predicate<T> { object in
+            ids.contains(object.id)
+        }
+        
+        let query = SwiftDatabaseQuery.filter(filter: filter)
+        
+        return try getObjects(context: context, query: query)
+    }
+    
+    public func getObjects<T: IdentifiableSwiftDataObject>(query: SwiftDatabaseQuery<T>?) throws -> [T] {
+        
+        return try getObjects(context: openContext(), query: query)
+    }
+    
+    public func getObjects<T: IdentifiableSwiftDataObject>(context: ModelContext, query: SwiftDatabaseQuery<T>?) throws -> [T] {
+        
+        let objects: [T] = try context.fetch(getFetchDescriptor(query: query))
+        
+        return objects
+    }
+}
+
+// MARK: - Write
+
+@available(iOS 17.4, *)
+extension SwiftDatabase {
+    
+    public func writeObjects(writeClosure: ((_ context: ModelContext) -> [any IdentifiableSwiftDataObject]), shouldAddObjectsToDatabase: Bool = true) throws {
+        
+        let context: ModelContext = openContext()
+        
+        try writeObjects(
+            context: context,
+            writeClosure: writeClosure,
+            shouldAddObjectsToDatabase: shouldAddObjectsToDatabase
+        )
+    }
+    
+    public func writeObjectsPublisher(writeClosure: @escaping ((_ context: ModelContext) -> [any IdentifiableSwiftDataObject]), shouldAddObjectsToDatabase: Bool = true) -> AnyPublisher<Void, Error> {
+        
+        return Future { promise in
+            
+            DispatchQueue.global().async {
+                
+                do {
+                    
+                    let context: ModelContext = self.openContext()
+                    
+                    try self.writeObjects(
+                        context: context,
+                        writeClosure: writeClosure,
+                        shouldAddObjectsToDatabase: shouldAddObjectsToDatabase
+                    )
+                    
+                    promise(.success(Void()))
+                }
+                catch let error {
+                    promise(.failure(error))
+                }
+            }
+        }
+        .eraseToAnyPublisher()
+    }
+    
+    public func writeObjects(context: ModelContext, writeClosure: ((_ context: ModelContext) -> [any IdentifiableSwiftDataObject]), shouldAddObjectsToDatabase: Bool = true) throws {
+        
+        let objects: [any IdentifiableSwiftDataObject] = writeClosure(context)
+        
+        if shouldAddObjectsToDatabase, objects.count > 0 {
+            
+            for object in objects {
+                context.insert(object)
+            }
+            
+            try context.save()
+        }
+    }
+}
+
+// MARK: - Delete
+
+@available(iOS 17.4, *)
+extension SwiftDatabase {
+    
+    public func deleteAllObjects() throws {
+        
+        if #available(iOS 18, *) {
+            try container.erase()
+        }
+        else {
+            container.deleteAllData()
+        }
+    }
+}

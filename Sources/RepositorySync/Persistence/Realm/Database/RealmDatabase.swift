@@ -60,7 +60,7 @@ public final class RealmDatabase {
     }
 }
 
-// MARK: - Get Objects
+// MARK: - Read
 
 extension RealmDatabase {
     
@@ -76,6 +76,24 @@ extension RealmDatabase {
         let realmObject: T? = realm.object(ofType: T.self, forPrimaryKey: id)
         
         return realmObject
+    }
+    
+    public func getObjects<T: IdentifiableRealmObject>(ids: [String]) throws -> [T] {
+        
+        let realm: Realm = try openRealm()
+                
+        return getObjects(realm: realm, ids: ids)
+    }
+    
+    public func getObjects<T: IdentifiableRealmObject>(realm: Realm, ids: [String]) -> [T] {
+        
+        let query = RealmDatabaseQuery.filter(filter: getObjectsByIdsFilter(ids: ids))
+        
+        return getObjects(realm: realm, query: query)
+    }
+    
+    private func getObjectsByIdsFilter(ids: [String]) -> NSPredicate {
+        return NSPredicate(format: "id IN %@", ids)
     }
     
     public func getObjects<T: IdentifiableRealmObject>(query: RealmDatabaseQuery?) throws -> [T] {
@@ -121,16 +139,21 @@ extension RealmDatabase {
     }
 }
 
-// MARK: - Write Objects
+// MARK: - Write
 
 extension RealmDatabase {
     
-    public func writeObjects(writeClosure: ((_ realm: Realm) -> [IdentifiableRealmObject]), updatePolicy: Realm.UpdatePolicy, shouldAddObjectsToRealm: Bool = true) throws {
+    public func writeObjects(writeClosure: ((_ realm: Realm) -> [IdentifiableRealmObject]), updatePolicy: Realm.UpdatePolicy, shouldAddObjectsToDatabase: Bool = true) throws {
         
-        try writeObjects(realm: openRealm(), writeClosure: writeClosure, updatePolicy: updatePolicy)
+        try writeObjects(
+            realm: openRealm(),
+            writeClosure: writeClosure,
+            updatePolicy: updatePolicy,
+            shouldAddObjectsToDatabase: shouldAddObjectsToDatabase
+        )
     }
     
-    public func writeObjectsPublisher(writeClosure: @escaping ((_ realm: Realm) -> [IdentifiableRealmObject]), updatePolicy: Realm.UpdatePolicy, shouldAddObjectsToRealm: Bool = true) -> AnyPublisher<Void, Error> {
+    public func writeObjectsPublisher(writeClosure: @escaping ((_ realm: Realm) -> [IdentifiableRealmObject]), updatePolicy: Realm.UpdatePolicy, shouldAddObjectsToDatabase: Bool = true) -> AnyPublisher<Void, Error> {
         
         return Future { promise in
             
@@ -138,7 +161,12 @@ extension RealmDatabase {
                 
                 do {
                     
-                    try self.writeObjects(realm: realm, writeClosure: writeClosure, updatePolicy: updatePolicy)
+                    try self.writeObjects(
+                        realm: realm,
+                        writeClosure: writeClosure,
+                        updatePolicy: updatePolicy,
+                        shouldAddObjectsToDatabase: shouldAddObjectsToDatabase
+                    )
                     
                     promise(.success(Void()))
                 }
@@ -151,13 +179,13 @@ extension RealmDatabase {
         .eraseToAnyPublisher()
     }
     
-    public func writeObjects(realm: Realm, writeClosure: ((_ realm: Realm) -> [IdentifiableRealmObject]), updatePolicy: Realm.UpdatePolicy, shouldAddObjectsToRealm: Bool = true) throws {
+    public func writeObjects(realm: Realm, writeClosure: ((_ realm: Realm) -> [IdentifiableRealmObject]), updatePolicy: Realm.UpdatePolicy, shouldAddObjectsToDatabase: Bool = true) throws {
         
         try realm.write {
             
             let objects: [IdentifiableRealmObject] = writeClosure(realm)
             
-            if shouldAddObjectsToRealm {
+            if shouldAddObjectsToDatabase {
                 
                 realm.add(objects, update: updatePolicy)
             }
@@ -165,7 +193,7 @@ extension RealmDatabase {
     }
 }
 
-// MARK: - Delete Objects
+// MARK: - Delete
 
 extension RealmDatabase {
     
