@@ -66,7 +66,7 @@ public class MockSwiftDatabase {
             cloudKitDatabase: .none
         )
         
-        let database = SwiftDatabase(
+        let database = try SwiftDatabase(
             modelConfiguration: config,
             schema: Schema(versionedSchema: MockSwiftDatabaseSchema.self),
             migrationPlan: nil

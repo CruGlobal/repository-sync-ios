@@ -71,9 +71,12 @@ extension RealmDatabase {
         return realmObject
     }
     
-    public func getObjects<T: IdentifiableRealmObject>(realm: Realm, ids: [String]) -> [T] {
+    public func getObjects<T: IdentifiableRealmObject>(realm: Realm, ids: [String], sortBykeyPath: SortByKeyPath? = nil) -> [T] {
         
-        let query = RealmDatabaseQuery.filter(filter: getObjectsByIdsFilter(ids: ids))
+        let query = RealmDatabaseQuery(
+            filter: getObjectsByIdsFilter(ids: ids),
+            sortByKeyPath: sortBykeyPath
+        )
         
         return getObjects(realm: realm, query: query)
     }

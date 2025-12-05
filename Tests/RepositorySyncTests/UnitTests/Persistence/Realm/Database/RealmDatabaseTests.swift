@@ -33,6 +33,28 @@ struct RealmDatabaseTests {
     }
     
     @Test()
+    func getObjectsByIds() async throws {
+        
+        let directoryName: String = getUniqueDirectoryName()
+        
+        let database = try getDatabase(directoryName: directoryName)
+        
+        let realm: Realm = try database.openRealm()
+        
+        let ids: [String] = ["6", "4", "2"]
+        
+        let objects: [MockRealmObject] = database.getObjects(
+            realm: realm,
+            ids: ids,
+            sortBykeyPath: SortByKeyPath(keyPath: #keyPath(MockRealmObject.position), ascending: false)
+        )
+        
+        try deleteDatabaseDirectory(directoryName: directoryName)
+        
+        #expect(objects.map { $0.id } == ids)
+    }
+    
+    @Test()
     func getObjectByFilter() async throws {
         
         let directoryName: String = getUniqueDirectoryName()
@@ -147,8 +169,6 @@ struct RealmDatabaseTests {
         #expect(objects.last?.position == -9999)
     }
     
-    
-    @available(iOS 17.4, *)
     @Test()
     func writeNewObjects() async throws {
         
@@ -275,6 +295,28 @@ struct RealmDatabaseTests {
         try deleteDatabaseDirectory(directoryName: directoryName)
         
         #expect(objectsAfterDelete.count == 0)
+    }
+    
+    @Test()
+    func willNotDeleteObjectsWhenObjectsIsEmpty() async throws {
+        
+        let directoryName: String = getUniqueDirectoryName()
+        
+        let database = try getDatabase(directoryName: directoryName)
+        
+        let realm: Realm = try database.openRealm()
+        
+        let query = RealmDatabaseQuery.sort(byKeyPath: SortByKeyPath(keyPath: #keyPath(MockRealmObject.position), ascending: false))
+        
+        let currentObjects: [MockRealmObject] = database.getObjects(realm: realm, query: query)
+        
+        try database.deleteObjects(realm: realm, objects: [])
+        
+        let objectsAfterDelete: [MockRealmObject] = database.getObjects(realm: realm, query: query)
+        
+        try deleteDatabaseDirectory(directoryName: directoryName)
+        
+        #expect(currentObjects == objectsAfterDelete)
     }
 }
 

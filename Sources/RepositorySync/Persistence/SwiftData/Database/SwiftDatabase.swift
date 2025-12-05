@@ -17,46 +17,17 @@ public class SwiftDatabase {
     
     public let configName: String
     
-    public init(modelConfiguration: ModelConfiguration, schema: Schema, migrationPlan: (any SchemaMigrationPlan.Type)?) {
+    public init(modelConfiguration: ModelConfiguration, schema: Schema, migrationPlan: (any SchemaMigrationPlan.Type)?) throws {
                 
-        do {
-            
-            container = try Self.createContainer(
-                modelConfiguration: modelConfiguration,
-                schema: schema,
-                migrationPlan: migrationPlan
-            )
-        }
-        catch let error {
-            
-            assertionFailure("\n SwiftData init container error: \(error.localizedDescription)")
-            
-            let inMemoryModelConfig = ModelConfiguration(
-                "shared_in_memory",
-                schema: nil,
-                isStoredInMemoryOnly: true,
-                allowsSave: true,
-                groupContainer: .none,
-                cloudKitDatabase: .none
-            )
-            
-            container = try! Self.createContainer(
-                modelConfiguration: inMemoryModelConfig,
-                schema: schema,
-                migrationPlan: nil
-            )
-        }
-        
-        configName = modelConfiguration.name
-    }
-    
-    private static func createContainer(modelConfiguration: ModelConfiguration, schema: Schema, migrationPlan: (any SchemaMigrationPlan.Type)?) throws -> ModelContainer {
-        
-        return try ModelContainer(
+        let container = try ModelContainer(
             for: schema,
             migrationPlan: migrationPlan,
             configurations: modelConfiguration
         )
+        
+        self.container = container
+        
+        configName = modelConfiguration.name
     }
     
     public func openContext(autosaveEnabled: Bool = false) -> ModelContext {
@@ -76,7 +47,7 @@ extension SwiftDatabase {
         return query?.fetchDescriptor ?? FetchDescriptor<T>()
     }
     
-    public func getObjectCount<T: IdentifiableSwiftDataObject>(context: ModelContext, query: SwiftDatabaseQuery<T>?) throws -> Int {
+    public func getObjectCount<T: IdentifiableSwiftDataObject>(context: ModelContext, query: SwiftDatabaseQuery<T>) throws -> Int {
         
         return try context
             .fetchCount(getFetchDescriptor(query: query))
@@ -93,13 +64,16 @@ extension SwiftDatabase {
         return try getObjects(context: context, query: query).first
     }
     
-    public func getObjects<T: IdentifiableSwiftDataObject>(context: ModelContext, ids: [String]) throws -> [T] {
+    public func getObjects<T: IdentifiableSwiftDataObject>(context: ModelContext, ids: [String], sortBy: [SortDescriptor<T>]? = nil) throws -> [T] {
         
         let filter = #Predicate<T> { object in
             ids.contains(object.id)
         }
         
-        let query = SwiftDatabaseQuery.filter(filter: filter)
+        let query = SwiftDatabaseQuery(
+            filter: filter,
+            sortBy: sortBy
+        )
         
         return try getObjects(context: context, query: query)
     }

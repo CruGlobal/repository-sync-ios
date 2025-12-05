@@ -15,7 +15,28 @@ import Combine
 struct SwiftDatabaseTests {
         
     private let allObjectIds: [Int] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+   
+    @available(iOS 17.4, *)
+    @Test()
+    func getObjectCount() async throws {
         
+        let directoryName: String = getUniqueDirectoryName()
+        
+        let database = try getDatabase(directoryName: directoryName)
+        
+        let context: ModelContext = database.openContext()
+        
+        let query = SwiftDatabaseQuery(
+            fetchDescriptor: FetchDescriptor<MockSwiftObject>()
+        )
+        
+        let objectCount: Int = try database.getObjectCount(context: context, query: query)
+        
+        try deleteDatabaseDirectory(directoryName: directoryName)
+        
+        #expect(objectCount == allObjectIds.count)
+    }
+    
     @available(iOS 17.4, *)
     @Test()
     func getObjectById() async throws {
@@ -31,6 +52,29 @@ struct SwiftDatabaseTests {
         try deleteDatabaseDirectory(directoryName: directoryName)
         
         #expect(object != nil)
+    }
+    
+    @available(iOS 17.4, *)
+    @Test()
+    func getObjectsByIds() async throws {
+        
+        let directoryName: String = getUniqueDirectoryName()
+        
+        let database = try getDatabase(directoryName: directoryName)
+        
+        let context: ModelContext = database.openContext()
+        
+        let ids: [String] = ["6", "4", "2"]
+        
+        let objects: [MockSwiftObject] = try database.getObjects(
+            context: context,
+            ids: ids,
+            sortBy: [SortDescriptor(\MockSwiftObject.position, order: .reverse)]
+        )
+        
+        try deleteDatabaseDirectory(directoryName: directoryName)
+        
+        #expect(objects.map { $0.id } == ids)
     }
     
     @available(iOS 17.4, *)
@@ -180,6 +224,29 @@ struct SwiftDatabaseTests {
     
     @available(iOS 17.4, *)
     @Test()
+    func willNotWriteWhenObjectsIsEmpty() async throws {
+        
+        let directoryName: String = getUniqueDirectoryName()
+        
+        let database = try getDatabase(directoryName: directoryName)
+        
+        let context: ModelContext = database.openContext()
+        
+        let query = SwiftDatabaseQuery.sort(sortBy: [SortDescriptor(\MockSwiftObject.position, order: .reverse)])
+        
+        let currentObjects: [MockSwiftObject] = try database.getObjects(context: context, query: query)
+        
+        try database.writeObjects(context: context, objects: [])
+        
+        let objectsAfterUpdate: [MockSwiftObject] = try database.getObjects(context: context, query: query)
+        
+        try deleteDatabaseDirectory(directoryName: directoryName)
+        
+        #expect(currentObjects == objectsAfterUpdate)
+    }
+    
+    @available(iOS 17.4, *)
+    @Test()
     func deleteObject() async throws {
         
         let directoryName: String = getUniqueDirectoryName()
@@ -222,6 +289,29 @@ struct SwiftDatabaseTests {
         try deleteDatabaseDirectory(directoryName: directoryName)
         
         #expect(objectsAfterDelete.count == 0)
+    }
+    
+    @available(iOS 17.4, *)
+    @Test()
+    func willNotDeleteObjectsWhenObjectsIsEmpty() async throws {
+        
+        let directoryName: String = getUniqueDirectoryName()
+        
+        let database = try getDatabase(directoryName: directoryName)
+        
+        let context: ModelContext = database.openContext()
+        
+        let query = SwiftDatabaseQuery.sort(sortBy: [SortDescriptor(\MockSwiftObject.position, order: .reverse)])
+        
+        let currentObjects: [MockSwiftObject] = try database.getObjects(context: context, query: query)
+        
+        try database.deleteObjects(context: context, objects: [])
+        
+        let objectsAfterDelete: [MockSwiftObject] = try database.getObjects(context: context, query: query)
+        
+        try deleteDatabaseDirectory(directoryName: directoryName)
+        
+        #expect(currentObjects == objectsAfterDelete)
     }
 }
 
