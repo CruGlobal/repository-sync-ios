@@ -12,6 +12,7 @@ import Combine
 public protocol ExternalDataFetchInterface {
     
     associatedtype ExternalObject
+    associatedtype ExternalDataFetchContext
     
     func getObjectPublisher(id: String, context: ExternalDataFetchContext) -> AnyPublisher<[ExternalObject], Error>
     func getObjectsPublisher(context: ExternalDataFetchContext) -> AnyPublisher<[ExternalObject], Error>

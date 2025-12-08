@@ -1,5 +1,5 @@
 //
-//  ExternalDataFetchContext.swift
+//  MockExternalDataFetchContext.swift
 //  RepositorySync
 //
 //  Created by Levi Eggert on 7/30/25.
@@ -7,7 +7,8 @@
 //
 
 import Foundation
+@testable import RepositorySync
 
-public protocol ExternalDataFetchContext {
+final class MockExternalDataFetchContext {
     
 }
