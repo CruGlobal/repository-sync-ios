@@ -26,7 +26,7 @@ public final class RealmRepositorySyncPersistence<DataModelType, ExternalObjectT
 
 extension RealmRepositorySyncPersistence {
     
-    public func observeCollectionChangesPublisher() -> AnyPublisher<Void, Error> {
+    @MainActor public func observeCollectionChangesPublisher() -> AnyPublisher<Void, Error> {
         
         do {
             
@@ -151,9 +151,9 @@ extension RealmRepositorySyncPersistence {
                         if objectsToRemove.count > 0 {
                             realm.delete(objectsToRemove)
                         }
-                        
-                        promise(.success(Void()))
                     }
+                    
+                    promise(.success(Void()))
                 }
                 catch let error {
                     

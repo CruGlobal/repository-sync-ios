@@ -40,7 +40,7 @@ public final class SwiftRepositorySyncPersistence<DataModelType, ExternalObjectT
 @available(iOS 17.4, *)
 extension SwiftRepositorySyncPersistence {
     
-    public func observeCollectionChangesPublisher() -> AnyPublisher<Void, Error> {
+    @MainActor public func observeCollectionChangesPublisher() -> AnyPublisher<Void, Error> {
         
         return observeSwiftDataCollectionChangesPublisher()
             .setFailureType(to: Error.self)
