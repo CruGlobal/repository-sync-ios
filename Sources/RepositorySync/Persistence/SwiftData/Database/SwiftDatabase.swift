@@ -91,14 +91,57 @@ extension SwiftDatabase {
 @available(iOS 17.4, *)
 extension SwiftDatabase {
 
-    public func writeObjects(context: ModelContext, objects: [any IdentifiableSwiftDataObject]) throws {
+    public func writeObjectsPublisher(writeClosure: @escaping ((_ context: ModelContext) -> SwiftDatabaseWrite)) -> AnyPublisher<Void, Error> {
+        
+        return Future { promise in
+            
+            DispatchQueue.global().async {
+                
+                let context: ModelContext = self.openContext()
+                
+                let write: SwiftDatabaseWrite = writeClosure(context)
+                
+                if let error = write.error {
 
-        guard objects.count > 0 else {
-            return
+                    promise(.failure(error))
+                    
+                    return
+                }
+                
+                do {
+                         
+                    try self.writeObjects(
+                        context: context,
+                        objects: write.updateObjects,
+                        deleteObjects: write.deleteObjects
+                    )
+                    
+                    promise(.success(Void()))
+                    
+                }
+                catch let error {
+                    
+                    promise(.failure(error))
+                }
+            }
         }
+        .eraseToAnyPublisher()
+    }
+    
+    public func writeObjects(context: ModelContext, objects: [any IdentifiableSwiftDataObject], deleteObjects: [any IdentifiableSwiftDataObject]? = nil) throws {
         
         for object in objects {
             context.insert(object)
+        }
+        
+        if let deleteObjects = deleteObjects, deleteObjects.count > 0 {
+            for object in deleteObjects {
+                context.delete(object)
+            }
+        }
+        
+        guard context.hasChanges else {
+            return
         }
         
         try context.save()

@@ -224,6 +224,144 @@ struct SwiftDatabaseTests {
     
     @available(iOS 17.4, *)
     @Test()
+    func writeToExistingObjectsPublisher() async throws {
+        
+        var cancellables: Set<AnyCancellable> = Set()
+        
+        let directoryName: String = getUniqueDirectoryName()
+        
+        let database = try getDatabase(directoryName: directoryName)
+        
+        var sinkCount: Int = 0
+        
+        await confirmation(expectedCount: 1) { confirmation in
+            
+            await withCheckedContinuation { continuation in
+                
+                let timeoutTask = Task {
+                    try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+                    continuation.resume(returning: ())
+                }
+                
+                database.writeObjectsPublisher(writeClosure: { context in
+                    
+                    do {
+                        
+                        let objects: [MockSwiftObject] = try database.getObjects(context: context, query: nil)
+                                        
+                        for object in objects {
+                            object.position = -9999
+                        }
+                        
+                        return SwiftDatabaseWrite(updateObjects: objects)
+                    }
+                    catch let error {
+                        
+                        return SwiftDatabaseWrite(error: error)
+                    }
+                })
+                .sink { completion in
+                    
+                    // When finished be sure to call:
+                    timeoutTask.cancel()
+                    continuation.resume(returning: ())
+                    
+                } receiveValue: { _ in
+                    
+                    // Place inside a sink or other async closure:
+                    confirmation()
+                    
+                    sinkCount += 1
+                }
+                .store(in: &cancellables)
+            }
+        }
+        
+        let context: ModelContext = database.openContext()
+        
+        let objects: [MockSwiftObject] = try database.getObjects(context: context, query: nil)
+        
+        try deleteDatabaseDirectory(directoryName: directoryName)
+        
+        #expect(objects.first?.position == -9999)
+        #expect(objects.last?.position == -9999)
+    }
+    
+    @available(iOS 17.4, *)
+    @Test()
+    func writeNewAndDeleteExistingObjectsPublisher() async throws {
+        
+        var cancellables: Set<AnyCancellable> = Set()
+        
+        let directoryName: String = getUniqueDirectoryName()
+        
+        let database = try getDatabase(directoryName: directoryName)
+        
+        let newObjectIds: [String] = ["10", "11", "12"]
+        
+        var sinkCount: Int = 0
+        
+        await confirmation(expectedCount: 1) { confirmation in
+            
+            await withCheckedContinuation { continuation in
+                
+                let timeoutTask = Task {
+                    try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+                    continuation.resume(returning: ())
+                }
+                
+                database.writeObjectsPublisher(writeClosure: { context in
+                    
+                    do {
+                        
+                        let existingObjects: [MockSwiftObject] = try database.getObjects(context: context, query: nil)
+                        
+                        let newObjects: [MockSwiftObject] = newObjectIds.compactMap {
+                            
+                            guard let position = Int($0) else {
+                                return nil
+                            }
+                            
+                            return MockSwiftObject.createObject(id: $0, position: position)
+                        }
+                                        
+                        return SwiftDatabaseWrite(updateObjects: newObjects, deleteObjects: existingObjects)
+                    }
+                    catch let error {
+                        
+                        return SwiftDatabaseWrite(error: error)
+                    }
+                })
+                .sink { completion in
+                    
+                    // When finished be sure to call:
+                    timeoutTask.cancel()
+                    continuation.resume(returning: ())
+                    
+                } receiveValue: { _ in
+                    
+                    // Place inside a sink or other async closure:
+                    confirmation()
+                    
+                    sinkCount += 1
+                }
+                .store(in: &cancellables)
+            }
+        }
+        
+        let context: ModelContext = database.openContext()
+        
+        let query = SwiftDatabaseQuery.sort(sortBy: [SortDescriptor(\MockSwiftObject.position, order: .forward)])
+                
+        let objects: [MockSwiftObject] = try database.getObjects(context: context, query: query)
+        
+        try deleteDatabaseDirectory(directoryName: directoryName)
+        
+        #expect(objects.map { $0.id } == ["10", "11", "12"])
+    }
+    
+    @available(iOS 17.4, *)
+    @Test()
     func willNotWriteWhenObjectsIsEmpty() async throws {
         
         let directoryName: String = getUniqueDirectoryName()

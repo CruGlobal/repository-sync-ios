@@ -64,7 +64,7 @@ public class MockRealmDatabase {
         let realm: Realm = try database.openRealm()
                 
         try database.writeObjects(realm: realm, writeClosure: { realm in
-            return objects
+            return RealmDatabaseWrite(updateObjects: objects)
         }, updatePolicy: .modified)
         
         return database

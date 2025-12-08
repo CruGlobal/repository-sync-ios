@@ -157,7 +157,7 @@ struct RealmDatabaseTests {
                 object.position = -9999
             }
             
-            return objects
+            return RealmDatabaseWrite(updateObjects: objects)
             
         }, updatePolicy: .modified)
         
@@ -185,7 +185,7 @@ struct RealmDatabaseTests {
         ]
         
         try database.writeObjects(realm: realm, writeClosure: { realm in
-            return newObjects
+            return RealmDatabaseWrite(updateObjects: newObjects)
         }, updatePolicy: .modified)
         
         let object: MockRealmObject = try #require(database.getObject(realm: realm, id: uniqueId))
@@ -223,7 +223,7 @@ struct RealmDatabaseTests {
                         object.position = -9999
                     }
                     
-                    return objects
+                    return RealmDatabaseWrite(updateObjects: objects)
                     
                 }, updatePolicy: .modified)
                 .sink { completion in
@@ -251,6 +251,72 @@ struct RealmDatabaseTests {
         
         #expect(objects.first?.position == -9999)
         #expect(objects.last?.position == -9999)
+    }
+    
+    @Test()
+    func writeNewAndDeleteExistingObjectsPublisher() async throws {
+        
+        var cancellables: Set<AnyCancellable> = Set()
+        
+        let directoryName: String = getUniqueDirectoryName()
+        
+        let database = try getDatabase(directoryName: directoryName)
+        
+        let newObjectIds: [String] = ["0", "10", "11", "12"]
+        
+        var sinkCount: Int = 0
+        
+        await confirmation(expectedCount: 1) { confirmation in
+            
+            await withCheckedContinuation { continuation in
+                
+                let timeoutTask = Task {
+                    try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+                    continuation.resume(returning: ())
+                }
+                
+                database.writeObjectsPublisher(writeClosure: { realm in
+                    
+                    let existingObjects: [MockRealmObject] = database.getObjects(realm: realm, query: nil)
+                    
+                    let newObjects: [MockRealmObject] = newObjectIds.compactMap {
+                        
+                        guard let position = Int($0) else {
+                            return nil
+                        }
+                        
+                        return MockRealmObject.createObject(id: $0, position: position)
+                    }
+                                    
+                    return RealmDatabaseWrite(updateObjects: newObjects, deleteObjects: existingObjects)
+                    
+                }, updatePolicy: .modified)
+                .sink { completion in
+                    
+                    // When finished be sure to call:
+                    timeoutTask.cancel()
+                    continuation.resume(returning: ())
+                    
+                } receiveValue: { _ in
+                    
+                    // Place inside a sink or other async closure:
+                    confirmation()
+                    
+                    sinkCount += 1
+                }
+                .store(in: &cancellables)
+            }
+        }
+        
+        let realm: Realm = try database.openRealm()
+        
+        let query = RealmDatabaseQuery.sort(byKeyPath: SortByKeyPath(keyPath: #keyPath(MockRealmObject.position), ascending: true))
+        
+        let objects: [MockRealmObject] = database.getObjects(realm: realm, query: query)
+        
+        try deleteDatabaseDirectory(directoryName: directoryName)
+        
+        #expect(objects.map { $0.id } == ["10", "11", "12"])
     }
     
     @Test()

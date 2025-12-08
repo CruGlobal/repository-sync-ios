@@ -245,64 +245,45 @@ extension SwiftRepositorySyncPersistence {
         }
     }
     
-    public func writeObjectsPublisher(writeClosure: @escaping (() -> [ExternalObjectType]), deleteObjectsNotFoundInExternalObjects: Bool) -> AnyPublisher<Void, any Error> {
+    public func writeObjectsPublisher(externalObjects: [ExternalObjectType], deleteObjectsNotFoundInExternalObjects: Bool) -> AnyPublisher<Void, Error> {
         
-        return Future { promise in
+        return database.writeObjectsPublisher(writeClosure: { (context: ModelContext) in
             
-            DispatchQueue.global().async {
+            do {
                 
-                do {
-                    
-                    let context: ModelContext = self.database.openContext()
-                    
-                    let externalObjects: [ExternalObjectType] = writeClosure()
-                    
-                    var objectsToAdd: [PersistObjectType] = Array()
-                    
-                    var objectsToRemove: [PersistObjectType]
-                    
-                    if deleteObjectsNotFoundInExternalObjects {
-                        // store all objects in the collection.
-                        objectsToRemove = try self.database.getObjects(context: context, query: nil)
-                    }
-                    else {
-                        objectsToRemove = Array()
-                    }
-                    
-                    for externalObject in externalObjects {
+                var objectsToAdd: [PersistObjectType] = Array()
+                
+                var objectsToRemove: [PersistObjectType] = Array()
+                
+                if deleteObjectsNotFoundInExternalObjects {
+                    // store all objects in the collection.
+                    objectsToRemove = try self.database.getObjects(context: context, query: nil)
+                }
+                
+                for externalObject in externalObjects {
 
-                        guard let persistObject = self.dataModelMapping.toPersistObject(externalObject: externalObject) else {
-                            continue
-                        }
-                        
-                        objectsToAdd.append(persistObject)
-                        
-                        // added persist object can be removed from this list so it won't be deleted from the database.
-                        if deleteObjectsNotFoundInExternalObjects, let index = objectsToRemove.firstIndex(where: { $0.id == persistObject.id }) {
-                            objectsToRemove.remove(at: index)
-                        }
+                    guard let persistObject = self.dataModelMapping.toPersistObject(externalObject: externalObject) else {
+                        continue
                     }
                     
-                    for object in objectsToAdd {
-                        context.insert(object)
-                    }
+                    objectsToAdd.append(persistObject)
                     
-                    for object in objectsToRemove {
-                        context.delete(object)
+                    // added persist object can be removed from this list so it won't be deleted from the database.
+                    if deleteObjectsNotFoundInExternalObjects, let index = objectsToRemove.firstIndex(where: { $0.id == persistObject.id }) {
+                        objectsToRemove.remove(at: index)
                     }
-                    
-                    if context.hasChanges {
-                        try context.save()
-                    }
-    
-                    promise(.success(Void()))
                 }
-                catch let error {
-                    
-                    promise(.failure(error))
-                }
+                
+                return SwiftDatabaseWrite(
+                    updateObjects: objectsToAdd,
+                    deleteObjects: objectsToRemove
+                )
             }
-        }
+            catch let error {
+                
+                return SwiftDatabaseWrite(error: error)
+            }
+        })
         .eraseToAnyPublisher()
     }
 }

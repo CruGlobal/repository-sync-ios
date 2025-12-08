@@ -64,10 +64,10 @@ extension RepositorySync {
         )
         .flatMap { (externalObjects: [ExternalDataFetchType.ExternalObject]) in
             
-            return self.persistence
-                .writeObjectsPublisher(writeClosure: {
-                    return externalObjects
-                }, deleteObjectsNotFoundInExternalObjects: false)
+            return self.persistence.writeObjectsPublisher(
+                externalObjects: externalObjects,
+                deleteObjectsNotFoundInExternalObjects: false
+            )
         }
         .eraseToAnyPublisher()
     }

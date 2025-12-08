@@ -108,59 +108,38 @@ extension RealmRepositorySyncPersistence {
 
 extension RealmRepositorySyncPersistence {
     
-    public func writeObjectsPublisher(writeClosure: @escaping (() -> [ExternalObjectType]), deleteObjectsNotFoundInExternalObjects: Bool) -> AnyPublisher<Void, any Error> {
+    public func writeObjectsPublisher(externalObjects: [ExternalObjectType], deleteObjectsNotFoundInExternalObjects: Bool) -> AnyPublisher<Void, any Error> {
         
-        return Future { promise in
+        return database.writeObjectsPublisher(writeClosure: { realm in
             
-            self.database.background { realm in
-                
-                do {
-                    
-                    try realm.write {
-                        
-                        let externalObjects: [ExternalObjectType] = writeClosure()
-                        
-                        var objectsToAdd: [PersistObjectType] = Array()
-                        
-                        var objectsToRemove: [PersistObjectType]
-                        
-                        if deleteObjectsNotFoundInExternalObjects {
-                            // store all objects in the collection.
-                            objectsToRemove = self.database.getObjects(realm: realm, query: nil)
-                        }
-                        else {
-                            objectsToRemove = Array()
-                        }
-                        
-                        for externalObject in externalObjects {
+            var objectsToAdd: [PersistObjectType] = Array()
+            
+            var objectsToRemove: [PersistObjectType]
+            
+            if deleteObjectsNotFoundInExternalObjects {
+                // store all objects in the collection.
+                objectsToRemove = self.database.getObjects(realm: realm, query: nil)
+            }
+            else {
+                objectsToRemove = Array()
+            }
+            
+            for externalObject in externalObjects {
 
-                            guard let persistObject = self.dataModelMapping.toPersistObject(externalObject: externalObject) else {
-                                continue
-                            }
-                            
-                            objectsToAdd.append(persistObject)
-                            
-                            // added persist object can be removed from this list so it won't be deleted from the database.
-                            if deleteObjectsNotFoundInExternalObjects, let index = objectsToRemove.firstIndex(where: { $0.id == persistObject.id }) {
-                                objectsToRemove.remove(at: index)
-                            }
-                        }
-                        
-                        realm.add(objectsToAdd, update: .modified)
-                       
-                        if objectsToRemove.count > 0 {
-                            realm.delete(objectsToRemove)
-                        }
-                    }
-                    
-                    promise(.success(Void()))
+                guard let persistObject = self.dataModelMapping.toPersistObject(externalObject: externalObject) else {
+                    continue
                 }
-                catch let error {
-                    
-                    promise(.failure(error))
+                
+                objectsToAdd.append(persistObject)
+                
+                // added persist object can be removed from this list so it won't be deleted from the database.
+                if deleteObjectsNotFoundInExternalObjects, let index = objectsToRemove.firstIndex(where: { $0.id == persistObject.id }) {
+                    objectsToRemove.remove(at: index)
                 }
             }
-        }
-        .eraseToAnyPublisher()
+            
+            return RealmDatabaseWrite(updateObjects: objectsToAdd, deleteObjects: objectsToRemove)
+            
+        }, updatePolicy: .modified)
     }
 }

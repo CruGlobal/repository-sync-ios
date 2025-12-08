@@ -2,8 +2,8 @@
 //  RealmDatabase.swift
 //  RepositorySync
 //
-//  Created by Levi Eggert on 3/20/20.
-//  Copyright © 2020 Cru. All rights reserved.
+//  Created by Levi Eggert on 12/22/23.
+//  Copyright © 2023 Cru. All rights reserved.
 //
 
 import Foundation
@@ -151,7 +151,7 @@ extension RealmDatabase {
 
 extension RealmDatabase {
         
-    public func writeObjectsPublisher(writeClosure: @escaping ((_ realm: Realm) -> [IdentifiableRealmObject]), updatePolicy: Realm.UpdatePolicy, shouldAddObjectsToDatabase: Bool = true) -> AnyPublisher<Void, Error> {
+    public func writeObjectsPublisher(writeClosure: @escaping ((_ realm: Realm) -> RealmDatabaseWrite), updatePolicy: Realm.UpdatePolicy) -> AnyPublisher<Void, Error> {
         
         return Future { promise in
             
@@ -162,8 +162,7 @@ extension RealmDatabase {
                     try self.writeObjects(
                         realm: realm,
                         writeClosure: writeClosure,
-                        updatePolicy: updatePolicy,
-                        shouldAddObjectsToDatabase: shouldAddObjectsToDatabase
+                        updatePolicy: updatePolicy
                     )
                     
                     promise(.success(Void()))
@@ -177,15 +176,18 @@ extension RealmDatabase {
         .eraseToAnyPublisher()
     }
     
-    public func writeObjects(realm: Realm, writeClosure: ((_ realm: Realm) -> [IdentifiableRealmObject]), updatePolicy: Realm.UpdatePolicy, shouldAddObjectsToDatabase: Bool = true) throws {
+    public func writeObjects(realm: Realm, writeClosure: ((_ realm: Realm) -> RealmDatabaseWrite), updatePolicy: Realm.UpdatePolicy) throws {
         
         try realm.write {
             
-            let objects: [IdentifiableRealmObject] = writeClosure(realm)
+            let realmDatabaseWrite: RealmDatabaseWrite = writeClosure(realm)
+                        
+            if realmDatabaseWrite.updateObjects.count > 0 {
+                realm.add(realmDatabaseWrite.updateObjects, update: updatePolicy)
+            }
             
-            if shouldAddObjectsToDatabase {
-                
-                realm.add(objects, update: updatePolicy)
+            if let objectsToDelete = realmDatabaseWrite.deleteObjects, objectsToDelete.count > 0 {
+                realm.delete(objectsToDelete)
             }
         }
     }
