@@ -73,22 +73,6 @@ public final class RealmDatabase {
         return try Realm(configuration: config)
     }
     
-    public func readBackgroundRealm(async: @escaping ((_ result: Result<Realm, Error>) -> Void)) {
-        
-        let config: Realm.Configuration = self.config
-        
-        DispatchQueue.global().async {
-            
-            do {
-                let realm: Realm = try Realm(configuration: config)
-                async(.success(realm))
-            }
-            catch let error {
-                async(.failure(error))
-            }
-        }
-    }
-    
     public func writeBackgroundRealm(async: @escaping ((_ result: Result<Realm, Error>) -> Void)) {
         
         let config: Realm.Configuration = self.config

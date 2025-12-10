@@ -102,68 +102,6 @@ extension RealmRepositorySyncPersistence {
         
         return dataModels
     }
-    
-    public func getObjectPublisher(id: String) -> AnyPublisher<DataModelType?, any Error> {
-        
-        return Future { promise in
-            
-            self.database.readBackgroundRealm { result in
-                
-                switch result {
-                
-                case .success(let realm):
-                   
-                    let realmObject: PersistObjectType? = self.database.getObject(realm: realm, id: id)
-                    let dataModel: DataModelType?
-                    
-                    if let realmObject = realmObject {
-                        dataModel = self.dataModelMapping.toDataModel(persistObject: realmObject)
-                    }
-                    else {
-                        dataModel = nil
-                    }
-                                        
-                    promise(.success(dataModel))
-                    
-                case .failure(let error):
-                    promise(.failure(error))
-                }
-            }
-        }
-        .eraseToAnyPublisher()
-    }
-    
-    public func getObjectsPublisher() -> AnyPublisher<[DataModelType], any Error> {
-     
-        return getObjectsPublisher(query: nil)
-            .eraseToAnyPublisher()
-    }
-    
-    public func getObjectsPublisher(query: RealmDatabaseQuery? = nil) -> AnyPublisher<[DataModelType], any Error> {
-        
-        return Future { promise in
-            
-            self.database.readBackgroundRealm { result in
-                
-                switch result {
-                
-                case .success(let realm):
-                   
-                    let objects: [PersistObjectType] = self.database.getObjects(realm: realm, query: query)
-                    
-                    let dataModels: [DataModelType] = objects.compactMap { object in
-                        self.dataModelMapping.toDataModel(persistObject: object)
-                    }
-                    
-                    promise(.success(dataModels))
-                    
-                case .failure(let error):
-                    promise(.failure(error))
-                }
-            }
-        }
-        .eraseToAnyPublisher()
-    }
 }
 
 // MARK: - Write

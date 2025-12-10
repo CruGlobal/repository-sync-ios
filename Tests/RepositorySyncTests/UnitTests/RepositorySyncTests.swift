@@ -130,6 +130,538 @@ struct RepositorySyncTests {
     
     @Test(arguments: [
         TestArgument(
+            initialPersistedObjectsIds: ["0", "1", "2"],
+            externalDataModelIds: ["5", "4"],
+            expectedCachedResponseDataModelIds: ["0", "1", "2"],
+            expectedResponseDataModelIds: ["0", "1", "2", "8"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: ["3", "2"],
+            expectedCachedResponseDataModelIds: [],
+            expectedResponseDataModelIds: ["0", "1", "8"]
+        )
+    ])
+    func returnCacheDataDontFetchWillTriggerTwiceWhenObservingChangesOnceForInitialCacheDataAndAgainForSecondaryExternalDataFetch(argument: TestArgument) async throws {
+        
+        try await runRealmTest(
+            argument: argument,
+            getObjectsType: .allObjects,
+            cachePolicy: .returnCacheDataDontFetch,
+            expectedNumberOfChanges: 2,
+            triggerSecondaryExternalDataFetchWithIds: ["8", "1", "0"]
+        )
+        
+        if #available(iOS 17.4, *) {
+            
+            try await runSwiftTest(
+                argument: argument,
+                getObjectsType: .allObjects,
+                cachePolicy: .returnCacheDataDontFetch,
+                expectedNumberOfChanges: 2,
+                triggerSecondaryExternalDataFetchWithIds: ["8", "1", "0"]
+            )
+        }
+    }
+    
+    // MARK: - Test Cache Policy (Return Cache Data Don't Fetch) - Object ID
+    
+    @Test(arguments: [
+        TestArgument(
+            initialPersistedObjectsIds: ["0", "1", "2"],
+            externalDataModelIds: ["5", "4"],
+            expectedCachedResponseDataModelIds: ["1"],
+            expectedResponseDataModelIds: ["1"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: ["3", "2"],
+            expectedCachedResponseDataModelIds: [],
+            expectedResponseDataModelIds: ["1"]
+        )
+    ])
+    func returnCacheDataDontFetchWillTriggerTwiceWithSingleObjectWhenObservingChangesOnceForInitialCacheDataAndAgainForSecondaryExternalDataFetch(argument: TestArgument) async throws {
+        
+        try await runRealmTest(
+            argument: argument,
+            getObjectsType: .object(id: "1"),
+            cachePolicy: .returnCacheDataDontFetch,
+            expectedNumberOfChanges: 2,
+            triggerSecondaryExternalDataFetchWithIds: ["8", "1", "0"]
+        )
+        
+        if #available(iOS 17.4, *) {
+            
+            try await runSwiftTest(
+                argument: argument,
+                getObjectsType: .object(id: "1"),
+                cachePolicy: .returnCacheDataDontFetch,
+                expectedNumberOfChanges: 2,
+                triggerSecondaryExternalDataFetchWithIds: ["8", "1", "0"]
+            )
+        }
+    }
+    
+    // MARK: - Test Cache Policy (Return Cache Data Else Fetch) - Objects
+    
+    @Test(arguments: [
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: ["5", "6", "7"],
+            expectedCachedResponseDataModelIds: [],
+            expectedResponseDataModelIds: ["5", "6", "7"]
+        )
+    ])
+    func returnCacheDataElseFetchIsTriggeredTwiceWhenNoCacheDataExistsAndExternalDataIsFetchedAndIsObservingChanges(argument: TestArgument) async throws {
+        
+        try await runRealmTest(
+            argument: argument,
+            getObjectsType: .allObjects,
+            cachePolicy: .returnCacheDataElseFetch,
+            expectedNumberOfChanges: 2
+        )
+        
+        if #available(iOS 17.4, *) {
+            
+            try await runSwiftTest(
+                argument: argument,
+                getObjectsType: .allObjects,
+                cachePolicy: .returnCacheDataElseFetch,
+                expectedNumberOfChanges: 2
+            )
+        }
+    }
+    
+    @Test(arguments: [
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: ["5", "6", "7"],
+            expectedCachedResponseDataModelIds: [],
+            expectedResponseDataModelIds: ["5", "6", "7", "9"]
+        )
+    ])
+    func returnCacheDataElseFetchIsTriggeredThreeTimesWhenCacheIsEmptyOnExternalDataFetchAndOnSecondaryExternalDataFetch(argument: TestArgument) async throws {
+        
+        try await runRealmTest(
+            argument: argument,
+            getObjectsType: .allObjects,
+            cachePolicy: .returnCacheDataElseFetch,
+            expectedNumberOfChanges: 3,
+            triggerSecondaryExternalDataFetchWithIds: ["9", "7"]
+        )
+        
+        if #available(iOS 17.4, *) {
+            
+            try await runSwiftTest(
+                argument: argument,
+                getObjectsType: .allObjects,
+                cachePolicy: .returnCacheDataElseFetch,
+                expectedNumberOfChanges: 3,
+                triggerSecondaryExternalDataFetchWithIds: ["9", "7"]
+            )
+        }
+    }
+    
+    @Test(arguments: [
+        TestArgument(
+            initialPersistedObjectsIds: ["1", "2"],
+            externalDataModelIds: ["3", "5", "4"],
+            expectedCachedResponseDataModelIds: ["1", "2"],
+            expectedResponseDataModelIds: ["1", "2", "7", "9"]
+        )
+    ])
+    func returnCacheDataElseFetchIsTriggeredTwiceWhenCacheHasDataAndOnSecondaryExternalDataFetch(argument: TestArgument) async throws {
+        
+        try await runRealmTest(
+            argument: argument,
+            getObjectsType: .allObjects,
+            cachePolicy: .returnCacheDataElseFetch,
+            expectedNumberOfChanges: 2,
+            triggerSecondaryExternalDataFetchWithIds: ["9", "7"]
+        )
+        
+        if #available(iOS 17.4, *) {
+            
+            try await runSwiftTest(
+                argument: argument,
+                getObjectsType: .allObjects,
+                cachePolicy: .returnCacheDataElseFetch,
+                expectedNumberOfChanges: 2,
+                triggerSecondaryExternalDataFetchWithIds: ["9", "7"]
+            )
+        }
+    }
+    
+    // MARK: - Test Cache Policy (Return Cache Data Else Fetch) - Object ID
+    
+    @Test(arguments: [
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: ["5", "6", "7"],
+            expectedCachedResponseDataModelIds: [],
+            expectedResponseDataModelIds: ["7"]
+        )
+    ])
+    func returnCacheDataElseFetchIsTriggeredTwiceWithSingleObjectWhenNoCacheDataExistsAndExternalDataIsFetchedAndIsObservingChanges(argument: TestArgument) async throws {
+        
+        try await runRealmTest(
+            argument: argument,
+            getObjectsType: .object(id: "7"),
+            cachePolicy: .returnCacheDataElseFetch,
+            expectedNumberOfChanges: 2
+        )
+        
+        if #available(iOS 17.4, *) {
+            
+            try await runSwiftTest(
+                argument: argument,
+                getObjectsType: .object(id: "7"),
+                cachePolicy: .returnCacheDataElseFetch,
+                expectedNumberOfChanges: 2
+            )
+        }
+    }
+    
+    @Test(arguments: [
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: ["5", "6", "7", "9"],
+            expectedCachedResponseDataModelIds: [],
+            expectedResponseDataModelIds: ["9"]
+        )
+    ])
+    func returnCacheDataElseFetchIsTriggeredThreeTimesWithSingleObjectWhenCacheIsEmptyOnExternalDataFetchAndOnSecondaryExternalDataFetch(argument: TestArgument) async throws {
+        
+        try await runRealmTest(
+            argument: argument,
+            getObjectsType: .object(id: "9"),
+            cachePolicy: .returnCacheDataElseFetch,
+            expectedNumberOfChanges: 3,
+            triggerSecondaryExternalDataFetchWithIds: ["9", "7"]
+        )
+        
+        if #available(iOS 17.4, *) {
+            
+            try await runSwiftTest(
+                argument: argument,
+                getObjectsType: .object(id: "9"),
+                cachePolicy: .returnCacheDataElseFetch,
+                expectedNumberOfChanges: 3,
+                triggerSecondaryExternalDataFetchWithIds: ["9", "7"]
+            )
+        }
+    }
+    
+    @Test(arguments: [
+        TestArgument(
+            initialPersistedObjectsIds: ["1", "2"],
+            externalDataModelIds: ["3", "5", "4"],
+            expectedCachedResponseDataModelIds: ["1"],
+            expectedResponseDataModelIds: ["1"]
+        )
+    ])
+    func returnCacheDataElseFetchIsTriggeredTwiceWithSingleObjectWhenCacheHasDataAndOnSecondaryExternalDataFetch(argument: TestArgument) async throws {
+        
+        try await runRealmTest(
+            argument: argument,
+            getObjectsType: .object(id: "1"),
+            cachePolicy: .returnCacheDataElseFetch,
+            expectedNumberOfChanges: 2,
+            triggerSecondaryExternalDataFetchWithIds: ["1", "7"]
+        )
+        
+        if #available(iOS 17.4, *) {
+            
+            try await runSwiftTest(
+                argument: argument,
+                getObjectsType: .object(id: "1"),
+                cachePolicy: .returnCacheDataElseFetch,
+                expectedNumberOfChanges: 2,
+                triggerSecondaryExternalDataFetchWithIds: ["1", "7"]
+            )
+        }
+    }
+    
+    // MARK: - Test Cache Policy (Return Cache Data And Fetch) - Objects
+
+    @Test(arguments: [
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: [],
+            expectedResponseDataModelIds: []
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: ["0", "1"],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: ["0", "1"],
+            expectedResponseDataModelIds: ["0", "1"]
+        )
+    ])
+    func returnCacheDataAndFetchWillTriggerOnceWhenNoExternalDataExists(argument: TestArgument) async throws {
+        
+        try await runRealmTest(
+            argument: argument,
+            getObjectsType: .allObjects,
+            cachePolicy: .returnCacheDataAndFetch,
+            expectedNumberOfChanges: 1
+        )
+        
+        if #available(iOS 17.4, *) {
+            
+            try await runSwiftTest(
+                argument: argument,
+                getObjectsType: .allObjects,
+                cachePolicy: .returnCacheDataAndFetch,
+                expectedNumberOfChanges: 1
+            )
+        }
+    }
+
+    @Test(arguments: [
+        TestArgument(
+            initialPersistedObjectsIds: ["0", "1"],
+            externalDataModelIds: ["2"],
+            expectedCachedResponseDataModelIds: ["0", "1"],
+            expectedResponseDataModelIds: ["0", "1", "2"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: ["4", "5"],
+            expectedCachedResponseDataModelIds: [],
+            expectedResponseDataModelIds: ["4", "5"]
+        )
+    ])
+    func returnCacheDataAndFetchWillTriggerTwiceWhenExternalDataExists(argument: TestArgument) async throws {
+        
+        try await runRealmTest(
+            argument: argument,
+            getObjectsType: .allObjects,
+            cachePolicy: .returnCacheDataAndFetch,
+            expectedNumberOfChanges: 2
+        )
+        
+        if #available(iOS 17.4, *) {
+            
+            try await runSwiftTest(
+                argument: argument,
+                getObjectsType: .allObjects,
+                cachePolicy: .returnCacheDataAndFetch,
+                expectedNumberOfChanges: 2
+            )
+        }
+    }
+    
+    @Test(arguments: [
+        TestArgument(
+            initialPersistedObjectsIds: ["0", "1"],
+            externalDataModelIds: ["2"],
+            expectedCachedResponseDataModelIds: ["0", "1"],
+            expectedResponseDataModelIds: ["0", "1", "2", "5", "9"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: ["4", "5"],
+            expectedCachedResponseDataModelIds: [],
+            expectedResponseDataModelIds: ["4", "5", "9"]
+        )
+    ])
+    func returnCacheDataAndFetchWillTriggerThreeTimesOnceForInitialCacheDataForExternalDataFetchAndSecondaryExternalDataFetch(argument: TestArgument) async throws {
+        
+        try await runRealmTest(
+            argument: argument,
+            getObjectsType: .allObjects,
+            cachePolicy: .returnCacheDataAndFetch,
+            expectedNumberOfChanges: 3,
+            triggerSecondaryExternalDataFetchWithIds: ["9", "5"]
+        )
+        
+        if #available(iOS 17.4, *) {
+            
+            try await runSwiftTest(
+                argument: argument,
+                getObjectsType: .allObjects,
+                cachePolicy: .returnCacheDataAndFetch,
+                expectedNumberOfChanges: 3,
+                triggerSecondaryExternalDataFetchWithIds: ["9", "5"]
+            )
+        }
+    }
+    
+    // MARK: - Test Cache Policy (Return Cache Data And Fetch) - Object ID
+    
+    @Test(arguments: [
+        TestArgument(
+            initialPersistedObjectsIds: ["0", "1"],
+            externalDataModelIds: ["3"],
+            expectedCachedResponseDataModelIds: [],
+            expectedResponseDataModelIds: ["3"]
+        )
+    ])
+    func returnCacheDataAndFetchWillTriggerTwiceWithSingleObjectWhenExternalDataExists(argument: TestArgument) async throws {
+        
+        try await runRealmTest(
+            argument: argument,
+            getObjectsType: .object(id: "3"),
+            cachePolicy: .returnCacheDataAndFetch,
+            expectedNumberOfChanges: 2
+        )
+        
+        if #available(iOS 17.4, *) {
+            
+            try await runSwiftTest(
+                argument: argument,
+                getObjectsType: .object(id: "3"),
+                cachePolicy: .returnCacheDataAndFetch,
+                expectedNumberOfChanges: 2
+            )
+        }
+    }
+    
+    @Test(arguments: [
+        TestArgument(
+            initialPersistedObjectsIds: ["0", "1"],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: [],
+            expectedResponseDataModelIds: ["3"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: ["0", "1"],
+            externalDataModelIds: ["5"],
+            expectedCachedResponseDataModelIds: [],
+            expectedResponseDataModelIds: ["3"]
+        )
+    ])
+    func returnCacheDataAndFetchWillTriggerTwiceWithSingleObjectWhenAdditionalDataExists(argument: TestArgument) async throws {
+        
+        try await runRealmTest(
+            argument: argument,
+            getObjectsType: .object(id: "3"),
+            cachePolicy: .returnCacheDataAndFetch,
+            expectedNumberOfChanges: 2,
+            triggerSecondaryExternalDataFetchWithIds: ["3"]
+        )
+        
+        if #available(iOS 17.4, *) {
+            
+            try await runSwiftTest(
+                argument: argument,
+                getObjectsType: .object(id: "3"),
+                cachePolicy: .returnCacheDataAndFetch,
+                expectedNumberOfChanges: 2,
+                triggerSecondaryExternalDataFetchWithIds: ["3"]
+            )
+        }
+    }
+    
+    /*
+    
+    // MARK: - Test Cache Policy (Ignoring Cache Data) - Objects
+    
+    @Test(arguments: [
+        TestArgument(
+            initialPersistedObjectsIds: ["0", "1"],
+            externalDataModelIds: ["5", "6", "7", "8", "9"],
+            expectedCachedResponseDataModelIds: nil,
+            expectedResponseDataModelIds: ["0", "1", "5", "6", "7", "8", "9"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: ["1", "2"],
+            expectedCachedResponseDataModelIds: nil,
+            expectedResponseDataModelIds: ["1", "2"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: ["2", "3"],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: nil,
+            expectedResponseDataModelIds: ["2", "3"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: nil,
+            expectedResponseDataModelIds: []
+        )
+    ])
+    func ignoreCacheDataWillTriggerOnceSinceCacheIsIgnoredAndExternalFetchIsMade(argument: TestArgument) async throws {
+        
+        try await runRealmTest(
+            argument: argument,
+            getObjectsType: .allObjects,
+            cachePolicy: .fetchIgnoringCacheData,
+            expectedNumberOfChanges: 1
+        )
+        
+        if #available(iOS 17.4, *) {
+            
+            try await runSwiftTest(
+                argument: argument,
+                getObjectsType: .allObjects,
+                cachePolicy: .fetchIgnoringCacheData,
+                expectedNumberOfChanges: 1
+            )
+        }
+    }
+    
+    // MARK: - Test Cache Policy (Ignoring Cache Data) - Object ID
+    
+    @Test(arguments: [
+        TestArgument(
+            initialPersistedObjectsIds: ["0", "1"],
+            externalDataModelIds: ["5", "6", "7", "8", "9"],
+            expectedCachedResponseDataModelIds: nil,
+            expectedResponseDataModelIds: ["1"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: ["1", "2"],
+            expectedCachedResponseDataModelIds: nil,
+            expectedResponseDataModelIds: ["1"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: ["1", "2", "3"],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: nil,
+            expectedResponseDataModelIds: ["1"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: ["2", "3"],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: nil,
+            expectedResponseDataModelIds: []
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: nil,
+            expectedResponseDataModelIds: []
+        )
+    ])
+    func ignoreCacheDataWillTriggerOnceWithSingleObjectSinceCacheIsIgnoredAndExternalFetchIsMade(argument: TestArgument) async throws {
+        
+        try await runRealmTest(
+            argument: argument,
+            getObjectsType: .object(id: "1"),
+            cachePolicy: .fetchIgnoringCacheData,
+            expectedNumberOfChanges: 1
+        )
+        
+        if #available(iOS 17.4, *) {
+            
+            try await runSwiftTest(
+                argument: argument,
+                getObjectsType: .object(id: "1"),
+                cachePolicy: .fetchIgnoringCacheData,
+                expectedNumberOfChanges: 1
+            )
+        }
+    }
+    
+    // MARK: - Test Cache Policy (Return Cache Data Don't Fetch) - Objects
+    
+    @Test(arguments: [
+        TestArgument(
             initialPersistedObjectsIds: ["0", "1"],
             externalDataModelIds: ["5", "6", "7", "8", "9"],
             expectedCachedResponseDataModelIds: ["0", "1"],
@@ -336,34 +868,33 @@ struct RepositorySyncTests {
         }
     }
     
-//    @Test(arguments: [
-//        TestArgument(
-//            initialPersistedObjectsIds: [],
-//            externalDataModelIds: ["5", "6", "7"],
-//            expectedCachedResponseDataModelIds: nil,
-//            expectedResponseDataModelIds: ["5", "6", "7"]
-//        )
-//    ])
-//    func returnCacheDataElseFetchIsTriggeredOnceWhenNoCacheDataExistsAndExternalDataIsFetchedAndNotObservingChanges(argument: TestArgument) async throws {
-//        
-//        try await runRealmTest(
-//            argument: argument,
-//            getObjectsType: .allObjects,
-//            cachePolicy: .returnCacheDataElseFetch(observeChanges: false),
-//            expectedNumberOfChanges: 1,
-//            loggingEnabled: true
-//        )
-//        
-//        if #available(iOS 17.4, *) {
-//            
-//            try await runSwiftTest(
-//                argument: argument,
-//                getObjectsType: .allObjects,
-//                cachePolicy: .returnCacheDataElseFetch(observeChanges: false),
-//                expectedNumberOfChanges: 1
-//            )
-//        }
-//    }
+    @Test(arguments: [
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: ["5", "6", "7"],
+            expectedCachedResponseDataModelIds: nil,
+            expectedResponseDataModelIds: ["5", "6", "7"]
+        )
+    ])
+    func returnCacheDataElseFetchIsTriggeredOnceWhenNoCacheDataExistsAndExternalDataIsFetchedAndNotObservingChanges(argument: TestArgument) async throws {
+        
+        try await runRealmTest(
+            argument: argument,
+            getObjectsType: .allObjects,
+            cachePolicy: .returnCacheDataElseFetch(observeChanges: false),
+            expectedNumberOfChanges: 1
+        )
+        
+        if #available(iOS 17.4, *) {
+            
+            try await runSwiftTest(
+                argument: argument,
+                getObjectsType: .allObjects,
+                cachePolicy: .returnCacheDataElseFetch(observeChanges: false),
+                expectedNumberOfChanges: 1
+            )
+        }
+    }
     
     @Test(arguments: [
         TestArgument(
@@ -776,6 +1307,8 @@ struct RepositorySyncTests {
             )
         }
     }
+    
+    */
     
     // MARK: - Run Realm Test
     

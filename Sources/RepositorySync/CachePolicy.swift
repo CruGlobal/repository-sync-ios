@@ -15,10 +15,10 @@ public enum CachePolicy {
     case fetchIgnoringCacheData
     
     // Fetches cached data, doesn't fetch data from remote.
-    case returnCacheDataDontFetch(observeChanges: Bool)
+    case returnCacheDataDontFetch
     
     // Fetches cached data, if no cached data, fetches data from remote and stores remote data to cache.
-    case returnCacheDataElseFetch(observeChanges: Bool)
+    case returnCacheDataElseFetch
     
     // Fetches cached data and fetches remote data and stores remote data to cache.
     // By default will observe changes.

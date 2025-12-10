@@ -77,17 +77,40 @@ extension RepositorySync {
 
 extension RepositorySync {
     
+//    private func getDataModelsPublisher(getObjectsType: GetObjectsType) -> AnyPublisher<[DataModelType], Error> {
+//     
+//        switch getObjectsType {
+//            
+//        case .allObjects:
+//            
+//            return persistence.getObjectsPublisher()
+//            
+//        case .object(let id):
+//           
+//            return persistence.getObjectPublisher(id: id)
+//                .map { (dataModel: DataModelType?) in
+//                    
+//                    guard let dataModel = dataModel else {
+//                        return []
+//                    }
+//                    
+//                    return [dataModel]
+//                }
+//                .eraseToAnyPublisher()
+//        }
+//    }
+    
     private func getDataModels(getObjectsType: GetObjectsType) throws -> [DataModelType] {
                 
         switch getObjectsType {
             
         case .allObjects:
             
-            return try self.persistence.getObjects()
+            return try persistence.getObjects()
             
         case .object(let id):
            
-            guard let dataModel = try self.persistence.getObject(id: id) else {
+            guard let dataModel = try persistence.getObject(id: id) else {
                 return []
             }
             
@@ -135,27 +158,18 @@ extension RepositorySync {
             }
             .eraseToAnyPublisher()
             
-        case .returnCacheDataDontFetch(let observeChanges):
+        case .returnCacheDataDontFetch:
             
-            if observeChanges {
-               
-                return persistence
-                    .observeCollectionChangesPublisher()
-                    .tryMap { _ in
-                        return try self.getDataModels(
-                            getObjectsType: getObjectsType
-                        )
-                    }
-                    .eraseToAnyPublisher()
-            }
-            else {
-                               
-                return self.getDataModelsPublisher(
-                    getObjectsType: getObjectsType
-                )
-            }
+            return persistence
+                .observeCollectionChangesPublisher()
+                .tryMap { _ in
+                    return try self.getDataModels(
+                        getObjectsType: getObjectsType
+                    )
+                }
+                .eraseToAnyPublisher()
         
-        case .returnCacheDataElseFetch(let observeChanges):
+        case .returnCacheDataElseFetch:
             
             let persistedObjectCount: Int
             
@@ -167,48 +181,22 @@ extension RepositorySync {
                     .eraseToAnyPublisher()
             }
             
-            if observeChanges {
+            if persistedObjectCount == 0 {
 
-                if persistedObjectCount == 0 {
-
-                    makeSinkingfetchAndStoreObjectsFromExternalDataFetch(
-                        getObjectsType: getObjectsType,
-                        context: context
-                    )
-                }
-
-                return persistence
-                    .observeCollectionChangesPublisher()
-                    .tryMap { _ in
-                        return try self.getDataModels(
-                            getObjectsType: getObjectsType
-                        )
-                    }
-                    .eraseToAnyPublisher()
+                makeSinkingfetchAndStoreObjectsFromExternalDataFetch(
+                    getObjectsType: getObjectsType,
+                    context: context
+                )
             }
-            else {
 
-                if persistedObjectCount == 0 {
-                    
-                    return fetchAndStoreObjectsFromExternalDataFetchPublisher(
-                        getObjectsType: getObjectsType,
-                        context: context
-                    )
-                    .receive(on: DispatchQueue.main)
-                    .tryMap { _ in
-                        return try self.getDataModels(
-                            getObjectsType: getObjectsType
-                        )
-                    }
-                    .eraseToAnyPublisher()
-                }
-                else {
-
-                    return self.getDataModelsPublisher(
+            return persistence
+                .observeCollectionChangesPublisher()
+                .tryMap { _ in
+                    return try self.getDataModels(
                         getObjectsType: getObjectsType
                     )
                 }
-            }
+                .eraseToAnyPublisher()
         
         case .returnCacheDataAndFetch:
            
