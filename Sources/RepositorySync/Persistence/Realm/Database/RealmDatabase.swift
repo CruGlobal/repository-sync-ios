@@ -13,7 +13,8 @@ import Combine
 
 public final class RealmDatabase {
     
-    private let backgroundQueue: DispatchQueue = DispatchQueue(label: "realm.background_queue")
+    private let writeSerialQueue: DispatchQueue = DispatchQueue(label: "realm.write.serial_queue")
+    
     private let config: Realm.Configuration
     private let fileUrl: URL
     
@@ -72,22 +73,36 @@ public final class RealmDatabase {
         return try Realm(configuration: config)
     }
     
-    public func background(async: @escaping ((_ realm: Realm) -> Void)) {
+    public func readBackgroundRealm(async: @escaping ((_ result: Result<Realm, Error>) -> Void)) {
         
-        backgroundQueue.async {
+        let config: Realm.Configuration = self.config
+        
+        DispatchQueue.global().async {
+            
+            do {
+                let realm: Realm = try Realm(configuration: config)
+                async(.success(realm))
+            }
+            catch let error {
+                async(.failure(error))
+            }
+        }
+    }
+    
+    public func writeBackgroundRealm(async: @escaping ((_ result: Result<Realm, Error>) -> Void)) {
+        
+        let config: Realm.Configuration = self.config
+        
+        writeSerialQueue.async {
             autoreleasepool {
-                
-                let realm: Realm
-               
+                               
                 do {
-                    realm = try Realm(configuration: self.config)
+                    let realm: Realm = try Realm(configuration: config)
+                    async(.success(realm))
                 }
                 catch let error {
-                    assertionFailure("RealmDatabase: Did fail to initialize background realm with error: \(error.localizedDescription) ")
-                    realm = try! Realm(configuration: self.config)
+                    async(.failure(error))
                 }
-                
-                async(realm)
             }
         }
     }
@@ -150,33 +165,58 @@ extension RealmDatabase {
 // MARK: - Write
 
 extension RealmDatabase {
-        
+    
     public func writeObjectsPublisher(writeClosure: @escaping ((_ realm: Realm) -> RealmDatabaseWrite), updatePolicy: Realm.UpdatePolicy) -> AnyPublisher<Void, Error> {
         
         return Future { promise in
             
-            self.background { realm in
-                
-                do {
+            self.writeObjectsAsync(
+                writeClosure: writeClosure,
+                updatePolicy: updatePolicy,
+                completion: { (error: Error?) in
                     
-                    try self.writeObjects(
-                        realm: realm,
-                        writeClosure: writeClosure,
-                        updatePolicy: updatePolicy
-                    )
-                    
-                    promise(.success(Void()))
+                    if let error = error {
+                        promise(.failure(error))
+                    }
+                    else {
+                        promise(.success(Void()))
+                    }
                 }
-                catch let error {
-                    
-                    promise(.failure(error))
-                }
-            }
+            )
         }
         .eraseToAnyPublisher()
     }
     
-    public func writeObjects(realm: Realm, writeClosure: ((_ realm: Realm) -> RealmDatabaseWrite), updatePolicy: Realm.UpdatePolicy) throws {
+    public func writeObjectsAsync(writeClosure: @escaping ((_ realm: Realm) -> RealmDatabaseWrite), updatePolicy: Realm.UpdatePolicy, completion: @escaping ((_ error: Error?) -> Void)) {
+        
+        writeBackgroundRealm { result in
+            
+            switch result {
+            
+            case .success(let realm):
+                
+                do {
+                                    
+                    try self.writeObjects(
+                        realm: realm,
+                        writeClosure: writeClosure,
+                        updatePolicy: updatePolicy,
+                        completion: {
+                            completion(nil)
+                        }
+                    )
+                }
+                catch let error {
+                    completion(error)
+                }
+            
+            case .failure(let error):
+                completion(error)
+            }
+        }
+    }
+        
+    public func writeObjects(realm: Realm, writeClosure: ((_ realm: Realm) -> RealmDatabaseWrite), updatePolicy: Realm.UpdatePolicy, completion: (() -> Void)? = nil) throws {
         
         try realm.write {
             
@@ -189,6 +229,8 @@ extension RealmDatabase {
             if let objectsToDelete = realmDatabaseWrite.deleteObjects, objectsToDelete.count > 0 {
                 realm.delete(objectsToDelete)
             }
+            
+            completion?()
         }
     }
 }

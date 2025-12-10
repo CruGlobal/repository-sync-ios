@@ -195,6 +195,18 @@ extension SwiftRepositorySyncPersistence {
         
         return dataModels
     }
+    
+    public func getObjectPublisher(id: String) -> AnyPublisher<DataModelType?, any Error> {
+        return Just(nil)
+            .setFailureType(to: Error.self)
+            .eraseToAnyPublisher()
+    }
+    
+    public func getObjectsPublisher() -> AnyPublisher<[DataModelType], any Error> {
+        return Just([])
+            .setFailureType(to: Error.self)
+            .eraseToAnyPublisher()
+    }
 }
 
 // MARK: - Write
@@ -202,52 +214,9 @@ extension SwiftRepositorySyncPersistence {
 @available(iOS 17.4, *)
 extension SwiftRepositorySyncPersistence {
     
-    private func writeObjects(externalObjects: [ExternalObjectType], deleteObjectsNotFoundInExternalObjects: Bool) throws {
-        
-        let context: ModelContext = self.database.openContext()
-                    
-        var objectsToAdd: [PersistObjectType] = Array()
-        
-        var objectsToRemove: [PersistObjectType]
-        
-        if deleteObjectsNotFoundInExternalObjects {
-            // store all objects in the collection.
-            objectsToRemove = try self.database.getObjects(context: context, query: nil)
-        }
-        else {
-            objectsToRemove = Array()
-        }
-        
-        for externalObject in externalObjects {
-
-            guard let persistObject = self.dataModelMapping.toPersistObject(externalObject: externalObject) else {
-                continue
-            }
-            
-            objectsToAdd.append(persistObject)
-            
-            // added persist object can be removed from this list so it won't be deleted from the database.
-            if deleteObjectsNotFoundInExternalObjects, let index = objectsToRemove.firstIndex(where: { $0.id == persistObject.id }) {
-                objectsToRemove.remove(at: index)
-            }
-        }
-        
-        for object in objectsToAdd {
-            context.insert(object)
-        }
-        
-        for object in objectsToRemove {
-            context.delete(object)
-        }
-        
-        if context.hasChanges {
-            try context.save()
-        }
-    }
-    
     public func writeObjectsPublisher(externalObjects: [ExternalObjectType], deleteObjectsNotFoundInExternalObjects: Bool) -> AnyPublisher<Void, Error> {
         
-        return database.writeObjectsPublisher(writeClosure: { (context: ModelContext) in
+        return database.writeObjectsPublisher(writeClosure: { [weak self] (context: ModelContext) in
             
             do {
                 
@@ -255,14 +224,14 @@ extension SwiftRepositorySyncPersistence {
                 
                 var objectsToRemove: [PersistObjectType] = Array()
                 
-                if deleteObjectsNotFoundInExternalObjects {
+                if deleteObjectsNotFoundInExternalObjects, let weakSelf = self {
                     // store all objects in the collection.
-                    objectsToRemove = try self.database.getObjects(context: context, query: nil)
+                    objectsToRemove = try weakSelf.database.getObjects(context: context, query: nil)
                 }
                 
                 for externalObject in externalObjects {
 
-                    guard let persistObject = self.dataModelMapping.toPersistObject(externalObject: externalObject) else {
+                    guard let persistObject = self?.dataModelMapping.toPersistObject(externalObject: externalObject) else {
                         continue
                     }
                     

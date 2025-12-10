@@ -102,6 +102,68 @@ extension RealmRepositorySyncPersistence {
         
         return dataModels
     }
+    
+    public func getObjectPublisher(id: String) -> AnyPublisher<DataModelType?, any Error> {
+        
+        return Future { promise in
+            
+            self.database.readBackgroundRealm { result in
+                
+                switch result {
+                
+                case .success(let realm):
+                   
+                    let realmObject: PersistObjectType? = self.database.getObject(realm: realm, id: id)
+                    let dataModel: DataModelType?
+                    
+                    if let realmObject = realmObject {
+                        dataModel = self.dataModelMapping.toDataModel(persistObject: realmObject)
+                    }
+                    else {
+                        dataModel = nil
+                    }
+                                        
+                    promise(.success(dataModel))
+                    
+                case .failure(let error):
+                    promise(.failure(error))
+                }
+            }
+        }
+        .eraseToAnyPublisher()
+    }
+    
+    public func getObjectsPublisher() -> AnyPublisher<[DataModelType], any Error> {
+     
+        return getObjectsPublisher(query: nil)
+            .eraseToAnyPublisher()
+    }
+    
+    public func getObjectsPublisher(query: RealmDatabaseQuery? = nil) -> AnyPublisher<[DataModelType], any Error> {
+        
+        return Future { promise in
+            
+            self.database.readBackgroundRealm { result in
+                
+                switch result {
+                
+                case .success(let realm):
+                   
+                    let objects: [PersistObjectType] = self.database.getObjects(realm: realm, query: query)
+                    
+                    let dataModels: [DataModelType] = objects.compactMap { object in
+                        self.dataModelMapping.toDataModel(persistObject: object)
+                    }
+                    
+                    promise(.success(dataModels))
+                    
+                case .failure(let error):
+                    promise(.failure(error))
+                }
+            }
+        }
+        .eraseToAnyPublisher()
+    }
 }
 
 // MARK: - Write
@@ -110,15 +172,15 @@ extension RealmRepositorySyncPersistence {
     
     public func writeObjectsPublisher(externalObjects: [ExternalObjectType], deleteObjectsNotFoundInExternalObjects: Bool) -> AnyPublisher<Void, any Error> {
         
-        return database.writeObjectsPublisher(writeClosure: { realm in
+        return database.writeObjectsPublisher(writeClosure: { [weak self] realm in
             
             var objectsToAdd: [PersistObjectType] = Array()
             
             var objectsToRemove: [PersistObjectType]
             
-            if deleteObjectsNotFoundInExternalObjects {
+            if deleteObjectsNotFoundInExternalObjects, let weakSelf = self {
                 // store all objects in the collection.
-                objectsToRemove = self.database.getObjects(realm: realm, query: nil)
+                objectsToRemove = weakSelf.database.getObjects(realm: realm, query: nil)
             }
             else {
                 objectsToRemove = Array()
@@ -126,7 +188,7 @@ extension RealmRepositorySyncPersistence {
             
             for externalObject in externalObjects {
 
-                guard let persistObject = self.dataModelMapping.toPersistObject(externalObject: externalObject) else {
+                guard let persistObject = self?.dataModelMapping.toPersistObject(externalObject: externalObject) else {
                     continue
                 }
                 

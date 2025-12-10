@@ -11,8 +11,9 @@ import SwiftData
 import Combine
 
 @available(iOS 17.4, *)
-public class SwiftDatabase {
+public final class SwiftDatabase {
     
+    private let serialQueue: DispatchQueue = DispatchQueue(label: "swiftdatabase.serial_queue")
     private let container: ModelContainer
     
     public let configName: String
@@ -93,39 +94,81 @@ extension SwiftDatabase {
 
     public func writeObjectsPublisher(writeClosure: @escaping ((_ context: ModelContext) -> SwiftDatabaseWrite)) -> AnyPublisher<Void, Error> {
         
+        
+//        let context: ModelContext = openContext()
+//        
+//        let write: SwiftDatabaseWrite = writeClosure(context)
+//        
+//        if let error = write.error {
+//            return Fail(error: error)
+//                .eraseToAnyPublisher()
+//        }
+//        
+//        do {
+//            
+//            try self.writeObjects(
+//                context: context,
+//                objects: write.updateObjects,
+//                deleteObjects: write.deleteObjects
+//            )
+//
+//            return Just(Void())
+//                .setFailureType(to: Error.self)
+//                .eraseToAnyPublisher()
+//        }
+//        catch let error {
+//            return Fail(error: error)
+//                .eraseToAnyPublisher()
+//        }
+        
         return Future { promise in
             
-            DispatchQueue.global().async {
-                
-                let context: ModelContext = self.openContext()
-                
-                let write: SwiftDatabaseWrite = writeClosure(context)
-                
-                if let error = write.error {
-
-                    promise(.failure(error))
+            self.writeObjectsSerialAsync(
+                writeClosure: writeClosure,
+                completion: { (error: Error?) in
                     
-                    return
+                    if let error = error {
+                        promise(.failure(error))
+                    }
+                    else {
+                        promise(.success(Void()))
+                    }
                 }
-                
-                do {
-                         
-                    try self.writeObjects(
-                        context: context,
-                        objects: write.updateObjects,
-                        deleteObjects: write.deleteObjects
-                    )
-                    
-                    promise(.success(Void()))
-                    
-                }
-                catch let error {
-                    
-                    promise(.failure(error))
-                }
-            }
+            )
         }
         .eraseToAnyPublisher()
+    }
+    
+    public func writeObjectsSerialAsync(writeClosure: @escaping ((_ context: ModelContext) -> SwiftDatabaseWrite), completion: @escaping ((_ error: Error?) -> Void)) {
+        
+        let container: ModelContainer = self.container
+        
+        serialQueue.async {
+            
+            let context = ModelContext(container)
+            context.autosaveEnabled = false
+            
+            let write: SwiftDatabaseWrite = writeClosure(context)
+            
+            if let error = write.error {
+                completion(error)
+                return
+            }
+            
+            do {
+                
+                try self.writeObjects(
+                    context: context,
+                    objects: write.updateObjects,
+                    deleteObjects: write.deleteObjects
+                )
+
+                completion(nil)
+            }
+            catch let error {
+                completion(error)
+            }
+        }
     }
     
     public func writeObjects(context: ModelContext, objects: [any IdentifiableSwiftDataObject], deleteObjects: [any IdentifiableSwiftDataObject]? = nil) throws {

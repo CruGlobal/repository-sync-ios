@@ -13,8 +13,8 @@ open class RepositorySync<DataModelType, ExternalDataFetchType: ExternalDataFetc
     
     private var cancellables: Set<AnyCancellable> = Set()
     
-    let externalDataFetch: ExternalDataFetchType
-    let persistence: any Persistence<DataModelType, ExternalDataFetchType.ExternalObject>
+    public let externalDataFetch: ExternalDataFetchType
+    public let persistence: any Persistence<DataModelType, ExternalDataFetchType.ExternalObject>
     
     public init(externalDataFetch: ExternalDataFetchType, persistence: any Persistence<DataModelType, ExternalDataFetchType.ExternalObject>) {
         
@@ -27,7 +27,7 @@ open class RepositorySync<DataModelType, ExternalDataFetchType: ExternalDataFetc
 
 extension RepositorySync {
     
-    private func fetchExternalObjects(getObjectsType: GetObjectsType, context: ExternalDataFetchType.ExternalDataFetchContext) -> AnyPublisher<[ExternalDataFetchType.ExternalObject], Error>  {
+    private func fetchExternalObjectsPublisher(getObjectsType: GetObjectsType, context: ExternalDataFetchType.ExternalDataFetchContext) -> AnyPublisher<[ExternalDataFetchType.ExternalObject], Error>  {
         
         switch getObjectsType {
         case .allObjects:
@@ -58,12 +58,12 @@ extension RepositorySync {
     
     private func fetchAndStoreObjectsFromExternalDataFetchPublisher(getObjectsType: GetObjectsType, context: ExternalDataFetchType.ExternalDataFetchContext) -> AnyPublisher<Void, Error> {
                 
-        return fetchExternalObjects(
+        return fetchExternalObjectsPublisher(
             getObjectsType: getObjectsType,
             context: context
         )
+        .receive(on: DispatchQueue.main)
         .flatMap { (externalObjects: [ExternalDataFetchType.ExternalObject]) in
-            
             return self.persistence.writeObjectsPublisher(
                 externalObjects: externalObjects,
                 deleteObjectsNotFoundInExternalObjects: false
@@ -127,6 +127,7 @@ extension RepositorySync {
                 getObjectsType: getObjectsType,
                 context: context
             )
+            .receive(on: DispatchQueue.main)
             .tryMap { _ in
                 return try self.getDataModels(
                     getObjectsType: getObjectsType
@@ -188,11 +189,12 @@ extension RepositorySync {
             else {
 
                 if persistedObjectCount == 0 {
-
+                    
                     return fetchAndStoreObjectsFromExternalDataFetchPublisher(
                         getObjectsType: getObjectsType,
                         context: context
                     )
+                    .receive(on: DispatchQueue.main)
                     .tryMap { _ in
                         return try self.getDataModels(
                             getObjectsType: getObjectsType

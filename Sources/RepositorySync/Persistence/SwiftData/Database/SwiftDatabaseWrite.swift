@@ -9,7 +9,7 @@
 import Foundation
 
 @available(iOS 17.4, *)
-public class SwiftDatabaseWrite {
+public final class SwiftDatabaseWrite {
     
     public let updateObjects: [any IdentifiableSwiftDataObject]
     public let deleteObjects: [any IdentifiableSwiftDataObject]?
