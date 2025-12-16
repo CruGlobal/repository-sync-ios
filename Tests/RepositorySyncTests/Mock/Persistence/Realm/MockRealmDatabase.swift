@@ -13,7 +13,6 @@ import RealmSwift
 public class MockRealmDatabase {
     
     private let fileManager: FileManager = FileManager.default
-    private let defaultIds: [Int] = [0, 1, 2, 3, 4]
     
     public init() {
         
@@ -31,27 +30,28 @@ public class MockRealmDatabase {
             .appendingPathComponent("realm_tests")
             .appendingPathExtension("realm")
     }
-    
-    public func createDatabase(directoryName: String, ids: [Int]? = nil) throws -> RealmDatabase {
+
+    public func getSharedDatabase(objects: [MockRealmObject], shouldDeleteExistingObjects: Bool) throws -> RealmDatabase {
         
-        let idsToCreate: [Int] = ids ?? defaultIds
+        let database = try createDatabase(directoryName: "shared_realm_database")
         
-        var objects: [MockRealmObject] = Array()
+        let realm: Realm = try database.openRealm()
         
-        for id in idsToCreate {
+        if shouldDeleteExistingObjects {
             
-            objects.append(
-                MockRealmObject.createObject(
-                    id: String(id),
-                    position: id
-                )
-            )
+            let existingObjects: [MockRealmObject] = database.getObjects(realm: realm, query: nil)
+            
+            try database.deleteObjects(realm: realm, objects: existingObjects)
         }
         
-        return try createDatabase(directoryName: directoryName, objects: objects)
+        try database.writeObjects(realm: realm, writeClosure: { realm in
+            return RealmDatabaseWrite(updateObjects: objects)
+        }, updatePolicy: .modified)
+        
+        return database
     }
     
-    public func createDatabase(directoryName: String, objects: [MockRealmObject]) throws -> RealmDatabase {
+    public func createDatabase(directoryName: String) throws -> RealmDatabase {
         
         try _ = fileManager.createDirectoryIfNotExists(directoryUrl: getDirectory(directoryName: directoryName))
         
@@ -60,12 +60,6 @@ public class MockRealmDatabase {
             schemaVersion: 1) { migration, oldSchemaVersion in
                 
             }
-        
-        let realm: Realm = try database.openRealm()
-                
-        try database.writeObjects(realm: realm, writeClosure: { realm in
-            return RealmDatabaseWrite(updateObjects: objects)
-        }, updatePolicy: .modified)
         
         return database
     }

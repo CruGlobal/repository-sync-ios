@@ -9,17 +9,30 @@
 import Foundation
 import Combine
 
-open class RepositorySync<DataModelType, ExternalDataFetchType: ExternalDataFetchInterface> {
+@MainActor open class RepositorySync<DataModelType, ExternalDataFetchType: ExternalDataFetchInterface, RealmObjectType: IdentifiableRealmObject> {
     
     private var cancellables: Set<AnyCancellable> = Set()
     
     public let externalDataFetch: ExternalDataFetchType
-    public let persistence: any Persistence<DataModelType, ExternalDataFetchType.ExternalObject>
+    public let swiftElseRealmPersistence: SwiftElseRealmPersistence<DataModelType, ExternalDataFetchType.ExternalObject, RealmObjectType>
     
-    public init(externalDataFetch: ExternalDataFetchType, persistence: any Persistence<DataModelType, ExternalDataFetchType.ExternalObject>) {
+    public init(externalDataFetch: ExternalDataFetchType, swiftElseRealmPersistence: SwiftElseRealmPersistence<DataModelType, ExternalDataFetchType.ExternalObject, RealmObjectType>) {
         
         self.externalDataFetch = externalDataFetch
-        self.persistence = persistence
+        self.swiftElseRealmPersistence = swiftElseRealmPersistence
+    }
+    
+    public var realmDatabase: RealmDatabase {
+        return swiftElseRealmPersistence.realmPersistence.database
+    }
+    
+    @available(iOS 17.4, *)
+    public var swiftDatabase: SwiftDatabase? {
+        return swiftElseRealmPersistence.getSwiftDatabase()
+    }
+    
+    public func getPersistence() -> any Persistence<DataModelType, ExternalDataFetchType.ExternalObject> {
+        return swiftElseRealmPersistence.getPersistence()
     }
 }
 
@@ -56,7 +69,7 @@ extension RepositorySync {
         .store(in: &cancellables)
     }
     
-    private func fetchAndStoreObjectsFromExternalDataFetchPublisher(getObjectsType: GetObjectsType, context: ExternalDataFetchType.ExternalDataFetchContext) -> AnyPublisher<Void, Error> {
+    private func fetchAndStoreObjectsFromExternalDataFetchPublisher(getObjectsType: GetObjectsType, context: ExternalDataFetchType.ExternalDataFetchContext) -> AnyPublisher<[DataModelType], Error> {
                 
         return fetchExternalObjectsPublisher(
             getObjectsType: getObjectsType,
@@ -64,9 +77,11 @@ extension RepositorySync {
         )
         .receive(on: DispatchQueue.main)
         .flatMap { (externalObjects: [ExternalDataFetchType.ExternalObject]) in
-            return self.persistence.writeObjectsPublisher(
+            
+            return self.getPersistence().writeObjectsPublisher(
                 externalObjects: externalObjects,
-                deleteObjectsNotFoundInExternalObjects: false
+                deleteObjectsNotFoundInExternalObjects: false,
+                getObjectsType: getObjectsType
             )
         }
         .eraseToAnyPublisher()
@@ -77,71 +92,35 @@ extension RepositorySync {
 
 extension RepositorySync {
     
-//    private func getDataModelsPublisher(getObjectsType: GetObjectsType) -> AnyPublisher<[DataModelType], Error> {
-//     
-//        switch getObjectsType {
-//            
-//        case .allObjects:
-//            
-//            return persistence.getObjectsPublisher()
-//            
-//        case .object(let id):
-//           
-//            return persistence.getObjectPublisher(id: id)
-//                .map { (dataModel: DataModelType?) in
-//                    
-//                    guard let dataModel = dataModel else {
-//                        return []
-//                    }
-//                    
-//                    return [dataModel]
-//                }
-//                .eraseToAnyPublisher()
-//        }
-//    }
-    
-    private func getDataModels(getObjectsType: GetObjectsType) throws -> [DataModelType] {
-                
-        switch getObjectsType {
-            
-        case .allObjects:
-            
-            return try persistence.getObjects()
-            
-        case .object(let id):
-           
-            guard let dataModel = try persistence.getObject(id: id) else {
-                return []
-            }
-            
-            return [dataModel]
-        }
-    }
-    
-    private func getDataModelsPublisher(getObjectsType: GetObjectsType) -> AnyPublisher<[DataModelType], Error> {
-        
-        do {
-            
-            let dataModels: [DataModelType] = try getDataModels(getObjectsType: getObjectsType)
-            
-            return Just(dataModels)
-                .setFailureType(to: Error.self)
-                .eraseToAnyPublisher()
-        }
-        catch let error {
-            
-            return Fail(error: error)
-                .eraseToAnyPublisher()
-        }
-    }
-    
     // TODO: Questions, Unknowns, Etc.
     /*
         - How do we handle more complex external data fetching?  For instance, a url request could contain query parameters and http body. Do we force that on subclasses of repository sync?  Do we provide methods for subclasses to hook into for observing, pushing data models for syncing, etc?
      */
     
-    @MainActor public func getObjectsPublisher(getObjectsType: GetObjectsType, cachePolicy: CachePolicy, context: ExternalDataFetchType.ExternalDataFetchContext) -> AnyPublisher<[DataModelType], Error> {
-                
+    public func getObjectsPublisher(getObjectsType: GetObjectsType, cachePolicy: CachePolicy, context: ExternalDataFetchType.ExternalDataFetchContext) -> AnyPublisher<[DataModelType], Error> {
+        
+        switch cachePolicy {
+            
+        case .get(let getCachePolicy):
+            
+            return getObjects(
+                getObjectsType: getObjectsType,
+                cachePolicy: getCachePolicy,
+                context: context
+            )
+            
+        case .observe(let observeCachePolicy):
+            
+            return observeObjects(
+                getObjectsType: getObjectsType,
+                cachePolicy: observeCachePolicy,
+                context: context
+            )
+        }
+    }
+    
+    private func getObjects(getObjectsType: GetObjectsType, cachePolicy: GetCachePolicy, context: ExternalDataFetchType.ExternalDataFetchContext) -> AnyPublisher<[DataModelType], Error> {
+        
         switch cachePolicy {
             
         case .fetchIgnoringCacheData:
@@ -151,19 +130,30 @@ extension RepositorySync {
                 context: context
             )
             .receive(on: DispatchQueue.main)
-            .tryMap { _ in
-                return try self.getDataModels(
-                    getObjectsType: getObjectsType
-                )
-            }
             .eraseToAnyPublisher()
             
         case .returnCacheDataDontFetch:
+            return Just([])
+                .setFailureType(to: Error.self)
+                .eraseToAnyPublisher()
+        
+        case .returnCacheDataElseFetch:
+            return Just([])
+                .setFailureType(to: Error.self)
+                .eraseToAnyPublisher()
+        }
+    }
+    
+    private func observeObjects(getObjectsType: GetObjectsType, cachePolicy: ObserveCachePolicy, context: ExternalDataFetchType.ExternalDataFetchContext) -> AnyPublisher<[DataModelType], Error> {
+                
+        switch cachePolicy {
             
-            return persistence
+        case .returnCacheDataDontFetch:
+            
+            return getPersistence()
                 .observeCollectionChangesPublisher()
                 .tryMap { _ in
-                    return try self.getDataModels(
+                    return try self.getPersistence().getObjects(
                         getObjectsType: getObjectsType
                     )
                 }
@@ -174,7 +164,7 @@ extension RepositorySync {
             let persistedObjectCount: Int
             
             do {
-                persistedObjectCount = try persistence.getObjectCount()
+                persistedObjectCount = try getPersistence().getObjectCount()
             }
             catch let error {
                 return Fail(error: error)
@@ -189,10 +179,10 @@ extension RepositorySync {
                 )
             }
 
-            return persistence
+            return getPersistence()
                 .observeCollectionChangesPublisher()
                 .tryMap { _ in
-                    return try self.getDataModels(
+                    return try self.getPersistence().getObjects(
                         getObjectsType: getObjectsType
                     )
                 }
@@ -205,10 +195,10 @@ extension RepositorySync {
                 context: context
             )
 
-            return persistence
+            return getPersistence()
                 .observeCollectionChangesPublisher()
                 .tryMap { _ in
-                    return try self.getDataModels(
+                    return try self.getPersistence().getObjects(
                         getObjectsType: getObjectsType
                     )
                 }

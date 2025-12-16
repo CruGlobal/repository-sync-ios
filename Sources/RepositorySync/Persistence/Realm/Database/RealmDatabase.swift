@@ -9,14 +9,11 @@
 import Foundation
 import RealmSwift
 import Realm
-import Combine
 
-public final class RealmDatabase {
-    
-    private let writeSerialQueue: DispatchQueue = DispatchQueue(label: "realm.write.serial_queue")
-    
-    private let config: Realm.Configuration
-    private let fileUrl: URL
+public final class RealmDatabase: Sendable {
+        
+    public let config: Realm.Configuration
+    public let fileUrl: URL
     
     public init(fileName: String, schemaVersion: UInt64, migrationBlock: @escaping MigrationBlock) {
         
@@ -72,24 +69,6 @@ public final class RealmDatabase {
         
         return try Realm(configuration: config)
     }
-    
-    public func writeBackgroundRealm(async: @escaping ((_ result: Result<Realm, Error>) -> Void)) {
-        
-        let config: Realm.Configuration = self.config
-        
-        writeSerialQueue.async {
-            autoreleasepool {
-                               
-                do {
-                    let realm: Realm = try Realm(configuration: config)
-                    async(.success(realm))
-                }
-                catch let error {
-                    async(.failure(error))
-                }
-            }
-        }
-    }
 }
 
 // MARK: - Read
@@ -104,19 +83,15 @@ extension RealmDatabase {
     }
     
     public func getObjects<T: IdentifiableRealmObject>(realm: Realm, ids: [String], sortBykeyPath: SortByKeyPath? = nil) -> [T] {
-        
+                
         let query = RealmDatabaseQuery(
-            filter: getObjectsByIdsFilter(ids: ids),
+            filter: NSPredicate(format: "id IN %@", ids),
             sortByKeyPath: sortBykeyPath
         )
         
         return getObjects(realm: realm, query: query)
     }
     
-    private func getObjectsByIdsFilter(ids: [String]) -> NSPredicate {
-        return NSPredicate(format: "id IN %@", ids)
-    }
-
     public func getObjects<T: IdentifiableRealmObject>(realm: Realm, query: RealmDatabaseQuery?) -> [T] {
         
         return Array(getObjectsResults(realm: realm, query: query))
@@ -149,68 +124,18 @@ extension RealmDatabase {
 // MARK: - Write
 
 extension RealmDatabase {
-    
-    public func writeObjectsPublisher(writeClosure: @escaping ((_ realm: Realm) -> RealmDatabaseWrite), updatePolicy: Realm.UpdatePolicy) -> AnyPublisher<Void, Error> {
-        
-        return Future { promise in
-            
-            self.writeObjectsAsync(
-                writeClosure: writeClosure,
-                updatePolicy: updatePolicy,
-                completion: { (error: Error?) in
-                    
-                    if let error = error {
-                        promise(.failure(error))
-                    }
-                    else {
-                        promise(.success(Void()))
-                    }
-                }
-            )
-        }
-        .eraseToAnyPublisher()
-    }
-    
-    public func writeObjectsAsync(writeClosure: @escaping ((_ realm: Realm) -> RealmDatabaseWrite), updatePolicy: Realm.UpdatePolicy, completion: @escaping ((_ error: Error?) -> Void)) {
-        
-        writeBackgroundRealm { result in
-            
-            switch result {
-            
-            case .success(let realm):
-                
-                do {
-                                    
-                    try self.writeObjects(
-                        realm: realm,
-                        writeClosure: writeClosure,
-                        updatePolicy: updatePolicy,
-                        completion: {
-                            completion(nil)
-                        }
-                    )
-                }
-                catch let error {
-                    completion(error)
-                }
-            
-            case .failure(let error):
-                completion(error)
-            }
-        }
-    }
         
     public func writeObjects(realm: Realm, writeClosure: ((_ realm: Realm) -> RealmDatabaseWrite), updatePolicy: Realm.UpdatePolicy, completion: (() -> Void)? = nil) throws {
         
         try realm.write {
             
-            let realmDatabaseWrite: RealmDatabaseWrite = writeClosure(realm)
-                        
-            if realmDatabaseWrite.updateObjects.count > 0 {
-                realm.add(realmDatabaseWrite.updateObjects, update: updatePolicy)
+            let write: RealmDatabaseWrite = writeClosure(realm)
+             
+            if write.updateObjects.count > 0 {
+                realm.add(write.updateObjects, update: updatePolicy)
             }
             
-            if let objectsToDelete = realmDatabaseWrite.deleteObjects, objectsToDelete.count > 0 {
+            if let objectsToDelete = write.deleteObjects, objectsToDelete.count > 0 {
                 realm.delete(objectsToDelete)
             }
             
@@ -223,14 +148,18 @@ extension RealmDatabase {
 
 extension RealmDatabase {
     
-    public func deleteObjects(realm: Realm, objects: [Object]) throws {
+    public func deleteObjects(realm: Realm, objects: [Object], completion: (() -> Void)? = nil) throws {
         
         guard objects.count > 0 else {
+            completion?()
             return
         }
         
         try realm.write {
+            
             realm.delete(objects)
+            
+            completion?()
         }
     }
 }

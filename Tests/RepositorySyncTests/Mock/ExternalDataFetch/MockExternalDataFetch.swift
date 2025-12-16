@@ -1,5 +1,5 @@
 //
-//  MockRepositorySyncExternalDataFetch.swift
+//  MockExternalDataFetch.swift
 //  RepositorySync
 //
 //  Created by Levi Eggert on 7/30/25.
@@ -10,23 +10,23 @@ import Foundation
 @testable import RepositorySync
 import Combine
 
-final class MockRepositorySyncExternalDataFetch: ExternalDataFetchInterface {
+final class MockExternalDataFetch: ExternalDataFetchInterface {
             
-    private let objects: [MockRepositorySyncDataModel]
+    private let objects: [MockDataModel]
     private let delayRequestSeconds: TimeInterval
     
-    init(objects: [MockRepositorySyncDataModel], delayRequestSeconds: TimeInterval) {
+    init(objects: [MockDataModel], delayRequestSeconds: TimeInterval) {
         
         self.objects = objects
         self.delayRequestSeconds = delayRequestSeconds
     }
     
-    func getObjectPublisher(id: String, context: MockExternalDataFetchContext) -> AnyPublisher<[MockRepositorySyncDataModel], Error> {
+    func getObjectPublisher(id: String, context: MockExternalDataFetchContext) -> AnyPublisher<[MockDataModel], Error> {
         
         return delayPublisher()
             .map { _ in
                 
-                let fetchedObjects: [MockRepositorySyncDataModel]
+                let fetchedObjects: [MockDataModel]
                 
                 if let existingObject = self.objects.first(where: {$0.id == id}) {
                     fetchedObjects = [existingObject]
@@ -40,9 +40,9 @@ final class MockRepositorySyncExternalDataFetch: ExternalDataFetchInterface {
             .eraseToAnyPublisher()
     }
     
-    func getObjectsPublisher(context: MockExternalDataFetchContext) -> AnyPublisher<[MockRepositorySyncDataModel], Error> {
+    func getObjectsPublisher(context: MockExternalDataFetchContext) -> AnyPublisher<[MockDataModel], Error> {
         
-        let allObjects: [MockRepositorySyncDataModel] = objects
+        let allObjects: [MockDataModel] = objects
         
         return delayPublisher()
             .map { _ in
@@ -54,11 +54,20 @@ final class MockRepositorySyncExternalDataFetch: ExternalDataFetchInterface {
     private func delayPublisher() -> AnyPublisher<Void, Error> {
         
         let delayRequestSeconds: TimeInterval = self.delayRequestSeconds
+
+        return getSuccessPublisher()
+            .delay(
+                for: .seconds(delayRequestSeconds),
+                scheduler: RunLoop.current
+            )
+            .eraseToAnyPublisher()
+    }
+    
+    private func getSuccessPublisher() -> AnyPublisher<Void, Error> {
         
         return Future { promise in
-            DispatchQueue.global().asyncAfter(deadline: .now() + delayRequestSeconds) {
-                promise(.success(Void()))
-            }
+            
+            promise(.success(Void()))
         }
         .eraseToAnyPublisher()
     }

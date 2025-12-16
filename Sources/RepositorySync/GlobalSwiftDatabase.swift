@@ -11,7 +11,7 @@ import SwiftData
 
 // TODO: This singleton can be removed once RealmSwift is dropped.
 //  This is needed while supporting realm with swift database fallback.
-//  Clients should enable swiftdatabase by injecting here. ~Levi
+//  Clients should enable swiftdatabase by injecting here in enableSwiftDatabase method. ~Levi
 @available(iOS 17.4, *)
 @MainActor public class GlobalSwiftDatabase {
         

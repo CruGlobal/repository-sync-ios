@@ -1,5 +1,5 @@
 //
-//  MockRealmRepositorySyncMapping.swift
+//  MockSwiftRepositorySyncMapping.swift
 //  RepositorySync
 //
 //  Created by Levi Eggert on 7/30/25.
@@ -9,24 +9,25 @@
 import Foundation
 @testable import RepositorySync
 
-class MockRealmRepositorySyncMapping: Mapping {
+@available(iOS 17.4, *)
+final class MockSwiftRepositorySyncMapping: Mapping {
 
-    func toDataModel(externalObject: MockRepositorySyncDataModel) -> MockRepositorySyncDataModel? {
+    func toDataModel(externalObject: MockDataModel) -> MockDataModel? {
         
         return externalObject
     }
     
-    func toDataModel(persistObject: MockRealmObject) -> MockRepositorySyncDataModel? {
+    func toDataModel(persistObject: MockSwiftObject) -> MockDataModel? {
         
-        return MockRepositorySyncDataModel(
+        return MockDataModel(
             id: persistObject.id,
             name: persistObject.name
         )
     }
     
-    func toPersistObject(externalObject: MockRepositorySyncDataModel) -> MockRealmObject? {
+    func toPersistObject(externalObject: MockDataModel) -> MockSwiftObject? {
         
-        return MockRealmObject
+        return MockSwiftObject
             .createObject(
                 id: externalObject.id,
                 name: externalObject.name

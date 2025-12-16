@@ -1,5 +1,5 @@
 //
-//  MockRepositorySyncDataModel.swift
+//  MockDataModel.swift
 //  RepositorySync
 //
 //  Created by Levi Eggert on 7/30/25.
@@ -8,24 +8,24 @@
 
 import Foundation
 
-struct MockRepositorySyncDataModel {
+struct MockDataModel {
     
     let id: String
     let name: String
         
-    static func createDataModelsFromIds(ids: [String]) -> [MockRepositorySyncDataModel] {
+    static func createDataModelsFromIds(ids: [String]) -> [MockDataModel] {
         
         return ids.map {
-            MockRepositorySyncDataModel(
+            MockDataModel(
                 id: $0,
                 name: "name_" + $0
             )
         }
     }
     
-    static func sortDataModelIds(dataModels: [MockRepositorySyncDataModel]) -> [String] {
+    static func sortDataModelIds(dataModels: [MockDataModel]) -> [String] {
         
-        let sortedDataModels: [MockRepositorySyncDataModel] = dataModels.sorted {
+        let sortedDataModels: [MockDataModel] = dataModels.sorted {
             $0.id < $1.id
         }
         

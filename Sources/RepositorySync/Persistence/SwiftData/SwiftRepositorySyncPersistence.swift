@@ -1,8 +1,8 @@
 //
 //  SwiftRepositorySyncPersistence.swift
-//  godtools
+//  RepositorySync
 //
-//  Created by Levi Eggert on 9/23/25.
+//  Created by Levi Eggert on 12/3/25.
 //  Copyright © 2025 Cru. All rights reserved.
 //
 
@@ -13,6 +13,7 @@ import Combine
 @available(iOS 17.4, *)
 public final class SwiftRepositorySyncPersistence<DataModelType, ExternalObjectType, PersistObjectType: IdentifiableSwiftDataObject>: Persistence {
     
+    private let serialQueue: DispatchQueue = DispatchQueue(label: "swiftdatabase.serial_queue")
     private let userInfoKeyPrependNotification: String = "RepositorySync.notificationKey.prepend"
     private let userInfoKeyEntityName: String = "RepositorySync.notificationKey.entityName"
     
@@ -71,9 +72,12 @@ extension SwiftRepositorySyncPersistence {
             .compactMap { (notification: Notification) in
                                                 
                 let swiftDatabaseConfigName: String = swiftDatabaseRef.configName
-                let fromContextConfigurations: Set<ModelConfiguration> = (notification.object as? ModelContext)?.container.configurations ?? Set<ModelConfiguration>()
+                let swiftDatabaseUrl: URL = swiftDatabaseRef.configUrl
+                let fromContainer: ModelContainer? = (notification.object as? ModelContext)?.container
+                let fromContextConfigurations: Set<ModelConfiguration> = fromContainer?.configurations ?? Set<ModelConfiguration>()
                 let fromConfigNames: [String] = fromContextConfigurations.map { $0.name }
-                let isSameContainer: Bool = fromConfigNames.contains(swiftDatabaseConfigName)
+                let fromConfigUrls: [URL] = fromContextConfigurations.map { $0.url }
+                let isSameContainer: Bool = fromConfigNames.contains(swiftDatabaseConfigName) && fromConfigUrls.contains(swiftDatabaseUrl)
                 
                 let userInfo: [AnyHashable: Any] = notification.userInfo ?? Dictionary()
                 let isPrepend: Bool = userInfo[userInfoKeyPrependNotification] as? Bool ?? false
@@ -152,60 +156,50 @@ extension SwiftRepositorySyncPersistence {
             )
     }
     
-    public func getObject(id: String) throws -> DataModelType? {
+    public func getObjects(getObjectsType: GetObjectsType) throws -> [DataModelType] {
         
+        // TODO: Can this be done in the background? ~Levi
+                
         let context: ModelContext = database.openContext()
         
-        let swiftObject: PersistObjectType? = try database.getObject(context: context, id: id)
+        return try getObjects(context: context, getObjectsType: getObjectsType)
+    }
+    
+    public func getObjects(context: ModelContext, getObjectsType: GetObjectsType) throws -> [DataModelType] {
         
-        guard let swiftObject = swiftObject, let dataModel = dataModelMapping.toDataModel(persistObject: swiftObject) else {
-            return nil
+        // TODO: Can this be done in the background? ~Levi
+        
+        let persistObjects: [PersistObjectType]
+                
+        switch getObjectsType {
+            
+        case .allObjects:
+            persistObjects = try database.getObjects(context: context, query: nil)
+            
+        case .object(let id):
+            
+            let object: PersistObjectType? = try database.getObject(context: context, id: id)
+            
+            if let object = object {
+                persistObjects = [object]
+            }
+            else {
+                persistObjects = []
+            }
         }
         
-        return dataModel
+        return mapPersistObjects(persistObjects: persistObjects)
     }
     
-    public func getObjects() throws -> [DataModelType] {
+    public func mapPersistObjects(persistObjects: [PersistObjectType]) -> [DataModelType] {
         
-        return try getObjects(query: nil)
-    }
-    
-    public func getObjects(query: SwiftDatabaseQuery<PersistObjectType>? = nil) throws -> [DataModelType] {
+        // TODO: Can this be done in the background? ~Levi
         
-        let context: ModelContext = database.openContext()
-        
-        let objects: [PersistObjectType] = try database.getObjects(context: context, query: query)
-        
-        let dataModels: [DataModelType] = objects.compactMap { object in
+        let dataModels: [DataModelType] = persistObjects.compactMap { object in
             self.dataModelMapping.toDataModel(persistObject: object)
         }
         
         return dataModels
-    }
-    
-    public func getObjects(ids: [String]) throws -> [DataModelType] {
-        
-        let context: ModelContext = database.openContext()
-        
-        let objects: [PersistObjectType] = try database.getObjects(context: context, ids: ids)
-        
-        let dataModels: [DataModelType] = objects.compactMap { object in
-            self.dataModelMapping.toDataModel(persistObject: object)
-        }
-        
-        return dataModels
-    }
-    
-    public func getObjectPublisher(id: String) -> AnyPublisher<DataModelType?, any Error> {
-        return Just(nil)
-            .setFailureType(to: Error.self)
-            .eraseToAnyPublisher()
-    }
-    
-    public func getObjectsPublisher() -> AnyPublisher<[DataModelType], any Error> {
-        return Just([])
-            .setFailureType(to: Error.self)
-            .eraseToAnyPublisher()
     }
 }
 
@@ -214,45 +208,109 @@ extension SwiftRepositorySyncPersistence {
 @available(iOS 17.4, *)
 extension SwiftRepositorySyncPersistence {
     
-    public func writeObjectsPublisher(externalObjects: [ExternalObjectType], deleteObjectsNotFoundInExternalObjects: Bool) -> AnyPublisher<Void, Error> {
+    @MainActor public func writeObjectsAsync(writeClosure: @escaping ((_ context: ModelContext) -> SwiftDatabaseWrite), completion: @escaping ((_ context: ModelContext?, _ error: Error?) -> Void)) {
         
-        return database.writeObjectsPublisher(writeClosure: { [weak self] (context: ModelContext) in
-            
-            do {
+        let database: SwiftDatabase = self.database
+        let container: ModelContainer = database.container
+        
+        serialQueue.async {
+            autoreleasepool {
+             
+                let context = ModelContext(container)
+                context.autosaveEnabled = false
                 
-                var objectsToAdd: [PersistObjectType] = Array()
+                let write: SwiftDatabaseWrite = writeClosure(context)
                 
-                var objectsToRemove: [PersistObjectType] = Array()
-                
-                if deleteObjectsNotFoundInExternalObjects, let weakSelf = self {
-                    // store all objects in the collection.
-                    objectsToRemove = try weakSelf.database.getObjects(context: context, query: nil)
+                if let error = write.error {
+                    completion(nil, error)
+                    return
                 }
                 
-                for externalObject in externalObjects {
+                do {
+                    
+                    try database.writeObjects(
+                        context: context,
+                        objects: write.updateObjects,
+                        deleteObjects: write.deleteObjects
+                    )
 
-                    guard let persistObject = self?.dataModelMapping.toPersistObject(externalObject: externalObject) else {
-                        continue
+                    completion(context, nil)
+                }
+                catch let error {
+                    completion(nil, error)
+                }
+            }
+        }
+    }
+    
+    @MainActor public func writeObjectsPublisher(externalObjects: [ExternalObjectType], deleteObjectsNotFoundInExternalObjects: Bool, getObjectsType: GetObjectsType) -> AnyPublisher<[DataModelType], Error> {
+        
+        return Future { [weak self] promise in
+            
+            guard let weakSelf = self else {
+                promise(.success([]))
+                return
+            }
+            
+            weakSelf.writeObjectsAsync(writeClosure: { (context: ModelContext) in
+                
+                do {
+                    
+                    var objectsToAdd: [PersistObjectType] = Array()
+                    
+                    var objectsToRemove: [PersistObjectType] = Array()
+                    
+                    if deleteObjectsNotFoundInExternalObjects, let weakSelf = self {
+                        // store all objects in the collection.
+                        objectsToRemove = try weakSelf.database.getObjects(context: context, query: nil)
                     }
                     
-                    objectsToAdd.append(persistObject)
-                    
-                    // added persist object can be removed from this list so it won't be deleted from the database.
-                    if deleteObjectsNotFoundInExternalObjects, let index = objectsToRemove.firstIndex(where: { $0.id == persistObject.id }) {
-                        objectsToRemove.remove(at: index)
+                    for externalObject in externalObjects {
+
+                        guard let persistObject = self?.dataModelMapping.toPersistObject(externalObject: externalObject) else {
+                            continue
+                        }
+                        
+                        objectsToAdd.append(persistObject)
+                        
+                        // added persist object can be removed from this list so it won't be deleted from the database.
+                        if deleteObjectsNotFoundInExternalObjects, let index = objectsToRemove.firstIndex(where: { $0.id == persistObject.id }) {
+                            objectsToRemove.remove(at: index)
+                        }
                     }
+                    
+                    return SwiftDatabaseWrite(
+                        updateObjects: objectsToAdd,
+                        deleteObjects: objectsToRemove
+                    )
+                }
+                catch let error {
+                    
+                    return SwiftDatabaseWrite(error: error)
                 }
                 
-                return SwiftDatabaseWrite(
-                    updateObjects: objectsToAdd,
-                    deleteObjects: objectsToRemove
-                )
-            }
-            catch let error {
+            }, completion: { (context: ModelContext?, error: Error?) in
                 
-                return SwiftDatabaseWrite(error: error)
-            }
-        })
+                if let error = error {
+                    promise(.failure(error))
+                }
+                else if let context = context {
+                    
+                    do {
+                        
+                        let dataModels: [DataModelType] = try weakSelf.getObjects(context: context, getObjectsType: getObjectsType)
+                        
+                        promise(.success(dataModels))
+                    }
+                    catch let error {
+                        promise(.failure(error))
+                    }
+                }
+                else {
+                    promise(.success([]))
+                }
+            })
+        }
         .eraseToAnyPublisher()
     }
 }

@@ -14,7 +14,6 @@ import SwiftData
 public class MockSwiftDatabase {
     
     private let fileManager: FileManager = FileManager.default
-    private let defaultIds: [Int] = [0, 1, 2, 3, 4]
     
     public init() {
         
@@ -33,23 +32,22 @@ public class MockSwiftDatabase {
             .appendingPathExtension("sqlite")
     }
     
-    public func createDatabase(directoryName: String, ids: [Int]? = nil) throws -> SwiftDatabase {
+    public func getSharedDatabase(objects: [MockSwiftObject], shouldDeleteExistingObjects: Bool) throws -> SwiftDatabase {
         
-        let idsToCreate: [Int] = ids ?? defaultIds
+        let database = try createDatabase(directoryName: "shared_swift_database", objects: objects)
         
-        var objects: [MockSwiftObject] = Array()
+        let context: ModelContext = database.openContext()
         
-        for id in idsToCreate {
+        if shouldDeleteExistingObjects {
             
-            objects.append(
-                MockSwiftObject.createObject(
-                    id: String(id),
-                    position: id
-                )
-            )
+            let existingObjects: [MockSwiftObject] = try database.getObjects(context: context, query: nil)
+            
+            try database.deleteObjects(context: context, objects: existingObjects)
         }
         
-        return try createDatabase(directoryName: directoryName, objects: objects)
+        try database.writeObjects(context: context, objects: objects)
+        
+        return database
     }
     
     public func createDatabase(directoryName: String, objects: [MockSwiftObject]) throws -> SwiftDatabase {
@@ -71,10 +69,6 @@ public class MockSwiftDatabase {
             schema: Schema(versionedSchema: MockSwiftDatabaseSchema.self),
             migrationPlan: nil
         )
-        
-        let context: ModelContext = database.openContext()
-        
-        try database.writeObjects(context: context, objects: objects)
              
         return database
     }

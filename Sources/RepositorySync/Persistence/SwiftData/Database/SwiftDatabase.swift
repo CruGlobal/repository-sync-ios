@@ -1,22 +1,20 @@
 //
 //  SwiftDatabase.swift
-//  godtools
+//  RepositorySync
 //
-//  Created by Levi Eggert on 9/19/25.
+//  Created by Levi Eggert on 12/3/25.
 //  Copyright © 2025 Cru. All rights reserved.
 //
 
 import Foundation
 import SwiftData
-import Combine
 
 @available(iOS 17.4, *)
-public final class SwiftDatabase {
+public final class SwiftDatabase: Sendable {
     
-    private let serialQueue: DispatchQueue = DispatchQueue(label: "swiftdatabase.serial_queue")
-    private let container: ModelContainer
-    
+    public let container: ModelContainer
     public let configName: String
+    public let configUrl: URL
     
     public init(modelConfiguration: ModelConfiguration, schema: Schema, migrationPlan: (any SchemaMigrationPlan.Type)?) throws {
                 
@@ -29,6 +27,7 @@ public final class SwiftDatabase {
         self.container = container
         
         configName = modelConfiguration.name
+        configUrl = modelConfiguration.url
     }
     
     public func openContext(autosaveEnabled: Bool = false) -> ModelContext {
@@ -91,85 +90,6 @@ extension SwiftDatabase {
 
 @available(iOS 17.4, *)
 extension SwiftDatabase {
-
-    public func writeObjectsPublisher(writeClosure: @escaping ((_ context: ModelContext) -> SwiftDatabaseWrite)) -> AnyPublisher<Void, Error> {
-        
-        
-//        let context: ModelContext = openContext()
-//        
-//        let write: SwiftDatabaseWrite = writeClosure(context)
-//        
-//        if let error = write.error {
-//            return Fail(error: error)
-//                .eraseToAnyPublisher()
-//        }
-//        
-//        do {
-//            
-//            try self.writeObjects(
-//                context: context,
-//                objects: write.updateObjects,
-//                deleteObjects: write.deleteObjects
-//            )
-//
-//            return Just(Void())
-//                .setFailureType(to: Error.self)
-//                .eraseToAnyPublisher()
-//        }
-//        catch let error {
-//            return Fail(error: error)
-//                .eraseToAnyPublisher()
-//        }
-        
-        return Future { promise in
-            
-            self.writeObjectsSerialAsync(
-                writeClosure: writeClosure,
-                completion: { (error: Error?) in
-                    
-                    if let error = error {
-                        promise(.failure(error))
-                    }
-                    else {
-                        promise(.success(Void()))
-                    }
-                }
-            )
-        }
-        .eraseToAnyPublisher()
-    }
-    
-    public func writeObjectsSerialAsync(writeClosure: @escaping ((_ context: ModelContext) -> SwiftDatabaseWrite), completion: @escaping ((_ error: Error?) -> Void)) {
-        
-        let container: ModelContainer = self.container
-        
-        serialQueue.async {
-            
-            let context = ModelContext(container)
-            context.autosaveEnabled = false
-            
-            let write: SwiftDatabaseWrite = writeClosure(context)
-            
-            if let error = write.error {
-                completion(error)
-                return
-            }
-            
-            do {
-                
-                try self.writeObjects(
-                    context: context,
-                    objects: write.updateObjects,
-                    deleteObjects: write.deleteObjects
-                )
-
-                completion(nil)
-            }
-            catch let error {
-                completion(error)
-            }
-        }
-    }
     
     public func writeObjects(context: ModelContext, objects: [any IdentifiableSwiftDataObject], deleteObjects: [any IdentifiableSwiftDataObject]? = nil) throws {
         

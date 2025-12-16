@@ -16,8 +16,6 @@ public protocol Persistence<DataModelType, ExternalObjectType> {
     
     @MainActor func observeCollectionChangesPublisher() -> AnyPublisher<Void, Error>
     func getObjectCount() throws -> Int
-    func getObject(id: String) throws -> DataModelType?
-    func getObjects() throws -> [DataModelType]
-    func getObjects(ids: [String]) throws -> [DataModelType]
-    func writeObjectsPublisher(externalObjects: [ExternalObjectType], deleteObjectsNotFoundInExternalObjects: Bool) -> AnyPublisher<Void, Error>
+    func getObjects(getObjectsType: GetObjectsType) throws -> [DataModelType]
+    @MainActor func writeObjectsPublisher(externalObjects: [ExternalObjectType], deleteObjectsNotFoundInExternalObjects: Bool, getObjectsType: GetObjectsType) -> AnyPublisher<[DataModelType], Error>
 }
