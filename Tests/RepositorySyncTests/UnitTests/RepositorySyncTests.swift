@@ -61,7 +61,7 @@ import RealmSwift
         try await runTest(
             argument: argument,
             getObjectsType: .allObjects,
-            cachePolicy: .get(cachePolicy: .fetchIgnoringCacheData),
+            fetchType: .get(cachePolicy: .fetchIgnoringCacheData),
             expectedNumberOfChanges: 1,
             triggerSecondaryExternalDataFetchWithIds: nil,
             shouldEnableSwiftDatabase: false,
@@ -108,7 +108,7 @@ import RealmSwift
         try await runTest(
             argument: argument,
             getObjectsType: .object(id: "1"),
-            cachePolicy: .get(cachePolicy: .fetchIgnoringCacheData),
+            fetchType: .get(cachePolicy: .fetchIgnoringCacheData),
             expectedNumberOfChanges: 1,
             triggerSecondaryExternalDataFetchWithIds: nil,
             shouldEnableSwiftDatabase: false,
@@ -149,7 +149,7 @@ import RealmSwift
         try await runTest(
             argument: argument,
             getObjectsType: .allObjects,
-            cachePolicy: .observe(cachePolicy: .returnCacheDataDontFetch),
+            fetchType: .observe(cachePolicy: .returnCacheDataDontFetch),
             expectedNumberOfChanges: 1,
             triggerSecondaryExternalDataFetchWithIds: nil,
             shouldEnableSwiftDatabase: false,
@@ -182,7 +182,7 @@ import RealmSwift
         try await runTest(
             argument: argument,
             getObjectsType: .allObjects,
-            cachePolicy: .observe(cachePolicy: .returnCacheDataDontFetch),
+            fetchType: .observe(cachePolicy: .returnCacheDataDontFetch),
             expectedNumberOfChanges: 2,
             triggerSecondaryExternalDataFetchWithIds: ["8", "1", "0"],
             shouldEnableSwiftDatabase: false,
@@ -229,7 +229,7 @@ import RealmSwift
         try await runTest(
             argument: argument,
             getObjectsType: .object(id: "1"),
-            cachePolicy: .observe(cachePolicy: .returnCacheDataDontFetch),
+            fetchType: .observe(cachePolicy: .returnCacheDataDontFetch),
             expectedNumberOfChanges: 1,
             triggerSecondaryExternalDataFetchWithIds: nil,
             shouldEnableSwiftDatabase: false,
@@ -256,7 +256,7 @@ import RealmSwift
         try await runTest(
             argument: argument,
             getObjectsType: .object(id: "1"),
-            cachePolicy: .observe(cachePolicy: .returnCacheDataDontFetch),
+            fetchType: .observe(cachePolicy: .returnCacheDataDontFetch),
             expectedNumberOfChanges: 2,
             triggerSecondaryExternalDataFetchWithIds: ["8", "1", "0"],
             shouldEnableSwiftDatabase: false,
@@ -289,7 +289,7 @@ import RealmSwift
 //        try await runRealmAndSwiftTest(
 //            argument: argument,
 //            getObjectsType: .allObjects,
-//            cachePolicy: .get(cachePolicy: .fetchIgnoringCacheData),
+//            fetchType: .get(cachePolicy: .fetchIgnoringCacheData),
 //            expectedNumberOfChanges: 1,
 //            loggingEnabled: false
 //        )
@@ -308,7 +308,7 @@ import RealmSwift
 //        try await runRealmAndSwiftTest(
 //            argument: argument,
 //            getObjectsType: .allObjects,
-//            cachePolicy: .get(cachePolicy: .fetchIgnoringCacheData),
+//            fetchType: .get(cachePolicy: .fetchIgnoringCacheData),
 //            expectedNumberOfChanges: 1,
 //            loggingEnabled: false
 //        )
@@ -327,7 +327,7 @@ import RealmSwift
 //        try await runRealmAndSwiftTest(
 //            argument: argument,
 //            getObjectsType: .allObjects,
-//            cachePolicy: .get(cachePolicy: .fetchIgnoringCacheData),
+//            fetchType: .get(cachePolicy: .fetchIgnoringCacheData),
 //            expectedNumberOfChanges: 1,
 //            loggingEnabled: false
 //        )
@@ -346,7 +346,7 @@ import RealmSwift
 //        try await runRealmAndSwiftTest(
 //            argument: argument,
 //            getObjectsType: .allObjects,
-//            cachePolicy: .get(cachePolicy: .fetchIgnoringCacheData),
+//            fetchType: .get(cachePolicy: .fetchIgnoringCacheData),
 //            expectedNumberOfChanges: 1,
 //            loggingEnabled: false
 //        )
@@ -389,7 +389,7 @@ import RealmSwift
         try await runTest(
             argument: argument,
             getObjectsType: .allObjects,
-            cachePolicy: .get(cachePolicy: .fetchIgnoringCacheData),
+            fetchType: .get(cachePolicy: .fetchIgnoringCacheData),
             expectedNumberOfChanges: 1,
             triggerSecondaryExternalDataFetchWithIds: nil,
             shouldEnableSwiftDatabase: true,
@@ -436,7 +436,7 @@ import RealmSwift
         try await runTest(
             argument: argument,
             getObjectsType: .object(id: "1"),
-            cachePolicy: .get(cachePolicy: .fetchIgnoringCacheData),
+            fetchType: .get(cachePolicy: .fetchIgnoringCacheData),
             expectedNumberOfChanges: 1,
             triggerSecondaryExternalDataFetchWithIds: nil,
             shouldEnableSwiftDatabase: true,
@@ -1205,7 +1205,7 @@ import RealmSwift
     
     // MARK: - Run Test
     
-    @MainActor private func runTest(argument: TestArgument, getObjectsType: GetObjectsType, cachePolicy: CachePolicy, expectedNumberOfChanges: Int, triggerSecondaryExternalDataFetchWithIds: [String]?, shouldEnableSwiftDatabase: Bool, loggingEnabled: Bool) async throws {
+    @MainActor private func runTest(argument: TestArgument, getObjectsType: GetObjectsType, fetchType: FetchType, expectedNumberOfChanges: Int, triggerSecondaryExternalDataFetchWithIds: [String]?, shouldEnableSwiftDatabase: Bool, loggingEnabled: Bool) async throws {
         
         let testName: String = shouldEnableSwiftDatabase ? "SWIFT" : "REALM"
         let testId: String = UUID().uuidString
@@ -1247,9 +1247,9 @@ import RealmSwift
                     )
                     
                     additionalRepositorySync
-                        .getObjectsPublisher(
+                        .fetchObjectsPublisher(
+                            fetchType: .get(cachePolicy: .fetchIgnoringCacheData),
                             getObjectsType: .allObjects,
-                            cachePolicy: .get(cachePolicy: .fetchIgnoringCacheData),
                             context: MockExternalDataFetchContext()
                         )
                         .sink { completion in
@@ -1307,9 +1307,9 @@ import RealmSwift
                 }
                 
                 repositorySync
-                    .getObjectsPublisher(
+                    .fetchObjectsPublisher(
+                        fetchType: fetchType,
                         getObjectsType: getObjectsType,
-                        cachePolicy: cachePolicy,
                         context: MockExternalDataFetchContext()
                     )
                     .sink { completion in

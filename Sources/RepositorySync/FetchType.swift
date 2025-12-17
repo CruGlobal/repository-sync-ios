@@ -1,5 +1,5 @@
 //
-//  CachePolicy.swift
+//  FetchType.swift
 //  RepositorySync
 //
 //  Created by Levi Eggert on 7/30/25.
@@ -8,7 +8,7 @@
 
 import Foundation
 
-public enum CachePolicy {
+public enum FetchType {
     
     case get(cachePolicy: GetCachePolicy)
     case observe(cachePolicy: ObserveCachePolicy)
