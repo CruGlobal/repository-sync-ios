@@ -31,9 +31,9 @@ public class MockRealmDatabase {
             .appendingPathExtension("realm")
     }
 
-    public func getSharedDatabase(objects: [MockRealmObject], shouldDeleteExistingObjects: Bool) throws -> RealmDatabase {
+    public func createDatabase(directoryName: String, objects: [MockRealmObject], shouldDeleteExistingObjects: Bool) throws -> RealmDatabase {
         
-        let database = try createDatabase(directoryName: "shared_realm_database")
+        let database = try createDatabase(directoryName: directoryName)
         
         let realm: Realm = try database.openRealm()
         

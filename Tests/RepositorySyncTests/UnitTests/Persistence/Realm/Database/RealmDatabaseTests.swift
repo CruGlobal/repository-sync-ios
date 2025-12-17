@@ -271,6 +271,8 @@ extension RealmDatabaseTests {
             )
         }
         
-        return try MockRealmDatabase().getSharedDatabase(objects: objects, shouldDeleteExistingObjects: true)
+        let directoryName: String = "realm_\(String(describing: RealmDatabaseTests.self))"
+        
+        return try MockRealmDatabase().createDatabase(directoryName: directoryName, objects: objects, shouldDeleteExistingObjects: true)
     }
 }

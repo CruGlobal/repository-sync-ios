@@ -32,9 +32,9 @@ public class MockSwiftDatabase {
             .appendingPathExtension("sqlite")
     }
     
-    public func getSharedDatabase(objects: [MockSwiftObject], shouldDeleteExistingObjects: Bool) throws -> SwiftDatabase {
+    public func createDatabase(directoryName: String, objects: [MockSwiftObject], shouldDeleteExistingObjects: Bool) throws -> SwiftDatabase {
         
-        let database = try createDatabase(directoryName: "shared_swift_database", objects: objects)
+        let database = try createDatabase(directoryName: directoryName, objects: objects)
         
         let context: ModelContext = database.openContext()
         

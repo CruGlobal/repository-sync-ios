@@ -285,7 +285,7 @@ import RealmSwift
 //            getObjectsType: .allObjects,
 //            cachePolicy: .get(cachePolicy: .fetchIgnoringCacheData),
 //            expectedNumberOfChanges: 1,
-//            loggingEnabled: true
+//            loggingEnabled: false
 //        )
 //    }
 //    
@@ -304,7 +304,7 @@ import RealmSwift
 //            getObjectsType: .allObjects,
 //            cachePolicy: .get(cachePolicy: .fetchIgnoringCacheData),
 //            expectedNumberOfChanges: 1,
-//            loggingEnabled: true
+//            loggingEnabled: false
 //        )
 //    }
 //    
@@ -323,7 +323,7 @@ import RealmSwift
 //            getObjectsType: .allObjects,
 //            cachePolicy: .get(cachePolicy: .fetchIgnoringCacheData),
 //            expectedNumberOfChanges: 1,
-//            loggingEnabled: true
+//            loggingEnabled: false
 //        )
 //    }
 //    
@@ -342,7 +342,7 @@ import RealmSwift
 //            getObjectsType: .allObjects,
 //            cachePolicy: .get(cachePolicy: .fetchIgnoringCacheData),
 //            expectedNumberOfChanges: 1,
-//            loggingEnabled: true
+//            loggingEnabled: false
 //        )
 //    }
     
@@ -434,7 +434,7 @@ import RealmSwift
             expectedNumberOfChanges: 1,
             triggerSecondaryExternalDataFetchWithIds: [],
             shouldEnableSwiftDatabase: true,
-            loggingEnabled: true
+            loggingEnabled: false
         )
     }
      */
@@ -1202,6 +1202,7 @@ import RealmSwift
     @MainActor private func runTest(argument: TestArgument, getObjectsType: GetObjectsType, cachePolicy: CachePolicy, expectedNumberOfChanges: Int, triggerSecondaryExternalDataFetchWithIds: [String], shouldEnableSwiftDatabase: Bool, loggingEnabled: Bool) async throws {
         
         let testName: String = shouldEnableSwiftDatabase ? "SWIFT" : "REALM"
+        let testId: String = UUID().uuidString
         
         let initialPersistedObjectsIds: [String] = argument.initialPersistedObjectsIds
         let externalDataModelIds: [String] = argument.externalDataModelIds
@@ -1210,6 +1211,7 @@ import RealmSwift
         
         if loggingEnabled {
             print("\n *** RUNNING \(testName) TEST *** \n")
+            print("  testId: \(testId)")
             print("  initial persisted object ids: \(initialPersistedObjectsIds) ")
             print("  external data model ids: \(externalDataModelIds) ")
         }
@@ -1378,6 +1380,12 @@ import RealmSwift
         }
         
         #expect(responseDataModelIds == expectedResponseDataModelIds)
+        
+        if loggingEnabled {
+            print("\n\n END \(testName) TEST")
+            print("  testId: \(testId)")
+            print("\n\n")
+        }
     }
 }
 
@@ -1386,12 +1394,14 @@ import RealmSwift
 extension RepositorySyncTests {
     
     private func getSharedRealmDatabase(addObjects: [MockRealmObject], shouldDeleteExistingObjects: Bool) throws -> RealmDatabase {
-        return try MockRealmDatabase().getSharedDatabase(objects: addObjects, shouldDeleteExistingObjects: shouldDeleteExistingObjects)
+        let directoryName: String = "realm_\(String(describing: RepositorySyncTests.self))"
+        return try MockRealmDatabase().createDatabase(directoryName: directoryName, objects: addObjects, shouldDeleteExistingObjects: shouldDeleteExistingObjects)
     }
     
     @available(iOS 17.4, *)
     private func getSharedSwiftDatabase(addObjects: [MockSwiftObject], shouldDeleteExistingObjects: Bool) throws -> SwiftDatabase {
-        return try MockSwiftDatabase().getSharedDatabase(objects: addObjects, shouldDeleteExistingObjects: shouldDeleteExistingObjects)
+        let directoryName: String = "swift_\(String(describing: RepositorySyncTests.self))"
+        return try MockSwiftDatabase().createDatabase(directoryName: directoryName, objects: addObjects, shouldDeleteExistingObjects: shouldDeleteExistingObjects)
     }
     
     @MainActor private func getRepositorySync(externalDataFetch: MockExternalDataFetch, addObjectsToDatabase: [MockDataModel], shouldDeleteExistingObjectsInDatabase: Bool, shouldEnableSwiftDatabase: Bool) throws -> RepositorySync<MockDataModel, MockExternalDataFetch, MockRealmObject> {

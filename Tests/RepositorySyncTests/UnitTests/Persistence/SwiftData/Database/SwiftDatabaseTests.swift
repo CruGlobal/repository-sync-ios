@@ -350,7 +350,8 @@ extension SwiftDatabaseTests {
                 )
             )
         }
-                
-        return try MockSwiftDatabase().getSharedDatabase(objects: objects, shouldDeleteExistingObjects: true)
+        
+        let directoryName: String = "swift_\(String(describing: SwiftDatabaseTests.self))"
+        return try MockSwiftDatabase().createDatabase(directoryName: directoryName, objects: objects, shouldDeleteExistingObjects: true)
     }
 }
