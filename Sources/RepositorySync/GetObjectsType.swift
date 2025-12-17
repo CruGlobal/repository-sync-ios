@@ -8,7 +8,7 @@
 
 import Foundation
 
-public enum GetObjectsType {
+public enum GetObjectsType: Sendable {
     case allObjects
     case object(id: String)
 }

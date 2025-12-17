@@ -10,7 +10,7 @@ import Foundation
 import RealmSwift
 import Combine
 
-public final class RealmRepositorySyncPersistence<DataModelType: Sendable, ExternalObjectType, PersistObjectType: IdentifiableRealmObject>: Persistence {
+public final class RealmRepositorySyncPersistence<DataModelType: Sendable, ExternalObjectType: Sendable, PersistObjectType: IdentifiableRealmObject>: Persistence {
     
     private let writeSerialQueue: DispatchQueue = DispatchQueue(label: "realm.write.serial_queue")
     

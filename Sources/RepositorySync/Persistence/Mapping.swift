@@ -10,8 +10,8 @@ import Foundation
 
 public protocol Mapping<DataModelType, ExternalObjectType, PersistObjectType> {
         
-    associatedtype DataModelType
-    associatedtype ExternalObjectType
+    associatedtype DataModelType: Sendable
+    associatedtype ExternalObjectType: Sendable
     associatedtype PersistObjectType
     
     func toDataModel(externalObject: ExternalObjectType) -> DataModelType?

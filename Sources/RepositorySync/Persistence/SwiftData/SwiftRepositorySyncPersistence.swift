@@ -11,7 +11,7 @@ import SwiftData
 import Combine
 
 @available(iOS 17.4, *)
-public final class SwiftRepositorySyncPersistence<DataModelType, ExternalObjectType, PersistObjectType: IdentifiableSwiftDataObject>: Persistence {
+public final class SwiftRepositorySyncPersistence<DataModelType, ExternalObjectType: Sendable, PersistObjectType: IdentifiableSwiftDataObject>: Persistence {
     
     private let serialQueue: DispatchQueue = DispatchQueue(label: "swiftdatabase.serial_queue")
     private let userInfoKeyPrependNotification: String = "RepositorySync.notificationKey.prepend"
