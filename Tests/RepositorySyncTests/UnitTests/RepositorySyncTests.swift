@@ -63,7 +63,7 @@ import RealmSwift
             getObjectsType: .allObjects,
             cachePolicy: .get(cachePolicy: .fetchIgnoringCacheData),
             expectedNumberOfChanges: 1,
-            triggerSecondaryExternalDataFetchWithIds: [],
+            triggerSecondaryExternalDataFetchWithIds: nil,
             shouldEnableSwiftDatabase: false,
             loggingEnabled: false
         )
@@ -110,7 +110,7 @@ import RealmSwift
             getObjectsType: .object(id: "1"),
             cachePolicy: .get(cachePolicy: .fetchIgnoringCacheData),
             expectedNumberOfChanges: 1,
-            triggerSecondaryExternalDataFetchWithIds: [],
+            triggerSecondaryExternalDataFetchWithIds: nil,
             shouldEnableSwiftDatabase: false,
             loggingEnabled: false
         )
@@ -151,7 +151,7 @@ import RealmSwift
             getObjectsType: .allObjects,
             cachePolicy: .observe(cachePolicy: .returnCacheDataDontFetch),
             expectedNumberOfChanges: 1,
-            triggerSecondaryExternalDataFetchWithIds: [],
+            triggerSecondaryExternalDataFetchWithIds: nil,
             shouldEnableSwiftDatabase: false,
             loggingEnabled: false
         )
@@ -231,7 +231,7 @@ import RealmSwift
             getObjectsType: .object(id: "1"),
             cachePolicy: .observe(cachePolicy: .returnCacheDataDontFetch),
             expectedNumberOfChanges: 1,
-            triggerSecondaryExternalDataFetchWithIds: [],
+            triggerSecondaryExternalDataFetchWithIds: nil,
             shouldEnableSwiftDatabase: false,
             loggingEnabled: false
         )
@@ -264,7 +264,13 @@ import RealmSwift
         )
     }
     
+    // MARK: - Realm Test Cache Policy (Observe Return Cache Data Else Fetch) - Objects
     
+    // MARK: - Realm Test Cache Policy (Observe Return Cache Data Else Fetch) - Object ID
+    
+    // MARK: - Realm Test Cache Policy (Observe Return Cache Data And Fetch) - Objects
+    
+    // MARK: - Realm Test Cache Policy (Observe Return Cache Data And Fetch) - Object ID
     
     
     
@@ -385,7 +391,7 @@ import RealmSwift
             getObjectsType: .allObjects,
             cachePolicy: .get(cachePolicy: .fetchIgnoringCacheData),
             expectedNumberOfChanges: 1,
-            triggerSecondaryExternalDataFetchWithIds: [],
+            triggerSecondaryExternalDataFetchWithIds: nil,
             shouldEnableSwiftDatabase: true,
             loggingEnabled: false
         )
@@ -432,7 +438,7 @@ import RealmSwift
             getObjectsType: .object(id: "1"),
             cachePolicy: .get(cachePolicy: .fetchIgnoringCacheData),
             expectedNumberOfChanges: 1,
-            triggerSecondaryExternalDataFetchWithIds: [],
+            triggerSecondaryExternalDataFetchWithIds: nil,
             shouldEnableSwiftDatabase: true,
             loggingEnabled: false
         )
@@ -1199,7 +1205,7 @@ import RealmSwift
     
     // MARK: - Run Test
     
-    @MainActor private func runTest(argument: TestArgument, getObjectsType: GetObjectsType, cachePolicy: CachePolicy, expectedNumberOfChanges: Int, triggerSecondaryExternalDataFetchWithIds: [String], shouldEnableSwiftDatabase: Bool, loggingEnabled: Bool) async throws {
+    @MainActor private func runTest(argument: TestArgument, getObjectsType: GetObjectsType, cachePolicy: CachePolicy, expectedNumberOfChanges: Int, triggerSecondaryExternalDataFetchWithIds: [String]?, shouldEnableSwiftDatabase: Bool, loggingEnabled: Bool) async throws {
         
         let testName: String = shouldEnableSwiftDatabase ? "SWIFT" : "REALM"
         let testId: String = UUID().uuidString
@@ -1217,7 +1223,8 @@ import RealmSwift
         }
         
         var cancellables: Set<AnyCancellable> = Set()
-                
+               
+        let triggerSecondaryExternalDataFetchWithIds: [String] = triggerSecondaryExternalDataFetchWithIds ?? Array()
         let triggersSecondaryExternalDataFetch: Bool = triggerSecondaryExternalDataFetchWithIds.count > 0
         
         if triggersSecondaryExternalDataFetch {
