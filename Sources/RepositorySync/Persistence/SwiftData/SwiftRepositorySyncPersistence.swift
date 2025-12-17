@@ -143,7 +143,7 @@ extension SwiftRepositorySyncPersistence {
 @available(iOS 17.4, *)
 extension SwiftRepositorySyncPersistence {
     
-    public func getObjectCount() throws -> Int {
+    @MainActor public func getObjectCount() throws -> Int {
         
         let context: ModelContext = database.openContext()
         
@@ -156,7 +156,7 @@ extension SwiftRepositorySyncPersistence {
             )
     }
     
-    public func getObjectsPublisher(getObjectsType: GetObjectsType) -> AnyPublisher<[DataModelType], Error> {
+    @MainActor public func getObjectsPublisher(getObjectsType: GetObjectsType) -> AnyPublisher<[DataModelType], Error> {
         
         return Future { promise in
          

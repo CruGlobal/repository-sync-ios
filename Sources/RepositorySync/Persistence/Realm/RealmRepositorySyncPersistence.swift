@@ -52,7 +52,7 @@ extension RealmRepositorySyncPersistence {
 
 extension RealmRepositorySyncPersistence {
     
-    public func getObjectCount() throws -> Int {
+    @MainActor public func getObjectCount() throws -> Int {
         
         let realm: Realm = try database.openRealm()
         
@@ -61,7 +61,7 @@ extension RealmRepositorySyncPersistence {
         return results.count
     }
     
-    public func getObjectsPublisher(getObjectsType: GetObjectsType) -> AnyPublisher<[DataModelType], Error> {
+    @MainActor public func getObjectsPublisher(getObjectsType: GetObjectsType) -> AnyPublisher<[DataModelType], Error> {
         
         // TODO: Can this be done in the background? ~Levi
         
