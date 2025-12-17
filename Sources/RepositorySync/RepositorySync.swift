@@ -92,11 +92,6 @@ extension RepositorySync {
 
 extension RepositorySync {
     
-    // TODO: Questions, Unknowns, Etc.
-    /*
-        - How do we handle more complex external data fetching?  For instance, a url request could contain query parameters and http body. Do we force that on subclasses of repository sync?  Do we provide methods for subclasses to hook into for observing, pushing data models for syncing, etc?
-     */
-    
     public func fetchObjectsPublisher(fetchType: FetchType, getObjectsType: GetObjectsType, context: ExternalDataFetchType.ExternalDataFetchContext) -> AnyPublisher<[DataModelType], Error> {
         
         switch fetchType {
