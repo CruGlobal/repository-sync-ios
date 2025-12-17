@@ -79,7 +79,25 @@ extension RealmRepositorySyncPersistence {
         return results.count
     }
     
-    public func getObjects(getObjectsType: GetObjectsType) throws -> [DataModelType] {
+    public func getObjectsPublisher(getObjectsType: GetObjectsType) -> AnyPublisher<[DataModelType], Error> {
+        
+        // TODO: Can this be done in the background? ~Levi
+        
+        return Future { promise in
+         
+            do {
+             
+                let dataModels: [DataModelType] = try self.getObjects(getObjectsType: getObjectsType)
+                promise(.success(dataModels))
+            }
+            catch let error {
+                promise(.failure(error))
+            }
+        }
+        .eraseToAnyPublisher()
+    }
+    
+    private func getObjects(getObjectsType: GetObjectsType) throws -> [DataModelType] {
         
         // TODO: Can this be done in the background? ~Levi
         
@@ -88,7 +106,7 @@ extension RealmRepositorySyncPersistence {
         return getObjects(realm: realm, getObjectsType: getObjectsType)
     }
     
-    public func getObjects(realm: Realm, getObjectsType: GetObjectsType) -> [DataModelType] {
+    private func getObjects(realm: Realm, getObjectsType: GetObjectsType) -> [DataModelType] {
         
         // TODO: Can this be done in the background? ~Levi
         
@@ -163,22 +181,17 @@ extension RealmRepositorySyncPersistence {
     
     @MainActor public func writeObjectsPublisher(externalObjects: [ExternalObjectType], deleteObjectsNotFoundInExternalObjects: Bool, getObjectsType: GetObjectsType) -> AnyPublisher<[DataModelType], any Error> {
         
-        return Future { [weak self] promise in
+        return Future { promise in
             
-            guard let weakSelf = self else {
-                promise(.success([]))
-                return
-            }
-            
-            weakSelf.writeObjectsAsync(writeClosure: { (realm: Realm) in
+            self.writeObjectsAsync(writeClosure: { (realm: Realm) in
                 
                 var objectsToAdd: [PersistObjectType] = Array()
                 
                 var objectsToRemove: [PersistObjectType]
                 
-                if deleteObjectsNotFoundInExternalObjects, let weakSelf = self {
+                if deleteObjectsNotFoundInExternalObjects {
                     // store all objects in the collection.
-                    objectsToRemove = weakSelf.database.getObjects(realm: realm, query: nil)
+                    objectsToRemove = self.database.getObjects(realm: realm, query: nil)
                 }
                 else {
                     objectsToRemove = Array()
@@ -186,7 +199,7 @@ extension RealmRepositorySyncPersistence {
                 
                 for externalObject in externalObjects {
 
-                    guard let persistObject = self?.dataModelMapping.toPersistObject(externalObject: externalObject) else {
+                    guard let persistObject = self.dataModelMapping.toPersistObject(externalObject: externalObject) else {
                         continue
                     }
                     
@@ -205,7 +218,7 @@ extension RealmRepositorySyncPersistence {
                 let dataModels: [DataModelType]
                 
                 if let realm = realm {
-                    dataModels = weakSelf.getObjects(realm: realm, getObjectsType: getObjectsType)
+                    dataModels = self.getObjects(realm: realm, getObjectsType: getObjectsType)
                 }
                 else {
                     dataModels = Array()

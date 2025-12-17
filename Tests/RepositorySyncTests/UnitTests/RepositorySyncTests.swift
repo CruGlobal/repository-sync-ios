@@ -56,7 +56,7 @@ import RealmSwift
             expectedResponseDataModelIds: []
         )
     ])
-    func realmIgnoreCacheDataWillTriggerOnceOnExternalFetchWithAllObjects(argument: TestArgument) async throws {
+    func realmGetIgnoreCacheDataWillTriggerOnceOnExternalFetchWithAllObjects(argument: TestArgument) async throws {
         
         try await runTest(
             argument: argument,
@@ -103,7 +103,7 @@ import RealmSwift
             expectedResponseDataModelIds: []
         )
     ])
-    func realmIgnoreCacheDataWillTriggerOnceOnExternalFetchWithObject(argument: TestArgument) async throws {
+    func realmGetIgnoreCacheDataWillTriggerOnceOnExternalFetchWithObject(argument: TestArgument) async throws {
         
         try await runTest(
             argument: argument,
@@ -115,6 +115,98 @@ import RealmSwift
             loggingEnabled: false
         )
     }
+    
+    // MARK: - Realm Test Cache Policy (Get Return Cache Data Don't Fetch) - Objects
+    
+    @Test(arguments: [
+        TestArgument(
+            initialPersistedObjectsIds: ["0", "1"],
+            externalDataModelIds: ["5", "6", "7", "8", "9"],
+            expectedCachedResponseDataModelIds: ["0", "1"],
+            expectedResponseDataModelIds: ["0", "1"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: ["1", "2"],
+            expectedCachedResponseDataModelIds: [],
+            expectedResponseDataModelIds: []
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: ["2", "3"],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: ["2", "3"],
+            expectedResponseDataModelIds: ["2", "3"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: [],
+            expectedResponseDataModelIds: []
+        )
+    ])
+    func realmGetReturnCacheDataDontFetchWillTriggerOnceWithAllObjects(argument: TestArgument) async throws {
+        
+        try await runTest(
+            argument: argument,
+            getObjectsType: .allObjects,
+            fetchType: .get(cachePolicy: .returnCacheDataDontFetch),
+            expectedNumberOfChanges: 1,
+            triggerSecondaryExternalDataFetchWithIds: nil,
+            shouldEnableSwiftDatabase: false,
+            loggingEnabled: true
+        )
+    }
+    
+    // MARK: - Realm Test Cache Policy (Get Return Cache Data Don't Fetch) - Object ID
+    
+    @Test(arguments: [
+        TestArgument(
+            initialPersistedObjectsIds: ["0", "1"],
+            externalDataModelIds: ["5", "6", "7", "8", "9"],
+            expectedCachedResponseDataModelIds: ["1"],
+            expectedResponseDataModelIds: ["1"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: ["1", "2"],
+            expectedCachedResponseDataModelIds: [],
+            expectedResponseDataModelIds: []
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: ["1", "2", "3"],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: ["1"],
+            expectedResponseDataModelIds: ["1"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: ["2", "3"],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: nil,
+            expectedResponseDataModelIds: []
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: nil,
+            expectedResponseDataModelIds: []
+        )
+    ])
+    func realmGetReturnCacheDataDontFetchWillTriggerOnceWithObject(argument: TestArgument) async throws {
+        
+        try await runTest(
+            argument: argument,
+            getObjectsType: .object(id: "1"),
+            fetchType: .get(cachePolicy: .returnCacheDataDontFetch),
+            expectedNumberOfChanges: 1,
+            triggerSecondaryExternalDataFetchWithIds: nil,
+            shouldEnableSwiftDatabase: false,
+            loggingEnabled: true
+        )
+    }
+    
+    // MARK: - Realm Test Cache Policy (Get Return Cache Data Else Fetch) - Objects
+    
+    // MARK: - Realm Test Cache Policy (Get Return Cache Data Else Fetch) - Object ID
     
     // MARK: - Realm Test Cache Policy (Observe Return Cache Data Don't Fetch) - Objects
     
@@ -150,7 +242,7 @@ import RealmSwift
             expectedResponseDataModelIds: ["2", "3"]
         ),
     ])
-    func realmReturnCacheDataDontFetchWillTriggerOnceWithAllObjects(argument: TestArgument) async throws {
+    func realmObserveReturnCacheDataDontFetchWillTriggerOnceWithAllObjects(argument: TestArgument) async throws {
         
         try await runTest(
             argument: argument,
@@ -195,7 +287,7 @@ import RealmSwift
             expectedResponseDataModelIds: ["2", "3", "8", "9"]
         ),
     ])
-    func realmReturnCacheDataDontFetchWillTriggerTwiceWithAllObjectsAndOnSecondaryExternalFetch(argument: TestArgument) async throws {
+    func realmObserveReturnCacheDataDontFetchWillTriggerTwiceWithAllObjectsAndOnSecondaryExternalFetch(argument: TestArgument) async throws {
         
         try await runTest(
             argument: argument,
@@ -242,7 +334,7 @@ import RealmSwift
             expectedResponseDataModelIds: []
         )
     ])
-    func realmReturnCacheDataDontFetchWillTriggerOnceWithObject(argument: TestArgument) async throws {
+    func realmObserveReturnCacheDataDontFetchWillTriggerOnceWithObject(argument: TestArgument) async throws {
         
         try await runTest(
             argument: argument,
@@ -269,7 +361,7 @@ import RealmSwift
             expectedResponseDataModelIds: ["1"]
         )
     ])
-    func realmReturnCacheDataDontFetchWillTriggerTwiceWithObjectAndOnSecondaryExternalDataFetch(argument: TestArgument) async throws {
+    func realmObserveReturnCacheDataDontFetchWillTriggerTwiceWithObjectAndOnSecondaryExternalDataFetch(argument: TestArgument) async throws {
         
         try await runTest(
             argument: argument,
@@ -292,7 +384,7 @@ import RealmSwift
             expectedResponseDataModelIds: ["5", "6", "7"]
         )
     ])
-    func realmReturnCacheDataElseFetchIsTriggeredTwiceWhenNoCacheDataExistsAndOnExternalDataFetch(argument: TestArgument) async throws {
+    func realmObserveReturnCacheDataElseFetchIsTriggeredTwiceWhenNoCacheDataExistsAndOnExternalDataFetch(argument: TestArgument) async throws {
         
         try await runTest(
             argument: argument,
@@ -313,7 +405,7 @@ import RealmSwift
             expectedResponseDataModelIds: ["5", "6", "7", "9"]
         )
     ])
-    func realmReturnCacheDataElseFetchIsTriggeredThreeTimesWithCachedObjectsAndExternalDataFetchAndOnSecondaryExternalDataFetch(argument: TestArgument) async throws {
+    func realmObserveReturnCacheDataElseFetchIsTriggeredThreeTimesWithCachedObjectsAndExternalDataFetchAndOnSecondaryExternalDataFetch(argument: TestArgument) async throws {
         
         try await runTest(
             argument: argument,
@@ -334,7 +426,7 @@ import RealmSwift
             expectedResponseDataModelIds: ["1", "2", "7", "9"]
         )
     ])
-    func realmReturnCacheDataElseFetchIsTriggeredTwiceWithCachedObjectsAndOnSecondaryExternalDataFetch(argument: TestArgument) async throws {
+    func realmObserveReturnCacheDataElseFetchIsTriggeredTwiceWithCachedObjectsAndOnSecondaryExternalDataFetch(argument: TestArgument) async throws {
         
         try await runTest(
             argument: argument,
@@ -357,7 +449,7 @@ import RealmSwift
             expectedResponseDataModelIds: ["7"]
         )
     ])
-    func realmReturnCacheDataElseFetchIsTriggeredTwiceWithCachedObjectAndExternalDataFetch(argument: TestArgument) async throws {
+    func realmObserveReturnCacheDataElseFetchIsTriggeredTwiceWithCachedObjectAndExternalDataFetch(argument: TestArgument) async throws {
         
         try await runTest(
             argument: argument,
@@ -378,7 +470,7 @@ import RealmSwift
             expectedResponseDataModelIds: ["9"]
         )
     ])
-    func realmReturnCacheDataElseFetchIsTriggeredThreeTimesWithCachedObjectAndExternalDataFetchAndOnSecondaryExternalDataFetch(argument: TestArgument) async throws {
+    func realmObserveReturnCacheDataElseFetchIsTriggeredThreeTimesWithCachedObjectAndExternalDataFetchAndOnSecondaryExternalDataFetch(argument: TestArgument) async throws {
         
         try await runTest(
             argument: argument,
@@ -399,7 +491,7 @@ import RealmSwift
             expectedResponseDataModelIds: ["1"]
         )
     ])
-    func realmReturnCacheDataElseFetchIsTriggeredTwiceWithCachedObjectAndOnSecondaryExternalDataFetch(argument: TestArgument) async throws {
+    func realmObserveReturnCacheDataElseFetchIsTriggeredTwiceWithCachedObjectAndOnSecondaryExternalDataFetch(argument: TestArgument) async throws {
         
         try await runTest(
             argument: argument,
@@ -428,7 +520,7 @@ import RealmSwift
             expectedResponseDataModelIds: ["0", "1"]
         )
     ])
-    func realmReturnCacheDataAndFetchWillTriggerOnceWhenNoExternalDataExists(argument: TestArgument) async throws {
+    func realmObserveReturnCacheDataAndFetchWillTriggerOnceWhenNoExternalDataExists(argument: TestArgument) async throws {
         
         try await runTest(
             argument: argument,
@@ -455,7 +547,7 @@ import RealmSwift
             expectedResponseDataModelIds: ["4", "5"]
         )
     ])
-    func realmReturnCacheDataAndFetchWillTriggerTwiceWhenExternalDataExists(argument: TestArgument) async throws {
+    func realmObserveReturnCacheDataAndFetchWillTriggerTwiceWhenExternalDataExists(argument: TestArgument) async throws {
         
         try await runTest(
             argument: argument,
@@ -482,7 +574,7 @@ import RealmSwift
             expectedResponseDataModelIds: ["4", "5", "9"]
         )
     ])
-    func realmReturnCacheDataAndFetchWillTriggerThreeTimesOnceForInitialCacheDataForExternalDataFetchAndSecondaryExternalDataFetch(argument: TestArgument) async throws {
+    func realmObserveReturnCacheDataAndFetchWillTriggerThreeTimesOnceForInitialCacheDataForExternalDataFetchAndSecondaryExternalDataFetch(argument: TestArgument) async throws {
         
         
         try await runTest(

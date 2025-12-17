@@ -156,7 +156,23 @@ extension SwiftRepositorySyncPersistence {
             )
     }
     
-    public func getObjects(getObjectsType: GetObjectsType) throws -> [DataModelType] {
+    public func getObjectsPublisher(getObjectsType: GetObjectsType) -> AnyPublisher<[DataModelType], Error> {
+        
+        return Future { promise in
+         
+            do {
+             
+                let dataModels: [DataModelType] = try self.getObjects(getObjectsType: getObjectsType)
+                promise(.success(dataModels))
+            }
+            catch let error {
+                promise(.failure(error))
+            }
+        }
+        .eraseToAnyPublisher()
+    }
+    
+    private func getObjects(getObjectsType: GetObjectsType) throws -> [DataModelType] {
         
         // TODO: Can this be done in the background? ~Levi
                 
@@ -165,7 +181,7 @@ extension SwiftRepositorySyncPersistence {
         return try getObjects(context: context, getObjectsType: getObjectsType)
     }
     
-    public func getObjects(context: ModelContext, getObjectsType: GetObjectsType) throws -> [DataModelType] {
+    private func getObjects(context: ModelContext, getObjectsType: GetObjectsType) throws -> [DataModelType] {
         
         // TODO: Can this be done in the background? ~Levi
         

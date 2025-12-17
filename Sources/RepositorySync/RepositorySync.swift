@@ -133,8 +133,9 @@ extension RepositorySync {
             .eraseToAnyPublisher()
             
         case .returnCacheDataDontFetch:
-            return Just([])
-                .setFailureType(to: Error.self)
+            
+            return getPersistence()
+                .getObjectsPublisher(getObjectsType: getObjectsType)
                 .eraseToAnyPublisher()
         
         case .returnCacheDataElseFetch:
@@ -152,8 +153,8 @@ extension RepositorySync {
             
             return getPersistence()
                 .observeCollectionChangesPublisher()
-                .tryMap { _ in
-                    return try self.getPersistence().getObjects(
+                .flatMap { _ in
+                    return self.getPersistence().getObjectsPublisher(
                         getObjectsType: getObjectsType
                     )
                 }
@@ -181,12 +182,8 @@ extension RepositorySync {
 
             return getPersistence()
                 .observeCollectionChangesPublisher()
-                .map { _ in
-                    print("\n DID OBSERVE CHANGES : \(cachePolicy)")
-                    return Void()
-                }
-                .tryMap { _ in
-                    return try self.getPersistence().getObjects(
+                .flatMap { _ in
+                    return self.getPersistence().getObjectsPublisher(
                         getObjectsType: getObjectsType
                     )
                 }
@@ -201,8 +198,8 @@ extension RepositorySync {
 
             return getPersistence()
                 .observeCollectionChangesPublisher()
-                .tryMap { _ in
-                    return try self.getPersistence().getObjects(
+                .flatMap { _ in
+                    return self.getPersistence().getObjectsPublisher(
                         getObjectsType: getObjectsType
                     )
                 }
