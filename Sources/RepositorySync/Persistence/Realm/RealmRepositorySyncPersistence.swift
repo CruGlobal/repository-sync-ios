@@ -146,7 +146,7 @@ extension RealmRepositorySyncPersistence {
                         realm: realm,
                         writeClosure: writeClosure,
                         updatePolicy: updatePolicy,
-                        completion: {
+                        completion: { (realm: Realm) in
                             completion(realm, nil)
                         }
                     )
@@ -202,17 +202,22 @@ extension RealmRepositorySyncPersistence {
                 
             }, updatePolicy: .modified, completion: { (realm: Realm?, error: Error?) in
                 
-                if let error = error {
-                    promise(.failure(error))
-                }
-                else if let realm = realm {
-                    
-                    let dataModels: [DataModelType] = weakSelf.getObjects(realm: realm, getObjectsType: getObjectsType)
-                    
-                    promise(.success(dataModels))
+                let dataModels: [DataModelType]
+                
+                if let realm = realm {
+                    dataModels = weakSelf.getObjects(realm: realm, getObjectsType: getObjectsType)
                 }
                 else {
-                    promise(.success([]))
+                    dataModels = Array()
+                }
+                
+                DispatchQueue.main.async {
+                    if let error = error {
+                        promise(.failure(error))
+                    }
+                    else {
+                        promise(.success(dataModels))
+                    }
                 }
             })
             

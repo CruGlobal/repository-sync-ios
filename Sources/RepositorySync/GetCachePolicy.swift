@@ -11,7 +11,7 @@ import Foundation
 public enum GetCachePolicy {
     
     // Fetches remote data and stores remote data to cache.
-    case fetchIgnoringCacheData
+    case ignoreCacheData
     
     // Fetches cached data, doesn't fetch data from remote.
     case returnCacheDataDontFetch

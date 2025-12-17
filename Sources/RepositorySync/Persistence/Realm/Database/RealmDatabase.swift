@@ -10,7 +10,7 @@ import Foundation
 import RealmSwift
 import Realm
 
-public final class RealmDatabase: Sendable {
+public final class RealmDatabase {
         
     public let config: Realm.Configuration
     public let fileUrl: URL
@@ -125,7 +125,7 @@ extension RealmDatabase {
 
 extension RealmDatabase {
         
-    public func writeObjects(realm: Realm, writeClosure: ((_ realm: Realm) -> RealmDatabaseWrite), updatePolicy: Realm.UpdatePolicy, completion: (() -> Void)? = nil) throws {
+    public func writeObjects(realm: Realm, writeClosure: ((_ realm: Realm) -> RealmDatabaseWrite), updatePolicy: Realm.UpdatePolicy, completion: ((_ realm: Realm) -> Void)? = nil) throws {
         
         try realm.write {
             
@@ -139,7 +139,7 @@ extension RealmDatabase {
                 realm.delete(objectsToDelete)
             }
             
-            completion?()
+            completion?(realm)
         }
     }
 }
@@ -148,10 +148,10 @@ extension RealmDatabase {
 
 extension RealmDatabase {
     
-    public func deleteObjects(realm: Realm, objects: [Object], completion: (() -> Void)? = nil) throws {
+    public func deleteObjects(realm: Realm, objects: [Object], completion: ((_ realm: Realm?) -> Void)? = nil) throws {
         
         guard objects.count > 0 else {
-            completion?()
+            completion?(nil)
             return
         }
         
@@ -159,7 +159,7 @@ extension RealmDatabase {
             
             realm.delete(objects)
             
-            completion?()
+            completion?(realm)
         }
     }
 }

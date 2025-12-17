@@ -123,7 +123,7 @@ extension RepositorySync {
         
         switch cachePolicy {
             
-        case .fetchIgnoringCacheData:
+        case .ignoreCacheData:
             
             return fetchAndStoreObjectsFromExternalDataFetchPublisher(
                 getObjectsType: getObjectsType,
@@ -181,6 +181,10 @@ extension RepositorySync {
 
             return getPersistence()
                 .observeCollectionChangesPublisher()
+                .map { _ in
+                    print("\n DID OBSERVE CHANGES : \(cachePolicy)")
+                    return Void()
+                }
                 .tryMap { _ in
                     return try self.getPersistence().getObjects(
                         getObjectsType: getObjectsType

@@ -291,23 +291,30 @@ extension SwiftRepositorySyncPersistence {
                 
             }, completion: { (context: ModelContext?, error: Error?) in
                 
-                if let error = error {
-                    promise(.failure(error))
-                }
-                else if let context = context {
+                let dataModels: [DataModelType]
+                var failure: Error? = error
+                
+                if let context = context {
                     
                     do {
-                        
-                        let dataModels: [DataModelType] = try weakSelf.getObjects(context: context, getObjectsType: getObjectsType)
-                        
-                        promise(.success(dataModels))
+                        dataModels = try weakSelf.getObjects(context: context, getObjectsType: getObjectsType)
                     }
                     catch let error {
-                        promise(.failure(error))
+                        dataModels = Array()
+                        failure = error
                     }
                 }
                 else {
-                    promise(.success([]))
+                    dataModels = Array()
+                }
+                
+                DispatchQueue.main.async {
+                    if let error = failure {
+                        promise(.failure(error))
+                    }
+                    else {
+                        promise(.success(dataModels))
+                    }
                 }
             })
         }

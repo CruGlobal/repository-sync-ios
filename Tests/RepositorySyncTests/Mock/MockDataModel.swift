@@ -8,7 +8,7 @@
 
 import Foundation
 
-struct MockDataModel {
+struct MockDataModel: Sendable {
     
     let id: String
     let name: String
