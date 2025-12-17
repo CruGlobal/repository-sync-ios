@@ -11,7 +11,7 @@ import RealmSwift
 import SwiftData
 
 // TODO: This class can be removed once RealmSwift is removed in place of SwiftData for iOS 17.4 minimum and up. ~Levi
-@MainActor open class SwiftElseRealmPersistence<DataModelType, ExternalObjectType, RealmObjectType: IdentifiableRealmObject> {
+@MainActor open class SwiftElseRealmPersistence<DataModelType: Sendable, ExternalObjectType, RealmObjectType: IdentifiableRealmObject> {
     
     public let realmPersistence: RealmRepositorySyncPersistence<DataModelType, ExternalObjectType, RealmObjectType>
     

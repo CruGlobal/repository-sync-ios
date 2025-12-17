@@ -9,7 +9,7 @@
 import Foundation
 import Combine
 
-@MainActor open class RepositorySync<DataModelType, ExternalDataFetchType: ExternalDataFetchInterface, RealmObjectType: IdentifiableRealmObject> {
+@MainActor open class RepositorySync<DataModelType: Sendable, ExternalDataFetchType: ExternalDataFetchInterface, RealmObjectType: IdentifiableRealmObject> {
     
     private var cancellables: Set<AnyCancellable> = Set()
     

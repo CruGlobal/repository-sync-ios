@@ -10,7 +10,7 @@ import Foundation
 import RealmSwift
 import Combine
 
-public final class RealmRepositorySyncPersistence<DataModelType, ExternalObjectType, PersistObjectType: IdentifiableRealmObject>: Persistence {
+public final class RealmRepositorySyncPersistence<DataModelType: Sendable, ExternalObjectType, PersistObjectType: IdentifiableRealmObject>: Persistence {
     
     private let writeSerialQueue: DispatchQueue = DispatchQueue(label: "realm.write.serial_queue")
     
@@ -21,24 +21,6 @@ public final class RealmRepositorySyncPersistence<DataModelType, ExternalObjectT
         
         self.database = database
         self.dataModelMapping = dataModelMapping
-    }
-    
-    private func writeBackgroundRealm(async: @escaping ((_ result: Result<Realm, Error>) -> Void)) {
-        
-        let config: Realm.Configuration = database.config
-        
-        writeSerialQueue.async {
-            autoreleasepool {
-                               
-                do {
-                    let realm: Realm = try Realm(configuration: config)
-                    async(.success(realm))
-                }
-                catch let error {
-                    async(.failure(error))
-                }
-            }
-        }
     }
 }
 
@@ -149,18 +131,17 @@ extension RealmRepositorySyncPersistence {
 extension RealmRepositorySyncPersistence {
     
     @MainActor private func writeObjectsAsync(writeClosure: @escaping ((_ realm: Realm) -> RealmDatabaseWrite), updatePolicy: Realm.UpdatePolicy, completion: @escaping ((_ realm: Realm?, _ error: Error?) -> Void)) {
-        
-        let database: RealmDatabase = self.database
-        
-        writeBackgroundRealm { result in
-            
-            switch result {
-            
-            case .success(let realm):
                 
+        let config: Realm.Configuration = database.config
+        
+        writeSerialQueue.async {
+            autoreleasepool {
+                               
                 do {
-                                    
-                    try database.writeObjects(
+                    
+                    let realm: Realm = try Realm(configuration: config)
+                    
+                    try self.database.writeObjects(
                         realm: realm,
                         writeClosure: writeClosure,
                         updatePolicy: updatePolicy,
@@ -170,13 +151,11 @@ extension RealmRepositorySyncPersistence {
                     )
                 }
                 catch let error {
+                    
                     completion(nil, error)
                 }
-            
-            case .failure(let error):
-                completion(nil, error)
-            }
-        }
+            }//end autoreleasepool
+        }//end writeSerialQueue.async
     }
     
     @MainActor public func writeObjectsPublisher(externalObjects: [ExternalObjectType], deleteObjectsNotFoundInExternalObjects: Bool, getObjectsType: GetObjectsType) -> AnyPublisher<[DataModelType], any Error> {
