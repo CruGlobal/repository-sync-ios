@@ -1,5 +1,5 @@
 //
-//  RepositorySyncMapping.swift
+//  Mapping.swift
 //  RepositorySync
 //
 //  Created by Levi Eggert on 7/30/25.
@@ -8,10 +8,10 @@
 
 import Foundation
 
-public protocol RepositorySyncMapping<DataModelType, ExternalObjectType, PersistObjectType> {
+public protocol Mapping<DataModelType, ExternalObjectType, PersistObjectType> {
         
-    associatedtype DataModelType
-    associatedtype ExternalObjectType
+    associatedtype DataModelType: Sendable
+    associatedtype ExternalObjectType: Sendable
     associatedtype PersistObjectType
     
     func toDataModel(externalObject: ExternalObjectType) -> DataModelType?

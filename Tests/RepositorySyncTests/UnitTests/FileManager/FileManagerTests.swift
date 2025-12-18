@@ -21,11 +21,11 @@ struct FileManagerTests {
         let directoryUrl: URL = fileManager.temporaryDirectory
             .appendingPathComponent(directoryName)
         
-        #expect(!fileManager.getDirectoryExists(directoryUrl: directoryUrl))
+        #expect(!fileManager.getFilePathExists(url: directoryUrl))
         
         try _ =  fileManager.createDirectoryIfNotExists(directoryUrl: directoryUrl)
         
-        #expect(fileManager.getDirectoryExists(directoryUrl: directoryUrl))
+        #expect(fileManager.getFilePathExists(url: directoryUrl))
     }
     
     @Test()
@@ -40,10 +40,10 @@ struct FileManagerTests {
         
         try _ =  fileManager.createDirectoryIfNotExists(directoryUrl: directoryUrl)
         
-        #expect(fileManager.getDirectoryExists(directoryUrl: directoryUrl))
+        #expect(fileManager.getFilePathExists(url: directoryUrl))
         
         try fileManager.removeUrl(url: directoryUrl)
         
-        #expect(!fileManager.getDirectoryExists(directoryUrl: directoryUrl))
+        #expect(!fileManager.getFilePathExists(url: directoryUrl))
     }
 }
