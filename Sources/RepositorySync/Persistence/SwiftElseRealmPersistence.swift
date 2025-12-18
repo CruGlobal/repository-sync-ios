@@ -40,7 +40,7 @@ import SwiftData
     }
     
     @available(iOS 17.4, *)
-    public func getSwiftPersistence(swiftDatabase: SwiftDatabase) -> (any Persistence<DataModelType, ExternalObjectType>)? {
+    open func getSwiftPersistence(swiftDatabase: SwiftDatabase) -> (any Persistence<DataModelType, ExternalObjectType>)? {
         // NOTE: Subclasses should override and return a SwiftRepositorySyncPersistence. ~Levi
         return nil
     }
