@@ -60,36 +60,28 @@ extension RealmRepositorySyncPersistence {
     }
     
     @MainActor public func getObjectsPublisher(getObjectsType: GetObjectsType) -> AnyPublisher<[DataModelType], Error> {
-        
-        // TODO: Can this be done in the background? ~Levi
-        
+                
         return Future { promise in
-         
-            do {
-             
-                let dataModels: [DataModelType] = try self.getObjects(getObjectsType: getObjectsType)
-                promise(.success(dataModels))
-            }
-            catch let error {
-                promise(.failure(error))
+            DispatchQueue.global().async {
+                do {
+                    let realm: Realm = try self.database.openRealm()
+                    let dataModels: [DataModelType] = self.getObjects(realm: realm, getObjectsType: getObjectsType)
+                    DispatchQueue.main.async {
+                        promise(.success(dataModels))
+                    }
+                }
+                catch let error {
+                    DispatchQueue.main.async {
+                        promise(.failure(error))
+                    }
+                }
             }
         }
         .eraseToAnyPublisher()
     }
-    
-    private func getObjects(getObjectsType: GetObjectsType) throws -> [DataModelType] {
-        
-        // TODO: Can this be done in the background? ~Levi
-        
-        let realm: Realm = try database.openRealm()
-        
-        return getObjects(realm: realm, getObjectsType: getObjectsType)
-    }
-    
+
     private func getObjects(realm: Realm, getObjectsType: GetObjectsType) -> [DataModelType] {
-        
-        // TODO: Can this be done in the background? ~Levi
-        
+                
         let persistObjects: [PersistObjectType]
                 
         switch getObjectsType {
@@ -113,9 +105,7 @@ extension RealmRepositorySyncPersistence {
     }
     
     public func mapPersistObjects(persistObjects: [PersistObjectType]) -> [DataModelType] {
-        
-        // TODO: Can this be done in the background? ~Levi
-        
+                
         let dataModels: [DataModelType] = persistObjects.compactMap { object in
             self.dataModelMapping.toDataModel(persistObject: object)
         }

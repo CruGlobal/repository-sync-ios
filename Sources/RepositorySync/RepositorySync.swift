@@ -98,7 +98,7 @@ extension RepositorySync {
             
         case .get(let getCachePolicy):
             
-            return getObjects(
+            return getObjectsPublisher(
                 getObjectsType: getObjectsType,
                 cachePolicy: getCachePolicy,
                 context: context
@@ -114,7 +114,7 @@ extension RepositorySync {
         }
     }
     
-    private func getObjects(getObjectsType: GetObjectsType, cachePolicy: GetCachePolicy, context: ExternalDataFetchType.ExternalDataFetchContext) -> AnyPublisher<[DataModelType], Error> {
+    private func getObjectsPublisher(getObjectsType: GetObjectsType, cachePolicy: GetCachePolicy, context: ExternalDataFetchType.ExternalDataFetchContext) -> AnyPublisher<[DataModelType], Error> {
         
         switch cachePolicy {
             
