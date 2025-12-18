@@ -10,37 +10,41 @@ import Foundation
 import RealmSwift
 import Realm
 
-public final class RealmDatabase {
+open class RealmDatabase {
         
     private let writeSerialQueue: DispatchQueue = DispatchQueue(label: "realm.write.serial_queue")
     
     public let config: Realm.Configuration
-    public let fileUrl: URL
     
-    public init(fileName: String, schemaVersion: UInt64, migrationBlock: @escaping MigrationBlock) {
+    public init(config: Realm.Configuration) {
         
-        fileUrl = URL(fileURLWithPath: RLMRealmPathForFile(fileName), isDirectory: false)
-        
-        config = Realm.Configuration(
-            fileURL: fileUrl,
-            schemaVersion: schemaVersion,
-            migrationBlock: migrationBlock
-        )
+        self.config = config
         
         _ = checkForUnsupportedFileFormatVersionAndDeleteRealmFilesIfNeeded(config: config)
     }
     
-    public init(fileUrl: URL, schemaVersion: UInt64, migrationBlock: @escaping MigrationBlock) {
+    public convenience init(fileName: String, schemaVersion: UInt64, migrationBlock: @escaping MigrationBlock) {
         
-        self.fileUrl = fileUrl
+        let fileUrl = URL(fileURLWithPath: RLMRealmPathForFile(fileName), isDirectory: false)
         
-        config = Realm.Configuration(
+        let config = Realm.Configuration(
             fileURL: fileUrl,
             schemaVersion: schemaVersion,
             migrationBlock: migrationBlock
         )
         
-        _ = checkForUnsupportedFileFormatVersionAndDeleteRealmFilesIfNeeded(config: config)
+        self.init(config: config)
+    }
+    
+    public convenience init(fileUrl: URL, schemaVersion: UInt64, migrationBlock: @escaping MigrationBlock) {
+                
+        let config = Realm.Configuration(
+            fileURL: fileUrl,
+            schemaVersion: schemaVersion,
+            migrationBlock: migrationBlock
+        )
+        
+        self.init(config: config)
     }
 
     private func checkForUnsupportedFileFormatVersionAndDeleteRealmFilesIfNeeded(config: Realm.Configuration) -> Error? {
