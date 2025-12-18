@@ -132,7 +132,7 @@ struct RealmDatabaseTests {
                 object.position = -9999
             }
             
-            return RealmDatabaseWrite(updateObjects: objects)
+            return RealmDatabaseWrite(updateObjects: objects, deleteObjects: nil)
             
         }, updatePolicy: .modified)
         
@@ -156,7 +156,7 @@ struct RealmDatabaseTests {
         ]
         
         try database.writeObjects(realm: realm, writeClosure: { realm in
-            return RealmDatabaseWrite(updateObjects: newObjects)
+            return RealmDatabaseWrite(updateObjects: newObjects, deleteObjects: nil)
         }, updatePolicy: .modified)
         
         let object: MockRealmObject = try #require(database.getObject(realm: realm, id: uniqueId))
@@ -197,7 +197,7 @@ struct RealmDatabaseTests {
         
         let objects: [MockRealmObject] = database.getObjects(realm: realm, query: query)
                 
-        #expect(objects.map { $0.id } == ["10", "11", "12"])
+        #expect(objects.map { $0.id } == ["0", "10", "11", "12"])
     }
     
     @Test()
@@ -211,8 +211,11 @@ struct RealmDatabaseTests {
         
         let object: MockRealmObject = try #require(database.getObject(realm: realm, id: objectId))
         
-        try database.deleteObjects(realm: realm, objects: [object])
+        try database.writeObjects(realm: realm, writeClosure: { (realm: Realm) in
             
+            return RealmDatabaseWrite(updateObjects: [], deleteObjects: [object])
+        }, updatePolicy: .modified)
+                    
         let objectAfterDelete: MockRealmObject? = database.getObject(realm: realm, id: objectId)
                 
         #expect(objectAfterDelete == nil)
@@ -229,8 +232,11 @@ struct RealmDatabaseTests {
                 
         #expect(currentObjects.count > 0)
         
-        try database.deleteObjects(realm: realm, objects: currentObjects)
-        
+        try database.writeObjects(realm: realm, writeClosure: { (realm: Realm) in
+            
+            return RealmDatabaseWrite(updateObjects: [], deleteObjects: currentObjects)
+        }, updatePolicy: .modified)
+                
         let objectsAfterDelete: [MockRealmObject] = database.getObjects(realm: realm, query: nil)
                         
         #expect(objectsAfterDelete.count == 0)
@@ -247,8 +253,11 @@ struct RealmDatabaseTests {
         
         let currentObjects: [MockRealmObject] = database.getObjects(realm: realm, query: query)
         
-        try database.deleteObjects(realm: realm, objects: [])
-        
+        try database.writeObjects(realm: realm, writeClosure: { (realm: Realm) in
+            
+            return RealmDatabaseWrite(updateObjects: [], deleteObjects: [])
+        }, updatePolicy: .modified)
+                
         let objectsAfterDelete: [MockRealmObject] = database.getObjects(realm: realm, query: query)
                 
         #expect(currentObjects == objectsAfterDelete)

@@ -15,7 +15,7 @@ public final class SwiftDatabaseWrite {
     public let deleteObjects: [any IdentifiableSwiftDataObject]?
     public let error: Error?
     
-    public init(updateObjects: [any IdentifiableSwiftDataObject], deleteObjects: [any IdentifiableSwiftDataObject]? = nil, error: Error? = nil) {
+    public init(updateObjects: [any IdentifiableSwiftDataObject], deleteObjects: [any IdentifiableSwiftDataObject]?, error: Error? = nil) {
         
         self.updateObjects = updateObjects
         self.deleteObjects = deleteObjects

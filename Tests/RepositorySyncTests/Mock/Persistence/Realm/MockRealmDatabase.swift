@@ -37,15 +37,11 @@ public class MockRealmDatabase {
         
         let realm: Realm = try database.openRealm()
         
-        if shouldDeleteExistingObjects {
-            
-            let existingObjects: [MockRealmObject] = database.getObjects(realm: realm, query: nil)
-            
-            try database.deleteObjects(realm: realm, objects: existingObjects)
-        }
-        
         try database.writeObjects(realm: realm, writeClosure: { realm in
-            return RealmDatabaseWrite(updateObjects: objects)
+            
+            let existingObjects: [MockRealmObject] = shouldDeleteExistingObjects ? database.getObjects(realm: realm, query: nil) : Array()
+            
+            return RealmDatabaseWrite(updateObjects: objects, deleteObjects: existingObjects)
         }, updatePolicy: .modified)
         
         return database

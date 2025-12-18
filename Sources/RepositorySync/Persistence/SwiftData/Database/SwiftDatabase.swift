@@ -93,14 +93,14 @@ extension SwiftDatabase {
     
     public func writeObjects(context: ModelContext, objects: [any IdentifiableSwiftDataObject], deleteObjects: [any IdentifiableSwiftDataObject]? = nil) throws {
         
-        for object in objects {
-            context.insert(object)
-        }
-        
         if let deleteObjects = deleteObjects, deleteObjects.count > 0 {
             for object in deleteObjects {
                 context.delete(object)
             }
+        }
+        
+        for object in objects {
+            context.insert(object)
         }
         
         guard context.hasChanges else {

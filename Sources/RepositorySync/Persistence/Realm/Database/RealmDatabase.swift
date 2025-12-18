@@ -12,6 +12,8 @@ import Realm
 
 public final class RealmDatabase {
         
+    private let writeSerialQueue: DispatchQueue = DispatchQueue(label: "realm.write.serial_queue")
+    
     public let config: Realm.Configuration
     public let fileUrl: URL
     
@@ -125,39 +127,41 @@ extension RealmDatabase {
 
 extension RealmDatabase {
         
+    @MainActor public func writeAsync(writeClosure: @escaping ((_ realm: Realm) -> Void), completion: @escaping ((_ result: Result<Realm, Error>) -> Void)) {
+                        
+        let config: Realm.Configuration = self.config
+        
+        writeSerialQueue.async {
+            autoreleasepool {
+                do {
+                    
+                    let realm: Realm = try Realm(configuration: config)
+                    
+                    try realm.write {
+                        writeClosure(realm)
+                        completion(.success(realm))
+                    }
+                }
+                catch let error {
+                    completion(.failure(error))
+                }
+            }
+        }
+    }
+    
     public func writeObjects(realm: Realm, writeClosure: ((_ realm: Realm) -> RealmDatabaseWrite), updatePolicy: Realm.UpdatePolicy, completion: ((_ realm: Realm) -> Void)? = nil) throws {
         
         try realm.write {
             
             let write: RealmDatabaseWrite = writeClosure(realm)
              
-            if write.updateObjects.count > 0 {
-                realm.add(write.updateObjects, update: updatePolicy)
-            }
-            
             if let objectsToDelete = write.deleteObjects, objectsToDelete.count > 0 {
                 realm.delete(objectsToDelete)
             }
             
-            completion?(realm)
-        }
-    }
-}
-
-// MARK: - Delete
-
-extension RealmDatabase {
-    
-    public func deleteObjects(realm: Realm, objects: [Object], completion: ((_ realm: Realm?) -> Void)? = nil) throws {
-        
-        guard objects.count > 0 else {
-            completion?(nil)
-            return
-        }
-        
-        try realm.write {
-            
-            realm.delete(objects)
+            if write.updateObjects.count > 0 {
+                realm.add(write.updateObjects, update: updatePolicy)
+            }
             
             completion?(realm)
         }

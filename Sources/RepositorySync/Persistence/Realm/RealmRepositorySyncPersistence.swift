@@ -11,9 +11,7 @@ import RealmSwift
 import Combine
 
 public final class RealmRepositorySyncPersistence<DataModelType: Sendable, ExternalObjectType: Sendable, PersistObjectType: IdentifiableRealmObject>: Persistence {
-    
-    private let writeSerialQueue: DispatchQueue = DispatchQueue(label: "realm.write.serial_queue")
-    
+        
     public let database: RealmDatabase
     public let dataModelMapping: any Mapping<DataModelType, ExternalObjectType, PersistObjectType>
     
@@ -130,39 +128,13 @@ extension RealmRepositorySyncPersistence {
 
 extension RealmRepositorySyncPersistence {
     
-    @MainActor private func writeObjectsAsync(writeClosure: @escaping ((_ realm: Realm) -> RealmDatabaseWrite), updatePolicy: Realm.UpdatePolicy, completion: @escaping ((_ realm: Realm?, _ error: Error?) -> Void)) {
-                
-        let config: Realm.Configuration = database.config
-        
-        writeSerialQueue.async {
-            autoreleasepool {
-                               
-                do {
-                    
-                    let realm: Realm = try Realm(configuration: config)
-                    
-                    try self.database.writeObjects(
-                        realm: realm,
-                        writeClosure: writeClosure,
-                        updatePolicy: updatePolicy,
-                        completion: { (realm: Realm) in
-                            completion(realm, nil)
-                        }
-                    )
-                }
-                catch let error {
-                    
-                    completion(nil, error)
-                }
-            }//end autoreleasepool
-        }//end writeSerialQueue.async
-    }
-    
     @MainActor public func writeObjectsPublisher(externalObjects: [ExternalObjectType], deleteObjectsNotFoundInExternalObjects: Bool, getObjectsType: GetObjectsType) -> AnyPublisher<[DataModelType], any Error> {
+        
+        let defaultUpdatePolicy: Realm.UpdatePolicy = .modified
         
         return Future { promise in
             
-            self.writeObjectsAsync(writeClosure: { (realm: Realm) in
+            self.database.writeAsync(writeClosure: { (realm: Realm) in
                 
                 var objectsToAdd: [PersistObjectType] = Array()
                 
@@ -190,29 +162,30 @@ extension RealmRepositorySyncPersistence {
                     }
                 }
                 
-                return RealmDatabaseWrite(updateObjects: objectsToAdd, deleteObjects: objectsToRemove)
-                
-            }, updatePolicy: .modified, completion: { (realm: Realm?, error: Error?) in
-                
-                let dataModels: [DataModelType]
-                
-                if let realm = realm {
-                    dataModels = self.getObjects(realm: realm, getObjectsType: getObjectsType)
-                }
-                else {
-                    dataModels = Array()
+                if objectsToRemove.count > 0 {
+                    realm.delete(objectsToRemove)
                 }
                 
-                DispatchQueue.main.async {
-                    if let error = error {
-                        promise(.failure(error))
-                    }
-                    else {
+                if objectsToAdd.count > 0 {
+                    realm.add(objectsToAdd, update: defaultUpdatePolicy)
+                }
+                
+            }, completion: { (result: Result<Realm, Error>) in
+              
+                switch result {
+                
+                case .success(let realm):
+                    let dataModels: [DataModelType] = self.getObjects(realm: realm, getObjectsType: getObjectsType)
+                    DispatchQueue.main.async {
                         promise(.success(dataModels))
+                    }
+                    
+                case .failure(let error):
+                    DispatchQueue.main.async {
+                        promise(.failure(error))
                     }
                 }
             })
-            
         }
         .eraseToAnyPublisher()
     }

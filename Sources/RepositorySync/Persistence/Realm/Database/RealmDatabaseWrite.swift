@@ -13,7 +13,7 @@ public class RealmDatabaseWrite {
     public let updateObjects: [IdentifiableRealmObject]
     public let deleteObjects: [IdentifiableRealmObject]?
     
-    public init(updateObjects: [IdentifiableRealmObject], deleteObjects: [IdentifiableRealmObject]? = nil) {
+    public init(updateObjects: [IdentifiableRealmObject], deleteObjects: [IdentifiableRealmObject]?) {
         
         self.updateObjects = updateObjects
         self.deleteObjects = deleteObjects
