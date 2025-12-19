@@ -153,7 +153,7 @@ import RealmSwift
             expectedNumberOfChanges: 1,
             triggerSecondaryExternalDataFetchWithIds: nil,
             shouldEnableSwiftDatabase: false,
-            loggingEnabled: true
+            loggingEnabled: false
         )
     }
     
@@ -200,7 +200,7 @@ import RealmSwift
             expectedNumberOfChanges: 1,
             triggerSecondaryExternalDataFetchWithIds: nil,
             shouldEnableSwiftDatabase: false,
-            loggingEnabled: true
+            loggingEnabled: false
         )
     }
     
@@ -393,7 +393,7 @@ import RealmSwift
             expectedNumberOfChanges: 2,
             triggerSecondaryExternalDataFetchWithIds: nil,
             shouldEnableSwiftDatabase: false,
-            loggingEnabled: true
+            loggingEnabled: false
         )
     }
     
