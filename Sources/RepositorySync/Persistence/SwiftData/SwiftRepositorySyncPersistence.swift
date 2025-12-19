@@ -158,16 +158,26 @@ extension SwiftRepositorySyncPersistence {
     
     @MainActor public func getObjectsAsync(getObjectsType: GetObjectsType) async throws -> [DataModelType] {
         
+        return try await getObjectsAsync(getObjectsType: getObjectsType, query: nil)
+    }
+    
+    @MainActor public func getObjectsAsync(getObjectsType: GetObjectsType, query: SwiftDatabaseQuery<PersistObjectType>?) async throws -> [DataModelType] {
+        
         return Array()
     }
     
     @MainActor public func getObjectsPublisher(getObjectsType: GetObjectsType) -> AnyPublisher<[DataModelType], Error> {
         
+        return getObjectsPublisher(getObjectsType: getObjectsType, query: nil)
+    }
+    
+    @MainActor public func getObjectsPublisher(getObjectsType: GetObjectsType, query: SwiftDatabaseQuery<PersistObjectType>?) -> AnyPublisher<[DataModelType], Error> {
+        
         return Future { promise in
          
             do {
              
-                let dataModels: [DataModelType] = try self.getObjects(getObjectsType: getObjectsType)
+                let dataModels: [DataModelType] = try self.getObjects(getObjectsType: getObjectsType, query: query)
                 promise(.success(dataModels))
             }
             catch let error {
@@ -177,16 +187,16 @@ extension SwiftRepositorySyncPersistence {
         .eraseToAnyPublisher()
     }
     
-    private func getObjects(getObjectsType: GetObjectsType) throws -> [DataModelType] {
+    private func getObjects(getObjectsType: GetObjectsType, query: SwiftDatabaseQuery<PersistObjectType>?) throws -> [DataModelType] {
         
         // TODO: Can this be done in the background? ~Levi
                 
         let context: ModelContext = database.openContext()
         
-        return try getObjects(context: context, getObjectsType: getObjectsType)
+        return try getObjects(context: context, getObjectsType: getObjectsType, query: query)
     }
     
-    private func getObjects(context: ModelContext, getObjectsType: GetObjectsType) throws -> [DataModelType] {
+    private func getObjects(context: ModelContext, getObjectsType: GetObjectsType, query: SwiftDatabaseQuery<PersistObjectType>?) throws -> [DataModelType] {
         
         // TODO: Can this be done in the background? ~Levi
         
@@ -195,7 +205,7 @@ extension SwiftRepositorySyncPersistence {
         switch getObjectsType {
             
         case .allObjects:
-            persistObjects = try database.getObjects(context: context, query: nil)
+            persistObjects = try database.getObjects(context: context, query: query)
             
         case .object(let id):
             
@@ -311,7 +321,7 @@ extension SwiftRepositorySyncPersistence {
                 if let context = context, let getObjectsType = getObjectsType {
                     
                     do {
-                        dataModels = try weakSelf.getObjects(context: context, getObjectsType: getObjectsType)
+                        dataModels = try weakSelf.getObjects(context: context, getObjectsType: getObjectsType, query: nil)
                     }
                     catch let error {
                         dataModels = Array()
