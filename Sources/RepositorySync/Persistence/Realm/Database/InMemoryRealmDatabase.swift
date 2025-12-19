@@ -18,10 +18,12 @@ import Realm
         
         let config = Realm.Configuration(inMemoryIdentifier: inMemoryId)
         
+        let databaseConfig = RealmDatabaseConfig(config: config)
+        
         do {
             try mainRealm = Realm(configuration: config)
         }
         
-        super.init(config: config)
+        super.init(databaseConfig: databaseConfig)
     }
 }

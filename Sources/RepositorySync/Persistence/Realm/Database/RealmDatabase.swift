@@ -14,66 +14,16 @@ open class RealmDatabase {
         
     private let writeSerialQueue: DispatchQueue = DispatchQueue(label: "realm.write.serial_queue")
     
-    public let config: Realm.Configuration
-    
-    public init(config: Realm.Configuration) {
+    public let databaseConfig: RealmDatabaseConfig
         
-        self.config = config
+    public init(databaseConfig: RealmDatabaseConfig) {
         
-        _ = checkForUnsupportedFileFormatVersionAndDeleteRealmFilesIfNeeded(config: config)
-    }
-    
-    public convenience init(fileName: String, schemaVersion: UInt64, migrationBlock: @escaping MigrationBlock) {
-        
-        let fileUrl = URL(fileURLWithPath: RLMRealmPathForFile(fileName), isDirectory: false)
-        
-        let config = Realm.Configuration(
-            fileURL: fileUrl,
-            schemaVersion: schemaVersion,
-            migrationBlock: migrationBlock
-        )
-        
-        self.init(config: config)
-    }
-    
-    public convenience init(fileUrl: URL, schemaVersion: UInt64, migrationBlock: @escaping MigrationBlock) {
-                
-        let config = Realm.Configuration(
-            fileURL: fileUrl,
-            schemaVersion: schemaVersion,
-            migrationBlock: migrationBlock
-        )
-        
-        self.init(config: config)
-    }
-
-    private func checkForUnsupportedFileFormatVersionAndDeleteRealmFilesIfNeeded(config: Realm.Configuration) -> Error? {
-        
-        do {
-            _ = try Realm(configuration: config)
-        }
-        catch let realmConfigError as NSError {
-            
-            if realmConfigError.code == Realm.Error.unsupportedFileFormatVersion.rawValue {
-                
-                do {
-                    _ = try Realm.deleteFiles(for: config)
-                }
-                catch let deleteFilesError {
-                    return deleteFilesError
-                }
-            }
-            else {
-                return realmConfigError
-            }
-        }
-        
-        return nil
+        self.databaseConfig = databaseConfig
     }
     
     public func openRealm() throws -> Realm {
         
-        return try Realm(configuration: config)
+        return try Realm(configuration: databaseConfig.config)
     }
 }
 
@@ -133,7 +83,7 @@ extension RealmDatabase {
         
     @MainActor public func writeAsync(writeClosure: @escaping ((_ realm: Realm) -> Void), completion: @escaping ((_ result: Result<Realm, Error>) -> Void)) {
                         
-        let config: Realm.Configuration = self.config
+        let config: Realm.Configuration = self.databaseConfig.config
         
         writeSerialQueue.async {
             autoreleasepool {

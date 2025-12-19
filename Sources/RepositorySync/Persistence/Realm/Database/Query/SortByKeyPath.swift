@@ -8,7 +8,7 @@
 
 import Foundation
 
-public struct SortByKeyPath {
+public struct SortByKeyPath: Sendable {
     
     public let keyPath: String
     public let ascending: Bool
