@@ -12,7 +12,7 @@ import SwiftData
 
 @available(iOS 17.4, *)
 @Model
-public class MockSwiftObject: IdentifiableSwiftDataObject {
+public class MockSwiftObject: IdentifiableSwiftDataObject, MockDataModelInterface {
     
     public var name: String = ""
     public var position: Int = -1
@@ -24,15 +24,16 @@ public class MockSwiftObject: IdentifiableSwiftDataObject {
         
     }
     
-    public static func createObject(id: String, name: String? = nil, position: Int = -1) -> MockSwiftObject {
-        
-        let object = MockSwiftObject()
-        
-        object.id = id
-        object.name = name ?? "name_\(id)"
-        object.position = position
-        object.isEvenPosition = position % 2 == 0
-        
-        return object
+    public func mapFrom(interface: MockDataModelInterface) {
+        id = interface.id
+        name = interface.name
+        position = interface.position
+        isEvenPosition = interface.isEvenPosition
+    }
+    
+    public static func createFrom(interface: MockDataModelInterface) -> MockSwiftObject {
+        let swiftObject = MockSwiftObject()
+        swiftObject.mapFrom(interface: interface)
+        return swiftObject
     }
 }

@@ -21,10 +21,8 @@ struct RealmDatabaseTests {
     func getObjectById() async throws {
         
         let database = try getSharedDatabase()
-        
-        let realm: Realm = try database.openRealm()
-        
-        let object: MockRealmObject? = database.getObject(realm: realm, id: "0")
+                
+        let object: MockRealmObject? = try database.getObject(id: "0")
                 
         #expect(object != nil)
     }
@@ -33,13 +31,10 @@ struct RealmDatabaseTests {
     func getObjectsByIds() async throws {
         
         let database = try getSharedDatabase()
-        
-        let realm: Realm = try database.openRealm()
-        
+                
         let ids: [String] = ["6", "4", "2"]
         
-        let objects: [MockRealmObject] = database.getObjects(
-            realm: realm,
+        let objects: [MockRealmObject] = try database.getObjects(
             ids: ids,
             sortBykeyPath: SortByKeyPath(keyPath: #keyPath(MockRealmObject.position), ascending: false)
         )
@@ -51,14 +46,12 @@ struct RealmDatabaseTests {
     func getObjectByFilter() async throws {
         
         let database = try getSharedDatabase()
-        
-        let realm: Realm = try database.openRealm()
-        
+                
         let predicate = NSPredicate(format: "\(#keyPath(MockRealmObject.position)) == %@", NSNumber(value: 0))
         
         let query = RealmDatabaseQuery.filter(filter: predicate)
         
-        let objects: [MockRealmObject] = database.getObjects(realm: realm, query: query)
+        let objects: [MockRealmObject] = try database.getObjects(query: query)
                 
         #expect(objects.count == 1)
         #expect(objects.first?.id == "0")
@@ -68,12 +61,10 @@ struct RealmDatabaseTests {
     func getObjectsBySortAscendingTrue() async throws {
         
         let database = try getSharedDatabase()
-        
-        let realm: Realm = try database.openRealm()
-                
+                        
         let query = RealmDatabaseQuery.sort(byKeyPath: SortByKeyPath(keyPath: #keyPath(MockRealmObject.position), ascending: true))
         
-        let objects: [MockRealmObject] = Array(database.getObjectsResults(realm: realm, query: query))
+        let objects: [MockRealmObject] = Array(try database.getObjectsResults(query: query))
         
         let objectPositions: [Int] = objects.map { $0.position }
                 
@@ -84,12 +75,10 @@ struct RealmDatabaseTests {
     func getObjectsBySortAscendingFalse() async throws {
         
         let database = try getSharedDatabase()
-        
-        let realm: Realm = try database.openRealm()
-                
+                        
         let query = RealmDatabaseQuery.sort(byKeyPath: SortByKeyPath(keyPath: #keyPath(MockRealmObject.position), ascending: false))
         
-        let objects: [MockRealmObject] = database.getObjects(realm: realm, query: query)
+        let objects: [MockRealmObject] = try database.getObjects(query: query)
         
         let objectPositions: [Int] = objects.map { $0.position }
                 
@@ -100,9 +89,7 @@ struct RealmDatabaseTests {
     func getObjectByFilterAndSort() async throws {
         
         let database = try getSharedDatabase()
-        
-        let realm: Realm = try database.openRealm()
-        
+                
         let isEvenPosition = NSPredicate(format: "\(#keyPath(MockRealmObject.isEvenPosition)) == %@", NSNumber(value: true))
         
         let query = RealmDatabaseQuery(
@@ -110,7 +97,7 @@ struct RealmDatabaseTests {
             sortByKeyPath: SortByKeyPath(keyPath: #keyPath(MockRealmObject.position), ascending: false)
         )
         
-        let objects: [MockRealmObject] = database.getObjects(realm: realm, query: query)
+        let objects: [MockRealmObject] = try database.getObjects(query: query)
         
         let objectPositions: [Int] = objects.map { $0.position }
                 
@@ -121,10 +108,8 @@ struct RealmDatabaseTests {
     func writeToExistingObjects() async throws {
         
         let database = try getSharedDatabase()
-        
-        let realm: Realm = try database.openRealm()
-        
-        try database.writeObjects(realm: realm, writeClosure: { realm in
+                
+        try database.writeObjects(writeClosure: { realm in
             
             let objects: [MockRealmObject] = database.getObjects(realm: realm, query: nil)
             
@@ -136,7 +121,7 @@ struct RealmDatabaseTests {
             
         }, updatePolicy: .modified)
         
-        let objects: [MockRealmObject] = database.getObjects(realm: realm, query: nil)
+        let objects: [MockRealmObject] = try database.getObjects(query: nil)
                 
         #expect(objects.first?.position == -9999)
         #expect(objects.last?.position == -9999)
@@ -146,47 +131,85 @@ struct RealmDatabaseTests {
     func writeNewObjects() async throws {
         
         let database = try getSharedDatabase()
-        
-        let realm: Realm = try database.openRealm()
-        
+                
         let uniqueId: String = UUID().uuidString
         
+        let newObject = MockRealmObject()
+        newObject.id = uniqueId
+                
         let newObjects: [MockRealmObject] = [
-            MockRealmObject.createObject(id: uniqueId)
+            newObject
         ]
         
-        try database.writeObjects(realm: realm, writeClosure: { realm in
+        try database.writeObjects(writeClosure: { realm in
             return RealmDatabaseWrite(updateObjects: newObjects, deleteObjects: nil)
         }, updatePolicy: .modified)
         
-        let object: MockRealmObject = try #require(database.getObject(realm: realm, id: uniqueId))
+        let object: MockRealmObject = try #require(try database.getObject(id: uniqueId))
                 
         #expect(object.id == uniqueId)
     }
     
+    @Test()
+    @MainActor func writeNewObjectsAsync()  async throws {
+        
+        let database = try getSharedDatabase()
+                
+        let uniqueId: String = UUID().uuidString
+                
+        await confirmation(expectedCount: 1) { confirmation in
+            
+            await withCheckedContinuation { continuation in
+                
+                let timeoutTask = Task {
+                    try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+                    continuation.resume(returning: ())
+                }
+                
+                let newObject = MockRealmObject()
+                newObject.id = uniqueId
+                
+                let newObjects: [MockRealmObject] = [
+                    newObject
+                ]
+                
+                database.writeAsync(writeClosure: { (realm: Realm) in
+                    realm.add(newObjects, update: .modified)
+                }, completion: { (result: Result<Realm, Error>) in
+                    
+                    DispatchQueue.main.async {
+                        // Place inside a sink or other async closure:
+                        confirmation()
+                        
+                        // When finished be sure to call:
+                        timeoutTask.cancel()
+                        continuation.resume(returning: ())
+                    }
+                })
+            }
+        }
+        
+        let object: MockRealmObject = try #require(try database.getObject(id: uniqueId))
+                
+        #expect(object.id == uniqueId)
+    }
     
     @Test()
     func writeNewAndDeleteExistingObjects() async throws {
                 
         let database = try getSharedDatabase()
-        
-        let realm: Realm = try database.openRealm()
-        
+                
         let newObjectIds: [String] = ["0", "10", "11", "12"]
         
         try database.writeObjects(
-            realm: realm,
             writeClosure: { (realm: Realm) in
                 
                 let existingObjects: [MockRealmObject] = database.getObjects(realm: realm, query: nil)
                 
                 let newObjects: [MockRealmObject] = newObjectIds.compactMap {
-                    
-                    guard let position = Int($0) else {
-                        return nil
-                    }
-                    
-                    return MockRealmObject.createObject(id: $0, position: position)
+                    let object = MockRealmObject()
+                    object.id = $0
+                    return object
                 }
                                 
                 return RealmDatabaseWrite(updateObjects: newObjects, deleteObjects: existingObjects)
@@ -195,7 +218,7 @@ struct RealmDatabaseTests {
      
         let query = RealmDatabaseQuery.sort(byKeyPath: SortByKeyPath(keyPath: #keyPath(MockRealmObject.position), ascending: true))
         
-        let objects: [MockRealmObject] = database.getObjects(realm: realm, query: query)
+        let objects: [MockRealmObject] = try database.getObjects(query: query)
                 
         #expect(objects.map { $0.id } == ["0", "10", "11", "12"])
     }
@@ -212,7 +235,6 @@ struct RealmDatabaseTests {
         let object: MockRealmObject = try #require(database.getObject(realm: realm, id: objectId))
         
         try database.writeObjects(realm: realm, writeClosure: { (realm: Realm) in
-            
             return RealmDatabaseWrite(updateObjects: [], deleteObjects: [object])
         }, updatePolicy: .modified)
                     
@@ -268,16 +290,8 @@ extension RealmDatabaseTests {
     
     private func getSharedDatabase() throws -> RealmDatabase {
         
-        var objects: [MockRealmObject] = Array()
-        
-        for id in allObjectIds {
-            
-            objects.append(
-                MockRealmObject.createObject(
-                    id: String(id),
-                    position: id
-                )
-            )
+        let objects: [MockRealmObject] = allObjectIds.map {
+            MockRealmObject.createFrom(interface: MockDataModel.createFromIntId(id: $0))
         }
         
         let directoryName: String = "realm_\(String(describing: RealmDatabaseTests.self))"

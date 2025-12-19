@@ -188,9 +188,13 @@ struct SwiftDatabaseTests {
         
         #expect(currentObjects.count == 1)
         #expect(currentObject.position == 5)
+                
+        let newObject = MockSwiftObject()
+        newObject.id = idToAdd
+        newObject.position = positionToUpdate
         
         let objectsToAdd: [MockSwiftObject] = [
-            MockSwiftObject.createObject(id: idToAdd, position: positionToUpdate)
+            newObject
         ]
         
         try database.writeObjects(context: context, objects: objectsToAdd)
@@ -211,9 +215,12 @@ struct SwiftDatabaseTests {
         let context: ModelContext = database.openContext()
         
         let uniqueId: String = UUID().uuidString
+                
+        let newObject = MockSwiftObject()
+        newObject.id = uniqueId
         
         let newObjects: [MockSwiftObject] = [
-            MockSwiftObject.createObject(id: uniqueId)
+            newObject
         ]
         
         try database.writeObjects(context: context, objects: newObjects)
@@ -241,7 +248,10 @@ struct SwiftDatabaseTests {
                 return nil
             }
             
-            return MockSwiftObject.createObject(id: $0, position: position)
+            let newObject = MockSwiftObject()
+            newObject.id = $0
+            newObject.position = position
+            return newObject
         }
         
         try database.writeObjects(
@@ -339,16 +349,8 @@ extension SwiftDatabaseTests {
     @available(iOS 17.4, *)
     private func getDatabase() throws -> SwiftDatabase {
         
-        var objects: [MockSwiftObject] = Array()
-        
-        for id in allObjectIds {
-            
-            objects.append(
-                MockSwiftObject.createObject(
-                    id: String(id),
-                    position: id
-                )
-            )
+        let objects: [MockSwiftObject] = allObjectIds.map {
+            MockSwiftObject.createFrom(interface: MockDataModel.createFromIntId(id: $0))
         }
         
         let directoryName: String = "swift_\(String(describing: SwiftDatabaseTests.self))"

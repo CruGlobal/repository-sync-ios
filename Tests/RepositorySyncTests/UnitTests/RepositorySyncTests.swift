@@ -153,7 +153,7 @@ import RealmSwift
             expectedNumberOfChanges: 1,
             triggerSecondaryExternalDataFetchWithIds: nil,
             shouldEnableSwiftDatabase: false,
-            loggingEnabled: true
+            loggingEnabled: false
         )
     }
     
@@ -200,7 +200,7 @@ import RealmSwift
             expectedNumberOfChanges: 1,
             triggerSecondaryExternalDataFetchWithIds: nil,
             shouldEnableSwiftDatabase: false,
-            loggingEnabled: true
+            loggingEnabled: false
         )
     }
     
@@ -393,7 +393,7 @@ import RealmSwift
             expectedNumberOfChanges: 2,
             triggerSecondaryExternalDataFetchWithIds: nil,
             shouldEnableSwiftDatabase: false,
-            loggingEnabled: true
+            loggingEnabled: false
         )
     }
     
@@ -592,98 +592,7 @@ import RealmSwift
     
     
     // MARK: - SWIFT TESTS
-    
-    /*
-    
-    // MARK: - Swift Test Cache Policy (Get Ignoring Cache Data) - Objects
-    
-    @Test(arguments: [
-        TestArgument(
-            initialPersistedObjectsIds: ["0", "1"],
-            externalDataModelIds: ["5", "6", "7", "8", "9"],
-            expectedCachedResponseDataModelIds: nil,
-            expectedResponseDataModelIds: ["0", "1", "5", "6", "7", "8", "9"]
-        ),
-        TestArgument(
-            initialPersistedObjectsIds: [],
-            externalDataModelIds: ["1", "2"],
-            expectedCachedResponseDataModelIds: nil,
-            expectedResponseDataModelIds: ["1", "2"]
-        ),
-        TestArgument(
-            initialPersistedObjectsIds: ["2", "3"],
-            externalDataModelIds: [],
-            expectedCachedResponseDataModelIds: nil,
-            expectedResponseDataModelIds: ["2", "3"]
-        ),
-        TestArgument(
-            initialPersistedObjectsIds: [],
-            externalDataModelIds: [],
-            expectedCachedResponseDataModelIds: nil,
-            expectedResponseDataModelIds: []
-        )
-    ])
-    func ignoreCacheDataWillTriggerOnceSinceCacheIsIgnoredAndExternalFetchIsMade(argument: TestArgument) async throws {
-        
-        try await runTest(
-            argument: argument,
-            getObjectsType: .allObjects,
-            fetchType: .get(cachePolicy: .ignoreCacheData),
-            expectedNumberOfChanges: 1,
-            triggerSecondaryExternalDataFetchWithIds: nil,
-            shouldEnableSwiftDatabase: true,
-            loggingEnabled: false
-        )
-    }
-    
-    // MARK: - Swift Test Cache Policy (Get Ignoring Cache Data) - Object ID
-    
-    @Test(arguments: [
-        TestArgument(
-            initialPersistedObjectsIds: ["0", "1"],
-            externalDataModelIds: ["5", "6", "7", "8", "9"],
-            expectedCachedResponseDataModelIds: nil,
-            expectedResponseDataModelIds: ["1"]
-        ),
-        TestArgument(
-            initialPersistedObjectsIds: [],
-            externalDataModelIds: ["1", "2"],
-            expectedCachedResponseDataModelIds: nil,
-            expectedResponseDataModelIds: ["1"]
-        ),
-        TestArgument(
-            initialPersistedObjectsIds: ["1", "2", "3"],
-            externalDataModelIds: [],
-            expectedCachedResponseDataModelIds: nil,
-            expectedResponseDataModelIds: ["1"]
-        ),
-        TestArgument(
-            initialPersistedObjectsIds: ["2", "3"],
-            externalDataModelIds: [],
-            expectedCachedResponseDataModelIds: nil,
-            expectedResponseDataModelIds: []
-        ),
-        TestArgument(
-            initialPersistedObjectsIds: [],
-            externalDataModelIds: [],
-            expectedCachedResponseDataModelIds: nil,
-            expectedResponseDataModelIds: []
-        )
-    ])
-    func ignoreCacheDataWillTriggerOnceWithSingleObjectSinceCacheIsIgnoredAndExternalFetchIsMade(argument: TestArgument) async throws {
-        
-        try await runTest(
-            argument: argument,
-            getObjectsType: .object(id: "1"),
-            fetchType: .get(cachePolicy: .ignoreCacheData),
-            expectedNumberOfChanges: 1,
-            triggerSecondaryExternalDataFetchWithIds: nil,
-            shouldEnableSwiftDatabase: true,
-            loggingEnabled: false
-        )
-    }
-     */
-    
+
     
     // MARK: - Run Test
     
@@ -849,7 +758,7 @@ import RealmSwift
              
         if let expectedCachedResponseDataModelIds = expectedCachedResponseDataModelIds {
             
-            let cachedResponseDataModelIds: [String] = MockDataModel.sortDataModelIds(dataModels: cachedObjects)
+            let cachedResponseDataModelIds: [String] = MockDataModel.getIdsSortedByPosition(dataModels: cachedObjects)
                         
             if loggingEnabled {
                 print("\n EXPECT")
@@ -860,7 +769,7 @@ import RealmSwift
             #expect(cachedResponseDataModelIds == expectedCachedResponseDataModelIds)
         }
         
-        let responseDataModelIds: [String] = MockDataModel.sortDataModelIds(dataModels: responseObjects)
+        let responseDataModelIds: [String] = MockDataModel.getIdsSortedByPosition(dataModels: responseObjects)
         
         if loggingEnabled {
             print("\n EXPECT")
@@ -883,20 +792,20 @@ import RealmSwift
 extension RepositorySyncTests {
     
     private func getSharedRealmDatabase(addObjects: [MockRealmObject], shouldDeleteExistingObjects: Bool) throws -> RealmDatabase {
-        let directoryName: String = "realm_\(String(describing: RepositorySyncTests.self))"
+        let directoryName: String = "realm_publisher_\(String(describing: RepositorySyncTests.self))"
         return try MockRealmDatabase().createDatabase(directoryName: directoryName, objects: addObjects, shouldDeleteExistingObjects: shouldDeleteExistingObjects)
     }
     
     @available(iOS 17.4, *)
     private func getSharedSwiftDatabase(addObjects: [MockSwiftObject], shouldDeleteExistingObjects: Bool) throws -> SwiftDatabase {
-        let directoryName: String = "swift_\(String(describing: RepositorySyncTests.self))"
+        let directoryName: String = "swift_publisher_\(String(describing: RepositorySyncTests.self))"
         return try MockSwiftDatabase().createDatabase(directoryName: directoryName, objects: addObjects, shouldDeleteExistingObjects: shouldDeleteExistingObjects)
     }
     
     @MainActor private func getRepositorySync(externalDataFetch: MockExternalDataFetch, addObjectsToDatabase: [MockDataModel], shouldDeleteExistingObjectsInDatabase: Bool, shouldEnableSwiftDatabase: Bool) throws -> RepositorySync<MockDataModel, MockExternalDataFetch, MockRealmObject> {
         
         let realmObjects: [MockRealmObject] = addObjectsToDatabase.map {
-            MockRealmObject.createObject(id: $0.id, name: $0.name)
+            MockRealmObject.createFrom(interface: $0)
         }
         
         let realmDatabase: RealmDatabase = try getSharedRealmDatabase(addObjects: realmObjects, shouldDeleteExistingObjects: shouldDeleteExistingObjectsInDatabase)
@@ -909,7 +818,7 @@ extension RepositorySyncTests {
         if #available(iOS 17.4, *), shouldEnableSwiftDatabase {
             
             let swiftObjects: [MockSwiftObject] = addObjectsToDatabase.map {
-                MockSwiftObject.createObject(id: $0.id, name: $0.name)
+                MockSwiftObject.createFrom(interface: $0)
             }
             
             let swiftDatabase: SwiftDatabase = try getSharedSwiftDatabase(addObjects: swiftObjects, shouldDeleteExistingObjects: shouldDeleteExistingObjectsInDatabase)
