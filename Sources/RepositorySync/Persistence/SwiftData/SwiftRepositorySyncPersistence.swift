@@ -156,6 +156,11 @@ extension SwiftRepositorySyncPersistence {
             )
     }
     
+    @MainActor public func getObjectsAsync(getObjectsType: GetObjectsType) async throws -> [DataModelType] {
+        
+        return Array()
+    }
+    
     @MainActor public func getObjectsPublisher(getObjectsType: GetObjectsType) -> AnyPublisher<[DataModelType], Error> {
         
         return Future { promise in
@@ -223,6 +228,11 @@ extension SwiftRepositorySyncPersistence {
 
 @available(iOS 17.4, *)
 extension SwiftRepositorySyncPersistence {
+    
+    @MainActor public func writeObjectsAsync(externalObjects: [ExternalObjectType], deleteObjectsNotFoundInExternalObjects: Bool, getObjectsType: GetObjectsType) async throws -> [DataModelType] {
+        
+        return Array()
+    }
     
     @MainActor public func writeObjectsAsync(writeClosure: @escaping ((_ context: ModelContext) -> SwiftDatabaseWrite), completion: @escaping ((_ context: ModelContext?, _ error: Error?) -> Void)) {
         
