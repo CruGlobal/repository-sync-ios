@@ -59,12 +59,12 @@ extension RealmRepositorySyncPersistence {
         return results.count
     }
     
-    @MainActor private func getObjectsBackground(getObjectsType: GetObjectsType, completion: @escaping ((_ result: Result<[DataModelType], Error>) -> Void)) {
+    @MainActor private func getObjectsBackground(getObjectsType: GetObjectsType, query: RealmDatabaseQuery?, completion: @escaping ((_ result: Result<[DataModelType], Error>) -> Void)) {
         
         DispatchQueue.global().async {
             do {
                 let realm: Realm = try self.database.openRealm()
-                let dataModels: [DataModelType] = self.getObjects(realm: realm, getObjectsType: getObjectsType)
+                let dataModels: [DataModelType] = self.getObjects(realm: realm, getObjectsType: getObjectsType, query: query)
                 DispatchQueue.main.async {
                     completion(.success(dataModels))
                 }
@@ -79,8 +79,13 @@ extension RealmRepositorySyncPersistence {
     
     @MainActor public func getObjectsAsync(getObjectsType: GetObjectsType) async throws -> [DataModelType] {
         
+        return try await getObjectsAsync(getObjectsType: getObjectsType, query: nil)
+    }
+    
+    @MainActor public func getObjectsAsync(getObjectsType: GetObjectsType, query: RealmDatabaseQuery?) async throws -> [DataModelType] {
+        
         return try await withCheckedThrowingContinuation { continuation in
-            getObjectsBackground(getObjectsType: getObjectsType) { (result: Result<[DataModelType], Error>) in
+            getObjectsBackground(getObjectsType: getObjectsType, query: query) { (result: Result<[DataModelType], Error>) in
                 switch result {
                 case .success(let dataModels):
                     continuation.resume(returning: dataModels)
@@ -93,8 +98,13 @@ extension RealmRepositorySyncPersistence {
     
     @MainActor public func getObjectsPublisher(getObjectsType: GetObjectsType) -> AnyPublisher<[DataModelType], Error> {
         
+        return getObjectsPublisher(getObjectsType: getObjectsType, query: nil)
+    }
+    
+    @MainActor public func getObjectsPublisher(getObjectsType: GetObjectsType, query: RealmDatabaseQuery?) -> AnyPublisher<[DataModelType], Error> {
+        
         return Future { promise in
-            self.getObjectsBackground(getObjectsType: getObjectsType) { result in
+            self.getObjectsBackground(getObjectsType: getObjectsType, query: query) { result in
                 switch result {
                 case .success(let dataModels):
                     promise(.success(dataModels))
@@ -106,14 +116,14 @@ extension RealmRepositorySyncPersistence {
         .eraseToAnyPublisher()
     }
 
-    private func getObjects(realm: Realm, getObjectsType: GetObjectsType) -> [DataModelType] {
+    private func getObjects(realm: Realm, getObjectsType: GetObjectsType, query: RealmDatabaseQuery?) -> [DataModelType] {
                 
         let persistObjects: [PersistObjectType]
                 
         switch getObjectsType {
             
         case .allObjects:
-            persistObjects = database.getObjects(realm: realm, query: nil)
+            persistObjects = database.getObjects(realm: realm, query: query)
             
         case .object(let id):
             
@@ -144,24 +154,14 @@ extension RealmRepositorySyncPersistence {
 
 extension RealmRepositorySyncPersistence {
     
-    @MainActor private func writeObjectsBackground(externalObjects: [ExternalObjectType], deleteObjectsNotFoundInExternalObjects: Bool, getObjectsType: GetObjectsType, completion: @escaping ((_ result: Result<[DataModelType], Error>) -> Void)) {
+    @MainActor private func writeObjectsBackground(externalObjects: [ExternalObjectType], getObjectsType: GetObjectsType?, completion: @escaping ((_ result: Result<[DataModelType], Error>) -> Void)) {
         
         let defaultUpdatePolicy: Realm.UpdatePolicy = .modified
         
         self.database.writeAsync(writeClosure: { (realm: Realm) in
             
             var objectsToAdd: [PersistObjectType] = Array()
-            
-            var objectsToRemove: [PersistObjectType]
-            
-            if deleteObjectsNotFoundInExternalObjects {
-                // store all objects in the collection.
-                objectsToRemove = self.database.getObjects(realm: realm, query: nil)
-            }
-            else {
-                objectsToRemove = Array()
-            }
-            
+                        
             for externalObject in externalObjects {
 
                 guard let persistObject = self.dataModelMapping.toPersistObject(externalObject: externalObject) else {
@@ -169,15 +169,6 @@ extension RealmRepositorySyncPersistence {
                 }
                 
                 objectsToAdd.append(persistObject)
-                
-                // added persist object can be removed from this list so it won't be deleted from the database.
-                if deleteObjectsNotFoundInExternalObjects, let index = objectsToRemove.firstIndex(where: { $0.id == persistObject.id }) {
-                    objectsToRemove.remove(at: index)
-                }
-            }
-            
-            if objectsToRemove.count > 0 {
-                realm.delete(objectsToRemove)
             }
             
             if objectsToAdd.count > 0 {
@@ -189,7 +180,16 @@ extension RealmRepositorySyncPersistence {
             switch result {
             
             case .success(let realm):
-                let dataModels: [DataModelType] = self.getObjects(realm: realm, getObjectsType: getObjectsType)
+                
+                let dataModels: [DataModelType]
+                
+                if let getObjectsType = getObjectsType {
+                    dataModels = self.getObjects(realm: realm, getObjectsType: getObjectsType, query: nil)
+                }
+                else {
+                    dataModels = Array()
+                }
+                
                 DispatchQueue.main.async {
                     completion(.success(dataModels))
                 }
@@ -202,10 +202,10 @@ extension RealmRepositorySyncPersistence {
         })
     }
     
-    @MainActor public func writeObjectsAsync(externalObjects: [ExternalObjectType], deleteObjectsNotFoundInExternalObjects: Bool, getObjectsType: GetObjectsType) async throws -> [DataModelType] {
+    @MainActor public func writeObjectsAsync(externalObjects: [ExternalObjectType], getObjectsType: GetObjectsType?) async throws -> [DataModelType] {
         
         return try await withCheckedThrowingContinuation { continuation in
-            writeObjectsBackground(externalObjects: externalObjects, deleteObjectsNotFoundInExternalObjects: deleteObjectsNotFoundInExternalObjects, getObjectsType: getObjectsType) { (result: Result<[DataModelType], Error>) in
+            writeObjectsBackground(externalObjects: externalObjects, getObjectsType: getObjectsType) { (result: Result<[DataModelType], Error>) in
                 switch result {
                 case .success(let dataModels):
                     continuation.resume(returning: dataModels)
@@ -216,11 +216,11 @@ extension RealmRepositorySyncPersistence {
         }
     }
     
-    @MainActor public func writeObjectsPublisher(externalObjects: [ExternalObjectType], deleteObjectsNotFoundInExternalObjects: Bool, getObjectsType: GetObjectsType) -> AnyPublisher<[DataModelType], any Error> {
+    @MainActor public func writeObjectsPublisher(externalObjects: [ExternalObjectType], getObjectsType: GetObjectsType?) -> AnyPublisher<[DataModelType], any Error> {
                 
         return Future { promise in
             
-            self.writeObjectsBackground(externalObjects: externalObjects, deleteObjectsNotFoundInExternalObjects: deleteObjectsNotFoundInExternalObjects, getObjectsType: getObjectsType) { result in
+            self.writeObjectsBackground(externalObjects: externalObjects, getObjectsType: getObjectsType) { result in
                 switch result {
                 case .success(let dataModels):
                     promise(.success(dataModels))

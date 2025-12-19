@@ -13,24 +13,14 @@ import Foundation
 final class MockSwiftRepositorySyncMapping: Mapping {
 
     func toDataModel(externalObject: MockDataModel) -> MockDataModel? {
-        
         return externalObject
     }
     
     func toDataModel(persistObject: MockSwiftObject) -> MockDataModel? {
-        
-        return MockDataModel(
-            id: persistObject.id,
-            name: persistObject.name
-        )
+        return MockDataModel(interface: persistObject)
     }
     
     func toPersistObject(externalObject: MockDataModel) -> MockSwiftObject? {
-        
-        return MockSwiftObject
-            .createObject(
-                id: externalObject.id,
-                name: externalObject.name
-            )
+        return MockSwiftObject.createFrom(interface: externalObject)
     }
 }

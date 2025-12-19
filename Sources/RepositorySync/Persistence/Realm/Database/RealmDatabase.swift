@@ -23,7 +23,9 @@ open class RealmDatabase {
     
     public func openRealm() throws -> Realm {
         
-        return try Realm(configuration: databaseConfig.config)
+        return try Realm(
+            configuration: databaseConfig.config
+        )
     }
 }
 
@@ -31,11 +33,19 @@ open class RealmDatabase {
 
 extension RealmDatabase {
     
+    public func getObject<T: IdentifiableRealmObject>(id: String) throws -> T? {
+        return getObject(realm: try openRealm(), id: id)
+    }
+    
     public func getObject<T: IdentifiableRealmObject>(realm: Realm, id: String) -> T? {
         
         let realmObject: T? = realm.object(ofType: T.self, forPrimaryKey: id)
-        
+
         return realmObject
+    }
+    
+    public func getObjects<T: IdentifiableRealmObject>(ids: [String], sortBykeyPath: SortByKeyPath? = nil) throws -> [T] {
+        return getObjects(realm: try openRealm(), ids: ids, sortBykeyPath: sortBykeyPath)
     }
     
     public func getObjects<T: IdentifiableRealmObject>(realm: Realm, ids: [String], sortBykeyPath: SortByKeyPath? = nil) -> [T] {
@@ -48,9 +58,17 @@ extension RealmDatabase {
         return getObjects(realm: realm, query: query)
     }
     
+    public func getObjects<T: IdentifiableRealmObject>(query: RealmDatabaseQuery?) throws -> [T] {
+        return getObjects(realm: try openRealm(), query: query)
+    }
+    
     public func getObjects<T: IdentifiableRealmObject>(realm: Realm, query: RealmDatabaseQuery?) -> [T] {
         
         return Array(getObjectsResults(realm: realm, query: query))
+    }
+    
+    public func getObjectsResults<T: IdentifiableRealmObject>(query: RealmDatabaseQuery?) throws -> Results<T> {
+        return getObjectsResults(realm: try openRealm(), query: query)
     }
     
     public func getObjectsResults<T: IdentifiableRealmObject>(realm: Realm, query: RealmDatabaseQuery?) -> Results<T> {
@@ -101,6 +119,16 @@ extension RealmDatabase {
                 }
             }
         }
+    }
+    
+    public func writeObjects(writeClosure: ((_ realm: Realm) -> RealmDatabaseWrite), updatePolicy: Realm.UpdatePolicy, completion: ((_ realm: Realm) -> Void)? = nil) throws {
+        
+        try writeObjects(
+            realm: try openRealm(),
+            writeClosure: writeClosure,
+            updatePolicy: updatePolicy,
+            completion: completion
+        )
     }
     
     public func writeObjects(realm: Realm, writeClosure: ((_ realm: Realm) -> RealmDatabaseWrite), updatePolicy: Realm.UpdatePolicy, completion: ((_ realm: Realm) -> Void)? = nil) throws {

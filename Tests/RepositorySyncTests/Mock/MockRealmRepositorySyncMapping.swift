@@ -12,24 +12,14 @@ import Foundation
 final class MockRealmRepositorySyncMapping: Mapping {
 
     func toDataModel(externalObject: MockDataModel) -> MockDataModel? {
-        
         return externalObject
     }
     
     func toDataModel(persistObject: MockRealmObject) -> MockDataModel? {
-        
-        return MockDataModel(
-            id: persistObject.id,
-            name: persistObject.name
-        )
+        return MockDataModel(interface: persistObject)
     }
     
     func toPersistObject(externalObject: MockDataModel) -> MockRealmObject? {
-        
-        return MockRealmObject
-            .createObject(
-                id: externalObject.id,
-                name: externalObject.name
-            )
+        return MockRealmObject.createFrom(interface: externalObject)
     }
 }

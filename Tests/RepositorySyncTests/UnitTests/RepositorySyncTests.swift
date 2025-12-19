@@ -758,7 +758,7 @@ import RealmSwift
              
         if let expectedCachedResponseDataModelIds = expectedCachedResponseDataModelIds {
             
-            let cachedResponseDataModelIds: [String] = MockDataModel.sortDataModelIds(dataModels: cachedObjects)
+            let cachedResponseDataModelIds: [String] = MockDataModel.getIdsSortedByPosition(dataModels: cachedObjects)
                         
             if loggingEnabled {
                 print("\n EXPECT")
@@ -769,7 +769,7 @@ import RealmSwift
             #expect(cachedResponseDataModelIds == expectedCachedResponseDataModelIds)
         }
         
-        let responseDataModelIds: [String] = MockDataModel.sortDataModelIds(dataModels: responseObjects)
+        let responseDataModelIds: [String] = MockDataModel.getIdsSortedByPosition(dataModels: responseObjects)
         
         if loggingEnabled {
             print("\n EXPECT")
@@ -805,7 +805,7 @@ extension RepositorySyncTests {
     @MainActor private func getRepositorySync(externalDataFetch: MockExternalDataFetch, addObjectsToDatabase: [MockDataModel], shouldDeleteExistingObjectsInDatabase: Bool, shouldEnableSwiftDatabase: Bool) throws -> RepositorySync<MockDataModel, MockExternalDataFetch, MockRealmObject> {
         
         let realmObjects: [MockRealmObject] = addObjectsToDatabase.map {
-            MockRealmObject.createObject(id: $0.id, name: $0.name)
+            MockRealmObject.createFrom(interface: $0)
         }
         
         let realmDatabase: RealmDatabase = try getSharedRealmDatabase(addObjects: realmObjects, shouldDeleteExistingObjects: shouldDeleteExistingObjectsInDatabase)
@@ -818,7 +818,7 @@ extension RepositorySyncTests {
         if #available(iOS 17.4, *), shouldEnableSwiftDatabase {
             
             let swiftObjects: [MockSwiftObject] = addObjectsToDatabase.map {
-                MockSwiftObject.createObject(id: $0.id, name: $0.name)
+                MockSwiftObject.createFrom(interface: $0)
             }
             
             let swiftDatabase: SwiftDatabase = try getSharedSwiftDatabase(addObjects: swiftObjects, shouldDeleteExistingObjects: shouldDeleteExistingObjectsInDatabase)
