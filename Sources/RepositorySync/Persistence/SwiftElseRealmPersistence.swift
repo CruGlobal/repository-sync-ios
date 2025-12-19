@@ -23,7 +23,7 @@ import SwiftData
     public func getPersistence() -> any Persistence<DataModelType, ExternalObjectType> {
         
         if #available(iOS 17.4, *),
-           let swiftDatabase = getSwiftDatabase(),
+           let swiftDatabase = swiftDatabase,
            let swiftPersistence = getSwiftPersistence(swiftDatabase: swiftDatabase) {
             
             return swiftPersistence
@@ -33,9 +33,13 @@ import SwiftData
             return realmPersistence
         }
     }
+    
+    public var realmDatabase: RealmDatabase {
+        return realmPersistence.database
+    }
 
     @available(iOS 17.4, *)
-    public func getSwiftDatabase() -> SwiftDatabase? {
+    public var swiftDatabase: SwiftDatabase? {
         return GlobalSwiftDatabase.shared.swiftDatabase
     }
     

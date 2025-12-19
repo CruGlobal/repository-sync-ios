@@ -28,7 +28,7 @@ import Combine
     
     @available(iOS 17.4, *)
     public var swiftDatabase: SwiftDatabase? {
-        return swiftElseRealmPersistence.getSwiftDatabase()
+        return swiftElseRealmPersistence.swiftDatabase
     }
     
     public func getPersistence() -> any Persistence<DataModelType, ExternalDataFetchType.ExternalObject> {
