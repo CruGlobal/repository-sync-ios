@@ -2,7 +2,7 @@
 //  SwiftRepositorySyncPersistence.swift
 //  RepositorySync
 //
-//  Created by Levi Eggert on 12/3/25.
+//  Created by Levi Eggert on 12/1/25.
 //  Copyright © 2025 Cru. All rights reserved.
 //
 
@@ -71,8 +71,8 @@ extension SwiftRepositorySyncPersistence {
             .prepend(prependNotification)
             .compactMap { (notification: Notification) in
                                                 
-                let swiftDatabaseConfigName: String = swiftDatabaseRef.configName
-                let swiftDatabaseUrl: URL = swiftDatabaseRef.configUrl
+                let swiftDatabaseConfigName: String = swiftDatabaseRef.container.configName
+                let swiftDatabaseUrl: URL = swiftDatabaseRef.container.configUrl
                 let fromContainer: ModelContainer? = (notification.object as? ModelContext)?.container
                 let fromContextConfigurations: Set<ModelConfiguration> = fromContainer?.configurations ?? Set<ModelConfiguration>()
                 let fromConfigNames: [String] = fromContextConfigurations.map { $0.name }
@@ -148,7 +148,7 @@ extension SwiftRepositorySyncPersistence {
         let context: ModelContext = database.openContext()
         
         return try database
-            .getObjectCount(
+            .read.objectCount(
                 context: context,
                 query: SwiftDatabaseQuery<PersistObjectType>(
                     fetchDescriptor: FetchDescriptor<PersistObjectType>()
@@ -205,11 +205,11 @@ extension SwiftRepositorySyncPersistence {
         switch getObjectsType {
             
         case .allObjects:
-            persistObjects = try database.getObjects(context: context, query: query)
+            persistObjects = try database.read.objects(context: context, query: query)
             
         case .object(let id):
             
-            let object: PersistObjectType? = try database.getObject(context: context, id: id)
+            let object: PersistObjectType? = try database.read.object(context: context, id: id)
             
             if let object = object {
                 persistObjects = [object]
@@ -244,10 +244,10 @@ extension SwiftRepositorySyncPersistence {
         return Array()
     }
     
-    @MainActor public func writeObjectsAsync(writeClosure: @escaping ((_ context: ModelContext) -> SwiftDatabaseWrite), completion: @escaping ((_ context: ModelContext?, _ error: Error?) -> Void)) {
+    @MainActor public func writeObjectsAsync(writeClosure: @escaping ((_ context: ModelContext) -> SwiftPersistenceWrite), completion: @escaping ((_ context: ModelContext?, _ error: Error?) -> Void)) {
         
         let database: SwiftDatabase = self.database
-        let container: ModelContainer = database.container
+        let container: ModelContainer = database.container.modelContainer
         
         serialQueue.async {
             autoreleasepool {
@@ -255,19 +255,14 @@ extension SwiftRepositorySyncPersistence {
                 let context = ModelContext(container)
                 context.autosaveEnabled = false
                 
-                let write: SwiftDatabaseWrite = writeClosure(context)
-                
-                if let error = write.error {
-                    completion(nil, error)
-                    return
-                }
-                
+                let write: SwiftPersistenceWrite = writeClosure(context)
+                            
                 do {
                     
-                    try database.writeObjects(
+                    try database.write.objects(
                         context: context,
-                        objects: write.updateObjects,
-                        deleteObjects: write.deleteObjects
+                        deleteObjects: write.deleteObjects,
+                        insertObjects: write.insertObjects
                     )
 
                     completion(context, nil)
@@ -290,28 +285,21 @@ extension SwiftRepositorySyncPersistence {
             
             weakSelf.writeObjectsAsync(writeClosure: { (context: ModelContext) in
                 
-                do {
-                    
-                    var objectsToAdd: [PersistObjectType] = Array()
-                    
-                    for externalObject in externalObjects {
+                var objectsToAdd: [PersistObjectType] = Array()
+                
+                for externalObject in externalObjects {
 
-                        guard let persistObject = self?.dataModelMapping.toPersistObject(externalObject: externalObject) else {
-                            continue
-                        }
-                        
-                        objectsToAdd.append(persistObject)
+                    guard let persistObject = self?.dataModelMapping.toPersistObject(externalObject: externalObject) else {
+                        continue
                     }
                     
-                    return SwiftDatabaseWrite(
-                        updateObjects: objectsToAdd,
-                        deleteObjects: nil
-                    )
+                    objectsToAdd.append(persistObject)
                 }
-                catch let error {
-                    
-                    return SwiftDatabaseWrite(error: error)
-                }
+                
+                return SwiftPersistenceWrite(
+                    deleteObjects: nil,
+                    insertObjects: objectsToAdd
+                )
                 
             }, completion: { (context: ModelContext?, error: Error?) in
                 

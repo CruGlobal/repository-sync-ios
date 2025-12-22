@@ -2,7 +2,7 @@
 //  RealmRepositorySyncPersistence.swift
 //  RepositorySync
 //
-//  Created by Levi Eggert on 12/3/25.
+//  Created by Levi Eggert on 12/1/25.
 //  Copyright © 2025 Cru. All rights reserved.
 //
 
@@ -54,7 +54,7 @@ extension RealmRepositorySyncPersistence {
         
         let realm: Realm = try database.openRealm()
         
-        let results: Results<PersistObjectType> = database.getObjectsResults(realm: realm, query: nil)
+        let results: Results<PersistObjectType> = database.read.results(realm: realm, query: nil)
         
         return results.count
     }
@@ -118,16 +118,18 @@ extension RealmRepositorySyncPersistence {
 
     private func getObjects(realm: Realm, getObjectsType: GetObjectsType, query: RealmDatabaseQuery?) -> [DataModelType] {
                 
+        // TODO: Should an error be thrown if GetObjectsType is other than all and query is provided? ~Levi
+        
         let persistObjects: [PersistObjectType]
                 
         switch getObjectsType {
             
         case .allObjects:
-            persistObjects = database.getObjects(realm: realm, query: query)
+            persistObjects = database.read.objects(realm: realm, query: query)
             
         case .object(let id):
             
-            let object: PersistObjectType? = database.getObject(realm: realm, id: id)
+            let object: PersistObjectType? = database.read.object(realm: realm, id: id)
             
             if let object = object {
                 persistObjects = [object]
@@ -155,13 +157,11 @@ extension RealmRepositorySyncPersistence {
 extension RealmRepositorySyncPersistence {
     
     @MainActor private func writeObjectsBackground(externalObjects: [ExternalObjectType], getObjectsType: GetObjectsType?, completion: @escaping ((_ result: Result<[DataModelType], Error>) -> Void)) {
-        
-        let defaultUpdatePolicy: Realm.UpdatePolicy = .modified
-        
-        self.database.writeAsync(writeClosure: { (realm: Realm) in
+                
+        self.database.asyncWrite.objects(writeClosure: { (realm: Realm) in
             
             var objectsToAdd: [PersistObjectType] = Array()
-                        
+                                    
             for externalObject in externalObjects {
 
                 guard let persistObject = self.dataModelMapping.toPersistObject(externalObject: externalObject) else {
@@ -172,11 +172,11 @@ extension RealmRepositorySyncPersistence {
             }
             
             if objectsToAdd.count > 0 {
-                realm.add(objectsToAdd, update: defaultUpdatePolicy)
+                realm.add(objectsToAdd, update: .modified)
             }
             
         }, completion: { (result: Result<Realm, Error>) in
-          
+            
             switch result {
             
             case .success(let realm):

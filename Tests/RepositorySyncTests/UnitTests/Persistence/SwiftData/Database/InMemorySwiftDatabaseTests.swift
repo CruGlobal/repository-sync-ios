@@ -1,5 +1,5 @@
 //
-//  SwiftDatabaseTests.swift
+//  InMemorySwiftDatabaseTests.swift
 //  RepositorySync
 //
 //  Created by Levi Eggert on 12/1/25.
@@ -11,8 +11,7 @@ import Testing
 @testable import RepositorySync
 import SwiftData
 
-@Suite(.serialized)
-struct SwiftDatabaseTests {
+struct InMemorySwiftDatabaseTests {
     
     private let allObjectIds: [Int] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     
@@ -259,7 +258,7 @@ struct SwiftDatabaseTests {
     }
 }
 
-extension SwiftDatabaseTests {
+extension InMemorySwiftDatabaseTests {
     
     @available(iOS 17.4, *)
     private func getDatabase() throws -> SwiftDatabase {
@@ -268,10 +267,16 @@ extension SwiftDatabaseTests {
             MockSwiftObject.createFrom(interface: MockDataModel.createFromIntId(id: $0))
         }
         
-        let database = try MockSwiftDatabase().createDatabase(
-            directoryName: "swift_\(String(describing: SwiftDatabaseTests.self))",
-            objects: objects,
-            shouldDeleteExistingObjects: true
+        let database = SwiftDatabase(
+            container: try SwiftDataContainer.createInMemoryContainer(schema: Schema(versionedSchema: MockSwiftDatabaseSchema.self))
+        )
+        
+        let context: ModelContext = database.openContext()
+        
+        try database.write.objects(
+            context: context,
+            deleteObjects: nil,
+            insertObjects: objects
         )
         
         return database

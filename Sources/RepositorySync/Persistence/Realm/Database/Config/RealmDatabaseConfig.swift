@@ -2,8 +2,8 @@
 //  RealmDatabaseConfig.swift
 //  RepositorySync
 //
-//  Created by Levi Eggert on 12/22/23.
-//  Copyright © 2023 Cru. All rights reserved.
+//  Created by Levi Eggert on 12/1/25.
+//  Copyright © 2025 Cru. All rights reserved.
 //
 
 import Foundation
@@ -19,6 +19,20 @@ public final class RealmDatabaseConfig: Sendable {
         self.config = config
         
         _ = checkForUnsupportedFileFormatVersionAndDeleteRealmFilesIfNeeded(config: config)
+    }
+    
+    public var isInMemory: Bool {
+        return config.isInMemory
+    }
+    
+    public static func createInMemoryConfig(inMemoryIdentifier: String = UUID().uuidString) -> RealmDatabaseConfig {
+        
+        let config = Realm.Configuration(
+            inMemoryIdentifier: inMemoryIdentifier,
+            schemaVersion: 1
+        )
+        
+        return RealmDatabaseConfig(config: config)
     }
     
     public convenience init(fileName: String, schemaVersion: UInt64, migrationBlock: @escaping MigrationBlock) {

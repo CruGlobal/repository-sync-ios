@@ -2,8 +2,8 @@
 //  IdentifiableRealmObject.swift
 //  RepositorySync
 //
-//  Created by Levi Eggert on 12/22/23.
-//  Copyright © 2023 Cru. All rights reserved.
+//  Created by Levi Eggert on 12/1/25.
+//  Copyright © 2025 Cru. All rights reserved.
 //
 
 import Foundation
