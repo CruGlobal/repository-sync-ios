@@ -268,7 +268,7 @@ extension SwiftRepositorySyncPersistence {
 
 @available(iOS 17.4, *)
 extension SwiftRepositorySyncPersistence {
-    
+
     @MainActor private func writeObjectsBackground(externalObjects: [ExternalObjectType], getObjectsType: GetObjectsType?, completion: @escaping ((_ result: Result<[DataModelType], Error>) -> Void)) {
         
         DispatchQueue.global().async {

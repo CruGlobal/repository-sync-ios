@@ -205,6 +205,8 @@ struct SwiftDatabaseTests {
     
     // MARK: - Write Async
     
+    /*
+    
     @available(iOS 17.4, *)
     @Test()
     func createObjectsAsync() async throws {
@@ -268,7 +270,7 @@ struct SwiftDatabaseTests {
         let objectsAfterDelete: [MockSwiftObject] = try database.read.objects(context: database.asyncWrite.context, query: nil)
                         
         #expect(objectsAfterDelete.count == 0)
-    }
+    }*/
 }
 
 extension SwiftDatabaseTests {

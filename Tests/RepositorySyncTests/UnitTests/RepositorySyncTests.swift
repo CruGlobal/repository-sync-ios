@@ -592,7 +592,278 @@ import RealmSwift
     
     
     // MARK: - SWIFT TESTS
+    
+    // MARK: - Swift Test Cache Policy (Get Ignoring Cache Data) - Objects
+    
+    @Test(arguments: [
+        TestArgument(
+            initialPersistedObjectsIds: ["0", "1"],
+            externalDataModelIds: ["5", "6", "7", "8", "9"],
+            expectedCachedResponseDataModelIds: nil,
+            expectedResponseDataModelIds: ["0", "1", "5", "6", "7", "8", "9"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: ["1", "2"],
+            expectedCachedResponseDataModelIds: nil,
+            expectedResponseDataModelIds: ["1", "2"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: ["2", "3"],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: nil,
+            expectedResponseDataModelIds: ["2", "3"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: nil,
+            expectedResponseDataModelIds: []
+        )
+    ])
+    func getIgnoreCacheDataWillTriggerOnceOnExternalFetchWithAllObjects(argument: TestArgument) async throws {
+        
+        try await runTest(
+            argument: argument,
+            getObjectsType: .allObjects,
+            fetchType: .get(cachePolicy: .ignoreCacheData),
+            expectedNumberOfChanges: 1,
+            triggerSecondaryExternalDataFetchWithIds: nil,
+            shouldEnableSwiftDatabase: true,
+            loggingEnabled: false
+        )
+    }
 
+    // MARK: - Swift Test Cache Policy (Get Ignoring Cache Data) - Object ID
+    
+    @Test(arguments: [
+        TestArgument(
+            initialPersistedObjectsIds: ["0", "1"],
+            externalDataModelIds: ["5", "6", "7", "8", "9"],
+            expectedCachedResponseDataModelIds: nil,
+            expectedResponseDataModelIds: ["1"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: ["1", "2"],
+            expectedCachedResponseDataModelIds: nil,
+            expectedResponseDataModelIds: ["1"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: ["1", "2", "3"],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: nil,
+            expectedResponseDataModelIds: ["1"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: ["2", "3"],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: nil,
+            expectedResponseDataModelIds: []
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: nil,
+            expectedResponseDataModelIds: []
+        )
+    ])
+    func getIgnoreCacheDataWillTriggerOnceOnExternalFetchWithObject(argument: TestArgument) async throws {
+        
+        try await runTest(
+            argument: argument,
+            getObjectsType: .object(id: "1"),
+            fetchType: .get(cachePolicy: .ignoreCacheData),
+            expectedNumberOfChanges: 1,
+            triggerSecondaryExternalDataFetchWithIds: nil,
+            shouldEnableSwiftDatabase: true,
+            loggingEnabled: false
+        )
+    }
+    
+    // MARK: - Swift Test Cache Policy (Get Return Cache Data Don't Fetch) - Objects
+    
+    @Test(arguments: [
+        TestArgument(
+            initialPersistedObjectsIds: ["0", "1"],
+            externalDataModelIds: ["5", "6", "7", "8", "9"],
+            expectedCachedResponseDataModelIds: ["0", "1"],
+            expectedResponseDataModelIds: ["0", "1"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: ["1", "2"],
+            expectedCachedResponseDataModelIds: [],
+            expectedResponseDataModelIds: []
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: ["2", "3"],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: ["2", "3"],
+            expectedResponseDataModelIds: ["2", "3"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: [],
+            expectedResponseDataModelIds: []
+        )
+    ])
+    func getReturnCacheDataDontFetchWillTriggerOnceWithAllObjects(argument: TestArgument) async throws {
+        
+        try await runTest(
+            argument: argument,
+            getObjectsType: .allObjects,
+            fetchType: .get(cachePolicy: .returnCacheDataDontFetch),
+            expectedNumberOfChanges: 1,
+            triggerSecondaryExternalDataFetchWithIds: nil,
+            shouldEnableSwiftDatabase: true,
+            loggingEnabled: false
+        )
+    }
+    
+    // MARK: - Swift Test Cache Policy (Get Return Cache Data Don't Fetch) - Object ID
+    
+    @Test(arguments: [
+        TestArgument(
+            initialPersistedObjectsIds: ["0", "1"],
+            externalDataModelIds: ["5", "6", "7", "8", "9"],
+            expectedCachedResponseDataModelIds: ["1"],
+            expectedResponseDataModelIds: ["1"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: ["1", "2"],
+            expectedCachedResponseDataModelIds: [],
+            expectedResponseDataModelIds: []
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: ["1", "2", "3"],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: ["1"],
+            expectedResponseDataModelIds: ["1"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: ["2", "3"],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: nil,
+            expectedResponseDataModelIds: []
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: nil,
+            expectedResponseDataModelIds: []
+        )
+    ])
+    func getReturnCacheDataDontFetchWillTriggerOnceWithObject(argument: TestArgument) async throws {
+        
+        try await runTest(
+            argument: argument,
+            getObjectsType: .object(id: "1"),
+            fetchType: .get(cachePolicy: .returnCacheDataDontFetch),
+            expectedNumberOfChanges: 1,
+            triggerSecondaryExternalDataFetchWithIds: nil,
+            shouldEnableSwiftDatabase: true,
+            loggingEnabled: false
+        )
+    }
+    
+    // MARK: - Swift Test Cache Policy (Get Return Cache Data Else Fetch) - Objects
+    
+    // MARK: - Swift Test Cache Policy (Get Return Cache Data Else Fetch) - Object ID
+    
+    // MARK: - Swift Test Cache Policy (Observe Return Cache Data Don't Fetch) - Objects
+    
+    @Test(arguments: [
+        TestArgument(
+            initialPersistedObjectsIds: ["0", "1"],
+            externalDataModelIds: ["5", "6", "7", "8", "9"],
+            expectedCachedResponseDataModelIds: ["0", "1"],
+            expectedResponseDataModelIds: ["0", "1"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: ["1", "2"],
+            expectedCachedResponseDataModelIds: [],
+            expectedResponseDataModelIds: []
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: ["2", "3"],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: ["2", "3"],
+            expectedResponseDataModelIds: ["2", "3"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: [],
+            expectedResponseDataModelIds: []
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: ["2", "3"],
+            externalDataModelIds: ["1", "2", "3"],
+            expectedCachedResponseDataModelIds: ["2", "3"],
+            expectedResponseDataModelIds: ["2", "3"]
+        ),
+    ])
+    func observeReturnCacheDataDontFetchWillTriggerOnceWithAllObjects(argument: TestArgument) async throws {
+        
+        try await runTest(
+            argument: argument,
+            getObjectsType: .allObjects,
+            fetchType: .observe(cachePolicy: .returnCacheDataDontFetch),
+            expectedNumberOfChanges: 1,
+            triggerSecondaryExternalDataFetchWithIds: nil,
+            shouldEnableSwiftDatabase: true,
+            loggingEnabled: false
+        )
+    }
+    
+    @Test(arguments: [
+        TestArgument(
+            initialPersistedObjectsIds: ["0", "1"],
+            externalDataModelIds: ["5", "6", "7", "8", "9"],
+            expectedCachedResponseDataModelIds: ["0", "1"],
+            expectedResponseDataModelIds: ["0", "1", "8", "9"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: ["1", "2"],
+            expectedCachedResponseDataModelIds: [],
+            expectedResponseDataModelIds: ["8", "9"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: ["2", "3"],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: ["2", "3"],
+            expectedResponseDataModelIds: ["2", "3", "8", "9"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: [],
+            expectedResponseDataModelIds: ["8", "9"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: ["2", "3"],
+            externalDataModelIds: ["1", "2", "3"],
+            expectedCachedResponseDataModelIds: ["2", "3"],
+            expectedResponseDataModelIds: ["2", "3", "8", "9"]
+        ),
+    ])
+    func observeReturnCacheDataDontFetchWillTriggerTwiceWithAllObjectsAndOnSecondaryExternalFetch(argument: TestArgument) async throws {
+        
+        try await runTest(
+            argument: argument,
+            getObjectsType: .allObjects,
+            fetchType: .observe(cachePolicy: .returnCacheDataDontFetch),
+            expectedNumberOfChanges: 2,
+            triggerSecondaryExternalDataFetchWithIds: ["8", "9"],
+            shouldEnableSwiftDatabase: true,
+            loggingEnabled: false
+        )
+    }
     
     // MARK: - Run Test
     

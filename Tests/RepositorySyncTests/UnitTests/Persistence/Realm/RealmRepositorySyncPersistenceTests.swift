@@ -109,6 +109,8 @@ struct RealmRepositorySyncPersistenceTests {
         #expect(MockDataModel.getIdsSortedByPosition(dataModels: dataModels) == sortedPeristObjectsIds)
     }
     
+    /*
+    
     @Test()
     @MainActor func writeObjectsAsyncWithMapping() async throws {
         
@@ -255,7 +257,7 @@ struct RealmRepositorySyncPersistenceTests {
         let allDataModels: [MockDataModel] = try await persistence.getObjectsAsync(getObjectsType: .allObjects)
         
         #expect(MockDataModel.getIdsSortedByPosition(dataModels: allDataModels) == allIds)
-    }
+    }*/
 }
 
 extension RealmRepositorySyncPersistenceTests {

@@ -8,7 +8,7 @@
 
 import Foundation
 
-public protocol Mapping<DataModelType, ExternalObjectType, PersistObjectType> {
+public protocol Mapping<DataModelType, ExternalObjectType, PersistObjectType>: Sendable {
         
     associatedtype DataModelType: Sendable
     associatedtype ExternalObjectType: Sendable

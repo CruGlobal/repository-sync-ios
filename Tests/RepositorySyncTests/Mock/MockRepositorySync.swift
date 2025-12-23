@@ -9,9 +9,9 @@
 import Foundation
 @testable import RepositorySync
 
-class MockRepositorySync: RepositorySync<MockDataModel, MockExternalDataFetch, MockRealmObject> {
+public class MockRepositorySync: RepositorySync<MockDataModel, MockExternalDataFetch, MockRealmObject> {
     
-    init(externalDataFetch: MockExternalDataFetch, swiftElseRealmPersistence: MockSwiftElseRealmPersistence) {
+    public init(externalDataFetch: MockExternalDataFetch, swiftElseRealmPersistence: MockSwiftElseRealmPersistence) {
         
         super.init(
             externalDataFetch: externalDataFetch,

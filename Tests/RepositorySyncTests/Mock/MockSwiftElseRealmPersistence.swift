@@ -11,10 +11,10 @@ import Foundation
 import RealmSwift
 import SwiftData
 
-class MockSwiftElseRealmPersistence: SwiftElseRealmPersistence<MockDataModel, MockDataModel, MockRealmObject> {
+public class MockSwiftElseRealmPersistence: SwiftElseRealmPersistence<MockDataModel, MockDataModel, MockRealmObject> {
  
     @available(iOS 17.4, *)
-    override func getSwiftPersistence(swiftDatabase: SwiftDatabase) -> (any Persistence<MockDataModel, MockDataModel>)? {
+    public override func getSwiftPersistence(swiftDatabase: SwiftDatabase) -> (any Persistence<MockDataModel, MockDataModel>)? {
         return SwiftRepositorySyncPersistence(
             database: swiftDatabase,
             dataModelMapping: MockSwiftRepositorySyncMapping()

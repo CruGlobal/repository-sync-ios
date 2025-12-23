@@ -10,17 +10,17 @@ import Foundation
 @testable import RepositorySync
 
 @available(iOS 17.4, *)
-final class MockSwiftRepositorySyncMapping: Mapping {
+public final class MockSwiftRepositorySyncMapping: Mapping {
 
-    func toDataModel(externalObject: MockDataModel) -> MockDataModel? {
+    public func toDataModel(externalObject: MockDataModel) -> MockDataModel? {
         return externalObject
     }
     
-    func toDataModel(persistObject: MockSwiftObject) -> MockDataModel? {
+    public func toDataModel(persistObject: MockSwiftObject) -> MockDataModel? {
         return MockDataModel(interface: persistObject)
     }
     
-    func toPersistObject(externalObject: MockDataModel) -> MockSwiftObject? {
+    public func toPersistObject(externalObject: MockDataModel) -> MockSwiftObject? {
         return MockSwiftObject.createFrom(interface: externalObject)
     }
 }

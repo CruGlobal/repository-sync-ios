@@ -10,7 +10,7 @@ import Foundation
 @testable import RepositorySync
 import Combine
 
-final class MockExternalDataFetch: ExternalDataFetchInterface {
+public final class MockExternalDataFetch: ExternalDataFetchInterface {
             
     private let objects: [MockDataModel]
     private let delayRequestSeconds: TimeInterval
@@ -21,7 +21,7 @@ final class MockExternalDataFetch: ExternalDataFetchInterface {
         self.delayRequestSeconds = delayRequestSeconds
     }
     
-    func getObjectPublisher(id: String, context: MockExternalDataFetchContext) -> AnyPublisher<[MockDataModel], Error> {
+    public func getObjectPublisher(id: String, context: MockExternalDataFetchContext) -> AnyPublisher<[MockDataModel], Error> {
         
         return delayPublisher()
             .map { _ in
@@ -40,7 +40,7 @@ final class MockExternalDataFetch: ExternalDataFetchInterface {
             .eraseToAnyPublisher()
     }
     
-    func getObjectsPublisher(context: MockExternalDataFetchContext) -> AnyPublisher<[MockDataModel], Error> {
+    public func getObjectsPublisher(context: MockExternalDataFetchContext) -> AnyPublisher<[MockDataModel], Error> {
         
         let allObjects: [MockDataModel] = objects
         

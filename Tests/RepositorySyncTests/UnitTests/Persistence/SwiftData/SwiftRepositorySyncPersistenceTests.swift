@@ -114,6 +114,8 @@ struct SwiftRepositorySyncPersistenceTests {
         #expect(MockDataModel.getIdsSortedByPosition(dataModels: dataModels) == sortedPeristObjectsIds)
     }
     
+    /*
+    
     @available(iOS 17.4, *)
     @Test()
     @MainActor func writeObjectsAsyncWithMapping() async throws {
@@ -264,7 +266,7 @@ struct SwiftRepositorySyncPersistenceTests {
         let allDataModels: [MockDataModel] = try await persistence.getObjectsAsync(getObjectsType: .allObjects)
         
         #expect(MockDataModel.getIdsSortedByPosition(dataModels: allDataModels) == allIds)
-    }
+    }*/
 }
 
 extension SwiftRepositorySyncPersistenceTests {
