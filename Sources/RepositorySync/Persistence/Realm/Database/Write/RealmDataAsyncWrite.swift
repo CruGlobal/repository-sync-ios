@@ -21,14 +21,14 @@ public final class RealmDataAsyncWrite {
         self.config = config
     }
     
-    @MainActor public func objects(writeClosure: @escaping ((_ realm: Realm) -> Void), completion: @escaping ((_ result: Result<Realm, Error>) -> Void)) {
+    @MainActor public func objects(writeClosure: @escaping ((_ realm: Realm) -> Void), writeError: @escaping ((_ error: Error) -> Void)) {
                         
         let config: Realm.Configuration = self.config
         
         guard config.isInMemory == false else {
             let description: String = "Unable to perform async write on in memory realm.  In memory realm's require a shared realm instance."
             let error: Error = NSError(domain: String(describing: RealmDataAsyncWrite.self), code: -1, userInfo: [NSLocalizedDescriptionKey: description])
-            completion(.failure(error))
+            writeError(error)
             return
         }
         
@@ -39,11 +39,10 @@ public final class RealmDataAsyncWrite {
                     
                     try realm.write {
                         writeClosure(realm)
-                        completion(.success(realm))
                     }
                 }
                 catch let error {
-                    completion(.failure(error))
+                    writeError(error)
                 }
             }
         }
@@ -52,14 +51,11 @@ public final class RealmDataAsyncWrite {
     @MainActor public func objects(writeClosure: @escaping ((_ realm: Realm) -> Void)) async throws {
         
         return try await withCheckedThrowingContinuation { continuation in
-            objects(writeClosure: writeClosure) { (result: Result<Realm, Error>) in
-                switch result {
-                case .success( _):
-                    continuation.resume(returning: Void())
-                case .failure(let error):
-                    continuation.resume(throwing: error)
-                }
-            }
+            objects(writeClosure: { (realm: Realm) in
+                continuation.resume(returning: Void())
+            }, writeError: { (error: Error) in
+                continuation.resume(throwing: error)
+            })
         }
     }
 }

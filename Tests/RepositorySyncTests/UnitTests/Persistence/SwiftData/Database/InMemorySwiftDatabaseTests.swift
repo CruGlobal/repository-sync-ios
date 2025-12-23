@@ -148,7 +148,9 @@ struct InMemorySwiftDatabaseTests {
             newObject
         ]
         
-        try database.write.objects(context: context, deleteObjects: nil, insertObjects: newObjects)
+        let writeObjects = WriteSwiftObjects(deleteObjects: nil, insertObjects: newObjects)
+        
+        try database.write.objects(context: context, writeObjects: writeObjects)
         
         let fetchedObject: MockSwiftObject = try #require(try database.read.object(context: context, id: uniqueId))
                 
@@ -169,7 +171,9 @@ struct InMemorySwiftDatabaseTests {
             object.position = -9999
         }
         
-        try database.write.objects(context: context, deleteObjects: nil, insertObjects: allObjects)
+        let writeObjects = WriteSwiftObjects(deleteObjects: nil, insertObjects: allObjects)
+        
+        try database.write.objects(context: context, writeObjects: writeObjects)
         
         let objects: [MockSwiftObject] = try database.read.objects(context: context, query: nil)
                 
@@ -189,7 +193,9 @@ struct InMemorySwiftDatabaseTests {
                 
         #expect(allObjects.count == allObjectIds.count)
         
-        try database.write.objects(context: context, deleteObjects: allObjects, insertObjects: nil)
+        let writeObjects = WriteSwiftObjects(deleteObjects: allObjects, insertObjects: nil)
+        
+        try database.write.objects(context: context, writeObjects: writeObjects)
         
         let objectsAfterDelete: [MockSwiftObject] = try database.read.objects(context: context, query: nil)
                         
@@ -213,7 +219,9 @@ struct InMemorySwiftDatabaseTests {
             newObject
         ]
         
-        try database.asyncWrite.objects(deleteObjects: nil, insertObjects: newObjects)
+        let writeObjects = WriteSwiftObjects(deleteObjects: nil, insertObjects: newObjects)
+        
+        try database.asyncWrite.objects(writeObjects: writeObjects)
         
         let fetchedObject: MockSwiftObject = try #require(try database.read.object(context: database.asyncWrite.context, id: uniqueId))
                 
@@ -232,7 +240,9 @@ struct InMemorySwiftDatabaseTests {
             object.position = -9999
         }
         
-        try database.asyncWrite.objects(deleteObjects: nil, insertObjects: allObjects)
+        let writeObjects = WriteSwiftObjects(deleteObjects: nil, insertObjects: allObjects)
+        
+        try database.asyncWrite.objects(writeObjects: writeObjects)
         
         let objects: [MockSwiftObject] = try database.read.objects(context: database.asyncWrite.context, query: nil)
                 
@@ -250,7 +260,9 @@ struct InMemorySwiftDatabaseTests {
                 
         #expect(allObjects.count == allObjectIds.count)
         
-        try database.asyncWrite.objects(deleteObjects: allObjects, insertObjects: nil)
+        let writeObjects = WriteSwiftObjects(deleteObjects: allObjects, insertObjects: nil)
+        
+        try database.asyncWrite.objects(writeObjects: writeObjects)
         
         let objectsAfterDelete: [MockSwiftObject] = try database.read.objects(context: database.asyncWrite.context, query: nil)
                         
@@ -273,10 +285,11 @@ extension InMemorySwiftDatabaseTests {
         
         let context: ModelContext = database.openContext()
         
+        let writeObjects = WriteSwiftObjects(deleteObjects: nil, insertObjects: objects)
+        
         try database.write.objects(
             context: context,
-            deleteObjects: nil,
-            insertObjects: objects
+            writeObjects: writeObjects
         )
         
         return database

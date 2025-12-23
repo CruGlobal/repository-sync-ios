@@ -118,7 +118,7 @@ extension RealmRepositorySyncPersistence {
 
     private func getObjects(realm: Realm, getObjectsType: GetObjectsType, query: RealmDatabaseQuery?) -> [DataModelType] {
                 
-        // TODO: Should an error be thrown if GetObjectsType is other than all and query is provided? ~Levi
+        // TODO: Should an error be thrown if GetObjectsType is other than all and query is provided since query won't apply to object id? ~Levi
         
         let persistObjects: [PersistObjectType]
                 
@@ -160,44 +160,32 @@ extension RealmRepositorySyncPersistence {
                 
         self.database.asyncWrite.objects(writeClosure: { (realm: Realm) in
             
-            var objectsToAdd: [PersistObjectType] = Array()
-                                    
             for externalObject in externalObjects {
-
+                
                 guard let persistObject = self.dataModelMapping.toPersistObject(externalObject: externalObject) else {
                     continue
                 }
                 
-                objectsToAdd.append(persistObject)
+                realm.add(persistObject, update: .modified)
             }
             
-            if objectsToAdd.count > 0 {
-                realm.add(objectsToAdd, update: .modified)
+            let dataModels: [DataModelType]
+            
+            if let getObjectsType = getObjectsType {
+                dataModels = self.getObjects(realm: realm, getObjectsType: getObjectsType, query: nil)
+            }
+            else {
+                dataModels = Array()
             }
             
-        }, completion: { (result: Result<Realm, Error>) in
+            DispatchQueue.main.async {
+                completion(.success(dataModels))
+            }
             
-            switch result {
+        }, writeError: { (error: Error) in
             
-            case .success(let realm):
-                
-                let dataModels: [DataModelType]
-                
-                if let getObjectsType = getObjectsType {
-                    dataModels = self.getObjects(realm: realm, getObjectsType: getObjectsType, query: nil)
-                }
-                else {
-                    dataModels = Array()
-                }
-                
-                DispatchQueue.main.async {
-                    completion(.success(dataModels))
-                }
-                
-            case .failure(let error):
-                DispatchQueue.main.async {
-                    completion(.failure(error))
-                }
+            DispatchQueue.main.async {
+                completion(.failure(error))
             }
         })
     }

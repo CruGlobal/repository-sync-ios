@@ -1,5 +1,5 @@
 //
-//  RealmRepositorySyncPersistenceTests.swift
+//  SwiftRepositorySyncPersistenceTests.swift
 //  RepositorySync
 //
 //  Created by Levi Eggert on 12/1/25.
@@ -9,14 +9,15 @@
 import Foundation
 import Testing
 @testable import RepositorySync
-import RealmSwift
+import SwiftData
 import Combine
 
 @Suite(.serialized)
-struct RealmRepositorySyncPersistenceTests {
- 
+struct SwiftRepositorySyncPersistenceTests {
+    
     private let allObjectIds: [String] = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
     
+    @available(iOS 17.4, *)
     @Test()
     @MainActor func getObjectCount() async throws {
         
@@ -27,6 +28,7 @@ struct RealmRepositorySyncPersistenceTests {
         #expect(objectCount == allObjectIds.count)
     }
     
+    @available(iOS 17.4, *)
     @Test()
     @MainActor func getObjectsAsync() async throws {
         
@@ -37,6 +39,7 @@ struct RealmRepositorySyncPersistenceTests {
         #expect(MockDataModel.getIdsSortedByPosition(dataModels: dataModels) == allObjectIds)
     }
     
+    @available(iOS 17.4, *)
     @Test()
     @MainActor func getObjectAsync() async throws {
         
@@ -49,6 +52,7 @@ struct RealmRepositorySyncPersistenceTests {
         #expect(dataModel.id == "3")
     }
     
+    @available(iOS 17.4, *)
     @Test()
     @MainActor func getObjectsPublisher() async throws {
         
@@ -89,6 +93,7 @@ struct RealmRepositorySyncPersistenceTests {
         #expect(MockDataModel.getIdsSortedByPosition(dataModels: dataModelsRef) == allObjectIds)
     }
     
+    @available(iOS 17.4, *)
     @Test()
     @MainActor func mapPersistObjects() async throws {
         
@@ -96,11 +101,11 @@ struct RealmRepositorySyncPersistenceTests {
         
         let sortedPeristObjectsIds: [String] = ["0", "1", "2"]
         
-        let persistObjects: [MockRealmObject] = sortedPeristObjectsIds.compactMap {
+        let persistObjects: [MockSwiftObject] = sortedPeristObjectsIds.compactMap {
             guard let dataModel = MockDataModel.createFromStringId(id: $0) else {
                 return nil
             }
-            return MockRealmObject.createFrom(interface: dataModel)
+            return MockSwiftObject.createFrom(interface: dataModel)
         }
 
         let dataModels: [MockDataModel] = persistence.mapPersistObjects(persistObjects: persistObjects)
@@ -109,6 +114,7 @@ struct RealmRepositorySyncPersistenceTests {
         #expect(MockDataModel.getIdsSortedByPosition(dataModels: dataModels) == sortedPeristObjectsIds)
     }
     
+    @available(iOS 17.4, *)
     @Test()
     @MainActor func writeObjectsAsyncWithMapping() async throws {
         
@@ -130,6 +136,7 @@ struct RealmRepositorySyncPersistenceTests {
         #expect(MockDataModel.getIdsSortedByPosition(dataModels: mappedDataModels) == allIds)
     }
     
+    @available(iOS 17.4, *)
     @Test()
     @MainActor func writeObjectsAsyncWithoutMapping() async throws {
         
@@ -154,6 +161,7 @@ struct RealmRepositorySyncPersistenceTests {
         #expect(MockDataModel.getIdsSortedByPosition(dataModels: allDataModels) == allIds)
     }
     
+    @available(iOS 17.4, *)
     @Test()
     @MainActor func writeObjectsPublisherWithMapping() async throws {
         
@@ -204,6 +212,7 @@ struct RealmRepositorySyncPersistenceTests {
         #expect(MockDataModel.getIdsSortedByPosition(dataModels: mappedDataModels) == allIds)
     }
     
+    @available(iOS 17.4, *)
     @Test()
     @MainActor func writeObjectsPublisherWithoutMapping() async throws {
         
@@ -258,31 +267,35 @@ struct RealmRepositorySyncPersistenceTests {
     }
 }
 
-extension RealmRepositorySyncPersistenceTests {
+extension SwiftRepositorySyncPersistenceTests {
     
-    private func getPersistence() throws -> RealmRepositorySyncPersistence<MockDataModel, MockDataModel, MockRealmObject> {
+    @available(iOS 17.4, *)
+    private func getPersistence() throws -> SwiftRepositorySyncPersistence<MockDataModel, MockDataModel, MockSwiftObject> {
         
-        return RealmRepositorySyncPersistence(
+        return SwiftRepositorySyncPersistence(
             database: try getDatabase(),
-            dataModelMapping: MockRealmRepositorySyncMapping()
+            dataModelMapping: MockSwiftRepositorySyncMapping()
         )
     }
     
-    private func getDatabase() throws -> RealmDatabase {
+    @available(iOS 17.4, *)
+    private func getDatabase() throws -> SwiftDatabase {
         
-        let objects: [MockRealmObject] = allObjectIds.compactMap {
+        let objects: [MockSwiftObject] = allObjectIds.compactMap {
             
             guard let dataModel = MockDataModel.createFromStringId(id: $0) else {
                 return nil
             }
             
-            return MockRealmObject.createFrom(interface: dataModel)
+            return MockSwiftObject.createFrom(interface: dataModel)
         }
         
-        return try MockRealmDatabase().createDatabase(
-            directoryName: "realm_\(String(describing: RealmRepositorySyncPersistenceTests.self))",
+        let database = try MockSwiftDatabase().createDatabase(
+            directoryName: "swift_\(String(describing: SwiftDatabaseTests.self))",
             objects: objects,
             shouldDeleteExistingObjects: true
         )
+        
+        return database
     }
 }

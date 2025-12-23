@@ -11,7 +11,7 @@ import SwiftData
 import Combine
 
 @available(iOS 17.4, *)
-public final class SwiftRepositorySyncPersistence<DataModelType, ExternalObjectType: Sendable, PersistObjectType: IdentifiableSwiftDataObject>: Persistence {
+public final class SwiftRepositorySyncPersistence<DataModelType: Sendable, ExternalObjectType: Sendable, PersistObjectType: IdentifiableSwiftDataObject>: Persistence {
     
     private let serialQueue: DispatchQueue = DispatchQueue(label: "swiftdatabase.serial_queue")
     private let userInfoKeyPrependNotification: String = "RepositorySync.notificationKey.prepend"
@@ -156,6 +156,24 @@ extension SwiftRepositorySyncPersistence {
             )
     }
     
+    @MainActor private func getObjectsBackground(getObjectsType: GetObjectsType, query: SwiftDatabaseQuery<PersistObjectType>?, completion: @escaping ((_ result: Result<[DataModelType], Error>) -> Void)) {
+        
+        DispatchQueue.global().async {
+            do {
+                let context: ModelContext = self.database.openContext()
+                let dataModels: [DataModelType] = try self.getObjects(context: context, getObjectsType: getObjectsType, query: query)
+                DispatchQueue.main.async {
+                    completion(.success(dataModels))
+                }
+            }
+            catch let error {
+                DispatchQueue.main.async {
+                    completion(.failure(error))
+                }
+            }
+        }
+    }
+    
     @MainActor public func getObjectsAsync(getObjectsType: GetObjectsType) async throws -> [DataModelType] {
         
         return try await getObjectsAsync(getObjectsType: getObjectsType, query: nil)
@@ -163,7 +181,16 @@ extension SwiftRepositorySyncPersistence {
     
     @MainActor public func getObjectsAsync(getObjectsType: GetObjectsType, query: SwiftDatabaseQuery<PersistObjectType>?) async throws -> [DataModelType] {
         
-        return Array()
+        return try await withCheckedThrowingContinuation { continuation in
+            getObjectsBackground(getObjectsType: getObjectsType, query: query) { (result: Result<[DataModelType], Error>) in
+                switch result {
+                case .success(let dataModels):
+                    continuation.resume(returning: dataModels)
+                case .failure(let error):
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
     }
     
     @MainActor public func getObjectsPublisher(getObjectsType: GetObjectsType) -> AnyPublisher<[DataModelType], Error> {
@@ -188,17 +215,15 @@ extension SwiftRepositorySyncPersistence {
     }
     
     private func getObjects(getObjectsType: GetObjectsType, query: SwiftDatabaseQuery<PersistObjectType>?) throws -> [DataModelType] {
-        
-        // TODO: Can this be done in the background? ~Levi
-                
+                        
         let context: ModelContext = database.openContext()
         
         return try getObjects(context: context, getObjectsType: getObjectsType, query: query)
     }
     
     private func getObjects(context: ModelContext, getObjectsType: GetObjectsType, query: SwiftDatabaseQuery<PersistObjectType>?) throws -> [DataModelType] {
-        
-        // TODO: Can this be done in the background? ~Levi
+           
+        // TODO: Should an error be thrown if GetObjectsType is other than all and query is provided since query won't apply to object id? ~Levi
         
         let persistObjects: [PersistObjectType]
                 
@@ -223,14 +248,19 @@ extension SwiftRepositorySyncPersistence {
     }
     
     public func mapPersistObjects(persistObjects: [PersistObjectType]) -> [DataModelType] {
-        
-        // TODO: Can this be done in the background? ~Levi
-        
+                
         let dataModels: [DataModelType] = persistObjects.compactMap { object in
             self.dataModelMapping.toDataModel(persistObject: object)
         }
         
         return dataModels
+    }
+    
+    private func mapExternalObjects(externalObjects: [ExternalObjectType]) -> [PersistObjectType] {
+        
+        return externalObjects.compactMap {
+            self.dataModelMapping.toPersistObject(externalObject: $0)
+        }
     }
 }
 
@@ -239,96 +269,65 @@ extension SwiftRepositorySyncPersistence {
 @available(iOS 17.4, *)
 extension SwiftRepositorySyncPersistence {
     
-    @MainActor public func writeObjectsAsync(externalObjects: [ExternalObjectType], getObjectsType: GetObjectsType?) async throws -> [DataModelType] {
+    @MainActor private func writeObjectsBackground(externalObjects: [ExternalObjectType], getObjectsType: GetObjectsType?, completion: @escaping ((_ result: Result<[DataModelType], Error>) -> Void)) {
         
-        return Array()
-    }
-    
-    @MainActor public func writeObjectsAsync(writeClosure: @escaping ((_ context: ModelContext) -> SwiftPersistenceWrite), completion: @escaping ((_ context: ModelContext?, _ error: Error?) -> Void)) {
-        
-        let database: SwiftDatabase = self.database
-        let container: ModelContainer = database.container.modelContainer
-        
-        serialQueue.async {
-            autoreleasepool {
-             
-                let context = ModelContext(container)
-                context.autosaveEnabled = false
-                
-                let write: SwiftPersistenceWrite = writeClosure(context)
-                            
-                do {
-                    
-                    try database.write.objects(
-                        context: context,
-                        deleteObjects: write.deleteObjects,
-                        insertObjects: write.insertObjects
-                    )
-
-                    completion(context, nil)
-                }
-                catch let error {
-                    completion(nil, error)
-                }
-            }
-        }
-    }
-    
-    @MainActor public func writeObjectsPublisher(externalObjects: [ExternalObjectType], getObjectsType: GetObjectsType?) -> AnyPublisher<[DataModelType], Error> {
-        
-        return Future { [weak self] promise in
+        DispatchQueue.global().async {
             
-            guard let weakSelf = self else {
-                promise(.success([]))
-                return
-            }
-            
-            weakSelf.writeObjectsAsync(writeClosure: { (context: ModelContext) in
+            do {
                 
-                var objectsToAdd: [PersistObjectType] = Array()
+                let objectsToAdd: [PersistObjectType] = self.mapExternalObjects(externalObjects: externalObjects)
                 
-                for externalObject in externalObjects {
-
-                    guard let persistObject = self?.dataModelMapping.toPersistObject(externalObject: externalObject) else {
-                        continue
-                    }
-                    
-                    objectsToAdd.append(persistObject)
-                }
-                
-                return SwiftPersistenceWrite(
-                    deleteObjects: nil,
-                    insertObjects: objectsToAdd
-                )
-                
-            }, completion: { (context: ModelContext?, error: Error?) in
+                try self.database.asyncWrite.objects(writeObjects: WriteSwiftObjects(deleteObjects: nil, insertObjects: objectsToAdd))
                 
                 let dataModels: [DataModelType]
-                var failure: Error? = error
                 
-                if let context = context, let getObjectsType = getObjectsType {
-                    
-                    do {
-                        dataModels = try weakSelf.getObjects(context: context, getObjectsType: getObjectsType, query: nil)
-                    }
-                    catch let error {
-                        dataModels = Array()
-                        failure = error
-                    }
+                if let getObjectsType = getObjectsType {
+                    let context: ModelContext = self.database.asyncWrite.context
+                    dataModels = try self.getObjects(context: context, getObjectsType: getObjectsType, query: nil)
                 }
                 else {
                     dataModels = Array()
                 }
                 
                 DispatchQueue.main.async {
-                    if let error = failure {
-                        promise(.failure(error))
-                    }
-                    else {
-                        promise(.success(dataModels))
-                    }
+                    completion(.success(dataModels))
                 }
-            })
+            }
+            catch let error {
+                
+                DispatchQueue.main.async {
+                    completion(.failure(error))
+                }
+            }
+        }
+    }
+    
+    @MainActor public func writeObjectsAsync(externalObjects: [ExternalObjectType], getObjectsType: GetObjectsType?) async throws -> [DataModelType] {
+        
+        return try await withCheckedThrowingContinuation { continuation in
+            writeObjectsBackground(externalObjects: externalObjects, getObjectsType: getObjectsType) { (result: Result<[DataModelType], Error>) in
+                switch result {
+                case .success(let dataModels):
+                    continuation.resume(returning: dataModels)
+                case .failure(let error):
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+    
+    @MainActor public func writeObjectsPublisher(externalObjects: [ExternalObjectType], getObjectsType: GetObjectsType?) -> AnyPublisher<[DataModelType], any Error> {
+                
+        return Future { promise in
+            
+            self.writeObjectsBackground(externalObjects: externalObjects, getObjectsType: getObjectsType) { result in
+                switch result {
+                case .success(let dataModels):
+                    promise(.success(dataModels))
+                case .failure(let error):
+                    promise(.failure(error))
+                }
+            }
         }
         .eraseToAnyPublisher()
     }

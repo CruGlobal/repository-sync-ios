@@ -200,7 +200,6 @@ struct InMemoryRealmDatabaseTests {
             newObject
         ]
         
-        var objectAfterAdd: MockRealmObject?
         var errorRef: Error?
         
         await confirmation(expectedCount: 1) { confirmation in
@@ -216,20 +215,21 @@ struct InMemoryRealmDatabaseTests {
                     writeClosure: { (realm: Realm) in
                         
                         realm.add(newObjects)
-                    },
-                    completion: { (result: Result<Realm, Error>) in
                         
                         // Place inside a sink or other async closure:
                         confirmation()
                         
-                        switch result {
+                        errorRef = nil
                         
-                        case .success(let realm):
-                            objectAfterAdd = database.read.object(realm: realm, id: uniqueId)
+                        timeoutTask.cancel()
+                        continuation.resume(returning: ())
+                    },
+                    writeError: { (error: Error) in
                         
-                        case .failure(let error):
-                            errorRef = error
-                        }
+                        // Place inside a sink or other async closure:
+                        confirmation()
+                        
+                        errorRef = error
                         
                         timeoutTask.cancel()
                         continuation.resume(returning: ())
@@ -238,7 +238,6 @@ struct InMemoryRealmDatabaseTests {
             }
         }
                                 
-        #expect(objectAfterAdd == nil)
         #expect(errorRef != nil)
     }
 }

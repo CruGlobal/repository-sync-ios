@@ -185,10 +185,78 @@ struct RealmDatabaseTests {
         #expect(objectsAfterDelete.count == 0)
     }
     
-    // MARK: - Write Async With Completion
-    
+    // MARK: - Write Async
     /*
+    @Test()
+    @MainActor func createObjectsAsync() async throws {
+        
+        let database = try getDatabase()
+                                
+        let uniqueId: String = UUID().uuidString
+                
+        let newObject = MockRealmObject()
+        newObject.id = uniqueId
+        
+        let objectsToAdd: [MockRealmObject] = [newObject]
+        
+        try await database.asyncWrite.objects(writeClosure: { (realm: Realm) in
+            
+            realm.add(objectsToAdd, update: .modified)
+        })
+                
+        let realm: Realm = try database.openRealm()
+        let objectAfterAdd: MockRealmObject = try #require(database.read.object(realm: realm, id: uniqueId))
+                
+        #expect(objectAfterAdd.id == uniqueId)
+    }
     
+    @Test()
+    @MainActor func updateObjectsAsync() async throws {
+        
+        let database = try getDatabase()
+        
+        try await database.asyncWrite.objects(writeClosure: { (realm: Realm) in
+            
+            let allObjects: [MockRealmObject] = database.read.objects(realm: realm, query: nil)
+                      
+            for object in allObjects {
+                object.position = -9999
+            }
+            
+            realm.add(allObjects, update: .modified)
+        })
+        
+        let realm: Realm = try database.openRealm()
+        let objectsAfterUpdate: [MockRealmObject] = database.read.objects(realm: realm, query: nil)
+                                                    
+        #expect(objectsAfterUpdate.first?.position == -9999)
+        #expect(objectsAfterUpdate.last?.position == -9999)
+    }
+    
+    @Test()
+    @MainActor func deleteObjectsAsync() async throws {
+        
+        let database = try getDatabase()
+        
+        let currentObjects: [MockRealmObject] = try database.openRealmAndRead.objects(query: nil)
+                
+        #expect(currentObjects.count == allObjectIds.count)
+            
+        try await database.asyncWrite.objects(writeClosure: { (realm: Realm) in
+            
+            let allObjects: [MockRealmObject] = database.read.objects(realm: realm, query: nil)
+            
+            realm.delete(allObjects)
+        })
+        
+        let realm: Realm = try database.openRealm()
+        let objectsAfterDelete: [MockRealmObject] = database.read.objects(realm: realm, query: nil)
+                                                  
+        #expect(objectsAfterDelete.count == 0)
+    }*/
+    
+    // MARK: - Write Async With Completion
+    /*
     @Test()
     @MainActor func createObjectsAsyncWithCompletion() async throws {
         
@@ -199,11 +267,7 @@ struct RealmDatabaseTests {
         let newObject = MockRealmObject()
         newObject.id = uniqueId
         
-        let newObjects: [MockRealmObject] = [
-            newObject
-        ]
-        
-        var objectAfterAdd: MockRealmObject?
+        let objectsToAdd: [MockRealmObject] = [newObject]
         
         try await confirmation(expectedCount: 1) { confirmation in
             
@@ -214,47 +278,44 @@ struct RealmDatabaseTests {
                     continuation.resume(returning: ())
                 }
                 
-                DispatchQueue.main.async {
-                    
-                    database.asyncWrite.objects(
-                        writeClosure: { (realm: Realm) in
-                            
-                            realm.add(newObjects)
-                        },
-                        completion: { (result: Result<Realm, Error>) in
-                            
-                            // Place inside a sink or other async closure:
-                            confirmation()
-                            
-                            switch result {
-                            
-                            case .success(let realm):
-                                objectAfterAdd = database.read.object(realm: realm, id: uniqueId)
-                                timeoutTask.cancel()
-                                continuation.resume(returning: ())
-                            
-                            case .failure(let error):
-                                timeoutTask.cancel()
-                                continuation.resume(throwing: error)
-                            }
+                database.asyncWrite.objects(
+                    writeClosure: { (realm: Realm) in
+                        
+                        realm.add(objectsToAdd)
+                        
+                        // Place inside a sink or other async closure:
+                        confirmation()
+                        
+                        DispatchQueue.main.async {
+                            timeoutTask.cancel()
+                            continuation.resume(returning: ())
                         }
-                    )
-                }
+                    },
+                    writeError: { (error: Error) in
+                        
+                        // Place inside a sink or other async closure:
+                        confirmation()
+                        
+                        DispatchQueue.main.async {
+                            timeoutTask.cancel()
+                            continuation.resume(throwing: error)
+                        }
+                    }
+                )
             }
         }
                 
-        let fetchedObject: MockRealmObject = try #require(objectAfterAdd)
+        let realm: Realm = try database.openRealm()
+        let objectAfterAdd: MockRealmObject = try #require(database.read.object(realm: realm, id: uniqueId))
                 
-        #expect(fetchedObject.id == uniqueId)
+        #expect(objectAfterAdd.id == uniqueId)
     }
     
     @Test()
     @MainActor func updateObjectsAsyncWithCompletion() async throws {
         
         let database = try getDatabase()
-        
-        var objectsAfterUpdate: [MockRealmObject] = Array()
-        
+                
         try await confirmation(expectedCount: 1) { confirmation in
             
             try await withCheckedThrowingContinuation { continuation in
@@ -264,41 +325,41 @@ struct RealmDatabaseTests {
                     continuation.resume(returning: ())
                 }
                 
-                DispatchQueue.main.async {
-                    
-                    database.asyncWrite.objects(
-                        writeClosure: { (realm: Realm) in
-                            
-                            let allObjects: [MockRealmObject] = database.read.objects(realm: realm, query: nil)
-                                      
-                            for object in allObjects {
-                                object.position = -9999
-                            }
-                            
-                            realm.add(allObjects, update: .modified)
-                        },
-                        completion: { (result: Result<Realm, Error>) in
-                            
-                            // Place inside a sink or other async closure:
-                            confirmation()
-                            
-                            switch result {
-                            
-                            case .success(let realm):
-                                objectsAfterUpdate = database.read.objects(realm: realm, query: nil)
-                                timeoutTask.cancel()
-                                continuation.resume(returning: ())
-                            
-                            case .failure(let error):
-                                objectsAfterUpdate = Array()
-                                timeoutTask.cancel()
-                                continuation.resume(throwing: error)
-                            }
+                database.asyncWrite.objects(
+                    writeClosure: { (realm: Realm) in
+                        
+                        let allObjects: [MockRealmObject] = database.read.objects(realm: realm, query: nil)
+                                  
+                        for object in allObjects {
+                            object.position = -9999
                         }
-                    )
-                }
+                        
+                        realm.add(allObjects, update: .modified)
+                        
+                        // Place inside a sink or other async closure:
+                        confirmation()
+                        
+                        DispatchQueue.main.async {
+                            timeoutTask.cancel()
+                            continuation.resume(returning: ())
+                        }
+                    },
+                    writeError: { (error: Error) in
+                        
+                        // Place inside a sink or other async closure:
+                        confirmation()
+                        
+                        DispatchQueue.main.async {
+                            timeoutTask.cancel()
+                            continuation.resume(throwing: error)
+                        }
+                    }
+                )
             }
         }
+        
+        let realm: Realm = try database.openRealm()
+        let objectsAfterUpdate: [MockRealmObject] = database.read.objects(realm: realm, query: nil)
                                                     
         #expect(objectsAfterUpdate.first?.position == -9999)
         #expect(objectsAfterUpdate.last?.position == -9999)
@@ -310,9 +371,7 @@ struct RealmDatabaseTests {
         let database = try getDatabase()
         
         let currentObjects: [MockRealmObject] = try database.openRealmAndRead.objects(query: nil)
-        
-        var objectsAfterDelete: [MockRealmObject] = currentObjects
-        
+                
         #expect(currentObjects.count == allObjectIds.count)
                         
         try await confirmation(expectedCount: 1) { confirmation in
@@ -324,36 +383,37 @@ struct RealmDatabaseTests {
                     continuation.resume(returning: ())
                 }
                 
-                DispatchQueue.main.async {
-                    
-                    database.asyncWrite.objects(
-                        writeClosure: { (realm: Realm) in
-                            
-                            let allObjects: [MockRealmObject] = database.read.objects(realm: realm, query: nil)
-                            
-                            realm.delete(allObjects)
-                        },
-                        completion: { (result: Result<Realm, Error>) in
-                            
-                            // Place inside a sink or other async closure:
-                            confirmation()
-                            
-                            switch result {
-                                
-                            case .success(let realm):
-                                objectsAfterDelete = database.read.objects(realm: realm, query: nil)
-                                timeoutTask.cancel()
-                                continuation.resume(returning: ())
-                                
-                            case .failure(let error):
-                                timeoutTask.cancel()
-                                continuation.resume(throwing: error)
-                            }
+                database.asyncWrite.objects(
+                    writeClosure: { (realm: Realm) in
+                        
+                        let allObjects: [MockRealmObject] = database.read.objects(realm: realm, query: nil)
+                        
+                        realm.delete(allObjects)
+                        
+                        // Place inside a sink or other async closure:
+                        confirmation()
+                        
+                        DispatchQueue.main.async {
+                            timeoutTask.cancel()
+                            continuation.resume(returning: ())
                         }
-                    )
-                }
+                    },
+                    writeError: { (error: Error) in
+                        
+                        // Place inside a sink or other async closure:
+                        confirmation()
+                        
+                        DispatchQueue.main.async {
+                            timeoutTask.cancel()
+                            continuation.resume(throwing: error)
+                        }
+                    }
+                )
             }
         }
+        
+        let realm: Realm = try database.openRealm()
+        let objectsAfterDelete: [MockRealmObject] = database.read.objects(realm: realm, query: nil)
                                                   
         #expect(objectsAfterDelete.count == 0)
     }*/

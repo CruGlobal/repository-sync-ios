@@ -38,14 +38,17 @@ public class MockSwiftDatabase {
         
         let context: ModelContext = database.openContext()
         
-        if shouldDeleteExistingObjects {
-            
-            let existingObjects: [MockSwiftObject] = try database.read.objects(context: context, query: nil)
-            
-            try database.write.objects(context: context, deleteObjects: existingObjects, insertObjects: nil)
-        }
+        let deleteObjects: [MockSwiftObject]? = shouldDeleteExistingObjects ? try database.read.objects(context: context, query: nil) : nil
+
+        let writeObjects = WriteSwiftObjects(
+            deleteObjects: deleteObjects,
+            insertObjects: objects
+        )
         
-        try database.write.objects(context: context, deleteObjects: nil, insertObjects: objects)
+        try database.write.objects(
+            context: context,
+            writeObjects: writeObjects
+        )
         
         return database
     }

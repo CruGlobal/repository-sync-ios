@@ -40,7 +40,7 @@ public actor SwiftDataAsyncWrite: ModelActor {
     }
     
     nonisolated
-    public func objects(deleteObjects: [any IdentifiableSwiftDataObject]?, insertObjects: [any IdentifiableSwiftDataObject]?) throws {
-        try write.objects(context: executor.modelContext, deleteObjects: deleteObjects, insertObjects: insertObjects)
+    public func objects(writeObjects: WriteSwiftObjects) throws {
+        try write.objects(context: executor.modelContext, writeObjects: writeObjects)
     }
 }

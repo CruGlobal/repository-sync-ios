@@ -1,5 +1,5 @@
 //
-//  SwiftPersistenceWrite.swift
+//  WriteSwiftObjects.swift
 //  RepositorySync
 //
 //  Created by Levi Eggert on 12/1/25.
@@ -9,7 +9,7 @@
 import Foundation
 
 @available(iOS 17.4, *)
-public final class SwiftPersistenceWrite {
+public final class WriteSwiftObjects {
     
     public let deleteObjects: [any IdentifiableSwiftDataObject]?
     public let insertObjects: [any IdentifiableSwiftDataObject]?

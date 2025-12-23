@@ -16,15 +16,15 @@ public final class SwiftDataWrite: Sendable {
         
     }
     
-    public func objects(context: ModelContext, deleteObjects: [any IdentifiableSwiftDataObject]?, insertObjects: [any IdentifiableSwiftDataObject]?) throws {
+    public func objects(context: ModelContext, writeObjects: WriteSwiftObjects) throws {
         
-        if let deleteObjects = deleteObjects, deleteObjects.count > 0 {
+        if let deleteObjects = writeObjects.deleteObjects, deleteObjects.count > 0 {
             for object in deleteObjects {
                 context.delete(object)
             }
         }
         
-        if let insertObjects = insertObjects, insertObjects.count > 0 {
+        if let insertObjects = writeObjects.insertObjects, insertObjects.count > 0 {
             for object in insertObjects {
                 context.insert(object)
             }
