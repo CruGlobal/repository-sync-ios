@@ -275,6 +275,60 @@ struct SwiftRepositorySyncPersistenceTests {
         
         #expect(MockDataModel.getIdsSortedByPosition(dataModels: allDataModels) == allIds)
     }
+    
+    @available(iOS 17.4, *)
+    @Test()
+    @MainActor func writeObjectsPublisherWithWriteOptionDeleteObjectsNotInExternal() async throws {
+
+        let persistence = try getPersistence()
+        
+        let newObjectIds: [String] = ["10", "11", "12"]
+        
+        let externalObjects: [MockDataModel] = newObjectIds.compactMap {
+            MockDataModel.createFromStringId(id: $0)
+        }
+        
+        var cancellables: Set<AnyCancellable> = Set()
+        
+        var mappedDataModels: [MockDataModel] = Array()
+        
+        await confirmation(expectedCount: 1) { confirmation in
+            
+            await withCheckedContinuation { continuation in
+                
+                let timeoutTask = Task {
+                    try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+                    continuation.resume(returning: ())
+                }
+                
+                persistence.writeObjectsPublisher(
+                    externalObjects: externalObjects,
+                    writeOption: .deleteObjectsNotInExternal,
+                    getObjectsType: nil
+                )
+                .sink { completion in
+                
+                    // Place inside a sink or other async closure:
+                    confirmation()
+                                    
+                    // When finished be sure to call:
+                    timeoutTask.cancel()
+                    continuation.resume(returning: ())
+                    
+                } receiveValue: { (dataModels: [MockDataModel]) in
+                    
+                    mappedDataModels = dataModels
+                }
+                .store(in: &cancellables)
+            }
+        }
+        
+        #expect(mappedDataModels.count == 0)
+        
+        let allDataModels: [MockDataModel] = try await persistence.getObjectsAsync(getObjectsType: .allObjects)
+        
+        #expect(MockDataModel.getIdsSortedByPosition(dataModels: allDataModels) == newObjectIds)
+    }
 }
 
 extension SwiftRepositorySyncPersistenceTests {
