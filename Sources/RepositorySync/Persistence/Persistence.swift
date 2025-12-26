@@ -13,6 +13,10 @@ public protocol Persistence<DataModelType, ExternalObjectType> {
     
     associatedtype DataModelType
     associatedtype ExternalObjectType
+    associatedtype PersistObjectType
+    
+    func getPersistedObject(id: String) throws -> PersistObjectType?
+    func getPersistedObjects() throws -> [PersistObjectType]
     
     @MainActor func observeCollectionChangesPublisher() -> AnyPublisher<Void, Error>
     @MainActor func getObjectCount() throws -> Int

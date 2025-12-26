@@ -21,8 +21,8 @@ public final class RealmDataAsyncWrite {
         self.config = config
     }
     
-    public func write(writeAsync: @escaping ((_ realm: Realm) -> Void), writeError: @escaping ((_ error: Error) -> Void)) {
-                        
+    public func serialAsync(asyncClosure: @escaping ((_ result: Result<Realm, Error>) -> Void)) {
+        
         let config: Realm.Configuration = self.config
         
         guard config.isInMemory == false else {
@@ -30,7 +30,7 @@ public final class RealmDataAsyncWrite {
             let description: String = "Unable to perform async write on in memory realm.  In memory realm's require a shared realm instance."
             let error: Error = NSError(domain: String(describing: RealmDataAsyncWrite.self), code: -1, userInfo: [NSLocalizedDescriptionKey: description])
             
-            writeError(error)
+            asyncClosure(.failure(error))
             
             return
         }
@@ -39,6 +39,24 @@ public final class RealmDataAsyncWrite {
             autoreleasepool {
                 do {
                     let realm: Realm = try Realm(configuration: config)
+                    asyncClosure(.success(realm))
+                }
+                catch let error {
+                    asyncClosure(.failure(error))
+                }
+            }
+        }
+    }
+    
+    public func write(writeAsync: @escaping ((_ realm: Realm) -> Void), writeError: @escaping ((_ error: Error) -> Void)) {
+        
+        serialAsync { (result: Result<Realm, Error>) in
+            
+            switch result {
+            
+            case .success(let realm):
+                
+                do {
                     
                     try realm.write {
                         writeAsync(realm)
@@ -47,6 +65,9 @@ public final class RealmDataAsyncWrite {
                 catch let error {
                     writeError(error)
                 }
+            
+            case .failure(let error):
+                writeError(error)
             }
         }
     }
