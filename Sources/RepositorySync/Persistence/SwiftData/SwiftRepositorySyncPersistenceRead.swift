@@ -8,44 +8,78 @@
 
 import Foundation
 import SwiftData
+import Combine
 
 @available(iOS 17.4, *)
 public actor SwiftRepositorySyncPersistenceRead<DataModelType: Sendable, ExternalObjectType: Sendable, PersistObjectType: IdentifiableSwiftDataObject> {
     
+    private let container: ModelContainer
+    private let executor: ModelExecutor
+    
     public let dataModelMapping: any Mapping<DataModelType, ExternalObjectType, PersistObjectType>
     
-    public init(dataModelMapping: any Mapping<DataModelType, ExternalObjectType, PersistObjectType>) {
+    public init(container: ModelContainer, dataModelMapping: any Mapping<DataModelType, ExternalObjectType, PersistObjectType>) {
+        
+        self.container = container
+        self.executor = DefaultSerialModelExecutor(modelContext: ModelContext(container))
         
         self.dataModelMapping = dataModelMapping
     }
     
-    public func getObjects(context: ModelContext, getObjectsType: GetObjectsType, query: SwiftDatabaseQuery<PersistObjectType>?) throws -> [DataModelType] {
+    public var context: ModelContext {
+        return modelContext
+    }
+    
+    public func getObjectsAsync(getObjectsType: GetObjectsType, query: SwiftDatabaseQuery<PersistObjectType>?) async throws -> [DataModelType] {
                    
-        let read = SwiftDataRead()
+        let context: ModelContext = self.context
         
-        let persistObjects: [PersistObjectType]
+        let getObjectsByType: SwiftRepositorySyncGetObjects<PersistObjectType> = SwiftRepositorySyncGetObjects()
+        
+        let persistObjects: [PersistObjectType] = try getObjectsByType.getObjects(
+            context: context,
+            getObjectsType: getObjectsType,
+            query: query
+        )
                 
-        switch getObjectsType {
-            
-        case .allObjects:
-            persistObjects = try read.objects(context: context, query: query)
-            
-        case .object(let id):
-            
-            let object: PersistObjectType? = try read.object(context: context, id: id)
-            
-            if let object = object {
-                persistObjects = [object]
-            }
-            else {
-                persistObjects = []
-            }
-        }
-        
         let dataModels: [DataModelType] = persistObjects.compactMap { object in
             self.dataModelMapping.toDataModel(persistObject: object)
         }
         
         return dataModels
+    }
+    
+    @MainActor public func getObjectsPublisher(getObjectsType: GetObjectsType, query: SwiftDatabaseQuery<PersistObjectType>?) -> AnyPublisher<[DataModelType], Error> {
+        
+        return Future { promise in
+            
+            Task {
+                
+                do {
+                    let dataModels = try await self.getObjectsAsync(getObjectsType: getObjectsType, query: query)
+                    
+                    promise(.success(dataModels))
+                }
+                catch let error {
+                    
+                    promise(.failure(error))
+                }
+            }
+        }
+        .eraseToAnyPublisher()
+    }
+}
+
+@available(iOS 17.4, *)
+extension SwiftRepositorySyncPersistenceRead: ModelActor {
+    
+    nonisolated
+    public var modelContainer: ModelContainer {
+        return container
+    }
+    
+    nonisolated
+    public var modelExecutor: any ModelExecutor {
+        return executor
     }
 }

@@ -53,28 +53,14 @@ public actor SwiftRepositorySyncPersistenceWrite<DataModelType: Sendable, Extern
         guard let getObjectsType = getObjectsType else {
             return Array()
         }
+                
+        let getObjectsByType: SwiftRepositorySyncGetObjects<PersistObjectType> = SwiftRepositorySyncGetObjects()
         
-        // Get Objects
-        
-        let read = SwiftDataRead()
-        let getObjects: [PersistObjectType]
-                        
-        switch getObjectsType {
-            
-        case .allObjects:
-            getObjects = try read.objects(context: context, query: nil)
-            
-        case .object(let id):
-            
-            let object: PersistObjectType? = try read.object(context: context, id: id)
-            
-            if let object = object {
-                getObjects = [object]
-            }
-            else {
-                getObjects = []
-            }
-        }
+        let getObjects: [PersistObjectType] = try getObjectsByType.getObjects(
+            context: context,
+            getObjectsType: getObjectsType,
+            query: nil
+        )
         
         let dataModels: [DataModelType] = getObjects.compactMap { object in
             self.dataModelMapping.toDataModel(persistObject: object)

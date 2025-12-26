@@ -12,18 +12,16 @@ import Combine
 
 public final class RealmRepositorySyncPersistenceWrite<DataModelType: Sendable, ExternalObjectType: Sendable, PersistObjectType: IdentifiableRealmObject> {
     
-    public let read: RealmRepositorySyncPersistenceRead<DataModelType, ExternalObjectType, PersistObjectType>
     public let asyncWrite: RealmDataAsyncWrite
     public let dataModelMapping: any Mapping<DataModelType, ExternalObjectType, PersistObjectType>
     
-    public init(read: RealmRepositorySyncPersistenceRead<DataModelType, ExternalObjectType, PersistObjectType>, asyncWrite: RealmDataAsyncWrite, dataModelMapping: any Mapping<DataModelType, ExternalObjectType, PersistObjectType>) {
+    public init(asyncWrite: RealmDataAsyncWrite, dataModelMapping: any Mapping<DataModelType, ExternalObjectType, PersistObjectType>) {
         
-        self.read = read
         self.asyncWrite = asyncWrite
         self.dataModelMapping = dataModelMapping
     }
     
-    private func writeObjectsBackground(externalObjects: [ExternalObjectType], getObjectsType: GetObjectsType?, completion: @escaping ((_ result: Result<[DataModelType], Error>) -> Void)) {
+    private func writeObjectsAsyncClosure(externalObjects: [ExternalObjectType], getObjectsType: GetObjectsType?, completion: @escaping ((_ result: Result<[DataModelType], Error>) -> Void)) {
      
         asyncWrite.write(writeAsync: { (realm: Realm) in
             
@@ -37,14 +35,22 @@ public final class RealmRepositorySyncPersistenceWrite<DataModelType: Sendable, 
                     
                     realm.add(persistObject, update: .modified)
                 }
-                                        
-                let dataModels: [DataModelType]
                 
-                if let getObjectsType = getObjectsType {
-                    dataModels = try self.read.getObjects(realm: realm, getObjectsType: getObjectsType, query: nil)
+                guard let getObjectsType = getObjectsType else {
+                    completion(.success(Array()))
+                    return
                 }
-                else {
-                    dataModels = Array()
+                  
+                let getObjectsByType: RealmRepositorySyncGetObjects<PersistObjectType> = RealmRepositorySyncGetObjects()
+                
+                let getObjects: [PersistObjectType] = try getObjectsByType.getObjects(
+                    realm: realm,
+                    getObjectsType: getObjectsType,
+                    query: nil
+                )
+                
+                let dataModels: [DataModelType] = getObjects.compactMap { object in
+                    self.dataModelMapping.toDataModel(persistObject: object)
                 }
                 
                 completion(.success(dataModels))
@@ -63,7 +69,7 @@ public final class RealmRepositorySyncPersistenceWrite<DataModelType: Sendable, 
     @MainActor public func writeObjectsAsync(externalObjects: [ExternalObjectType], getObjectsType: GetObjectsType?) async throws -> [DataModelType] {
         
         return try await withCheckedThrowingContinuation { continuation in
-            self.writeObjectsBackground(externalObjects: externalObjects, getObjectsType: getObjectsType) { result in
+            self.writeObjectsAsyncClosure(externalObjects: externalObjects, getObjectsType: getObjectsType) { result in
                 switch result {
                 case .success(let dataModels):
                     continuation.resume(returning: dataModels)

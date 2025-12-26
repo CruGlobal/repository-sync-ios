@@ -25,7 +25,7 @@ public final class SwiftRepositorySyncPersistence<DataModelType: Sendable, Exter
         self.database = database
         self.dataModelMapping = dataModelMapping
                 
-        self.read = SwiftRepositorySyncPersistenceRead(dataModelMapping: dataModelMapping)
+        self.read = SwiftRepositorySyncPersistenceRead(container: database.container.modelContainer, dataModelMapping: dataModelMapping)
         self.write = SwiftRepositorySyncPersistenceWrite(container: database.container.modelContainer, dataModelMapping: dataModelMapping)
     }
 }
@@ -62,63 +62,19 @@ extension SwiftRepositorySyncPersistence {
     }
     
     @MainActor public func getObjectsAsync(getObjectsType: GetObjectsType) async throws -> [DataModelType] {
-        
         return try await getObjectsAsync(getObjectsType: getObjectsType, query: nil)
     }
     
     @MainActor public func getObjectsAsync(getObjectsType: GetObjectsType, query: SwiftDatabaseQuery<PersistObjectType>?) async throws -> [DataModelType] {
-        
-        return try await withCheckedThrowingContinuation { continuation in
-            getObjectsBackground(getObjectsType: getObjectsType, query: query) { (result: Result<[DataModelType], Error>) in
-                switch result {
-                case .success(let dataModels):
-                    continuation.resume(returning: dataModels)
-                case .failure(let error):
-                    continuation.resume(throwing: error)
-                }
-            }
-        }
+        return try await read.getObjectsAsync(getObjectsType: getObjectsType, query: query)
     }
     
     @MainActor public func getObjectsPublisher(getObjectsType: GetObjectsType) -> AnyPublisher<[DataModelType], Error> {
-        
         return getObjectsPublisher(getObjectsType: getObjectsType, query: nil)
     }
     
     @MainActor public func getObjectsPublisher(getObjectsType: GetObjectsType, query: SwiftDatabaseQuery<PersistObjectType>?) -> AnyPublisher<[DataModelType], Error> {
-        
-        return Future { promise in
-         
-            self.getObjectsBackground(getObjectsType: getObjectsType, query: query, completion: { (result: Result<[DataModelType], Error>) in
-                switch result {
-                case .success(let dataModels):
-                    promise(.success(dataModels))
-                case .failure(let error):
-                    promise(.failure(error))
-                }
-            })
-        }
-        .eraseToAnyPublisher()
-    }
-    
-    @MainActor private func getObjectsBackground(getObjectsType: GetObjectsType, query: SwiftDatabaseQuery<PersistObjectType>?, completion: @escaping ((_ result: Result<[DataModelType], Error>) -> Void)) {
-        
-        Task {
-            do {
-                
-                let context: ModelContext = self.database.openContext()
-                let dataModels = try await read.getObjects(context: context, getObjectsType: getObjectsType, query: query)
-                
-                await MainActor.run {
-                    completion(.success(dataModels))
-                }
-            }
-            catch let error {
-                await MainActor.run {
-                    completion(.failure(error))
-                }
-            }
-        }
+        return read.getObjectsPublisher(getObjectsType: getObjectsType, query: query)
     }
 }
 

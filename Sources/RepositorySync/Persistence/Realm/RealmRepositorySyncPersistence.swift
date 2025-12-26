@@ -23,8 +23,8 @@ public final class RealmRepositorySyncPersistence<DataModelType: Sendable, Exter
         self.database = database
         self.dataModelMapping = dataModelMapping
         
-        self.read = RealmRepositorySyncPersistenceRead(dataModelMapping: dataModelMapping)
-        self.write = RealmRepositorySyncPersistenceWrite(read: read, asyncWrite: database.asyncWrite, dataModelMapping: dataModelMapping)
+        self.read = RealmRepositorySyncPersistenceRead(database: database, dataModelMapping: dataModelMapping)
+        self.write = RealmRepositorySyncPersistenceWrite(asyncWrite: database.asyncWrite, dataModelMapping: dataModelMapping)
     }
 }
 
@@ -71,57 +71,15 @@ extension RealmRepositorySyncPersistence {
     }
     
     @MainActor public func getObjectsAsync(getObjectsType: GetObjectsType, query: RealmDatabaseQuery?) async throws -> [DataModelType] {
-        
-        return try await withCheckedThrowingContinuation { continuation in
-            getObjectsBackground(getObjectsType: getObjectsType, query: query) { (result: Result<[DataModelType], Error>) in
-                switch result {
-                case .success(let dataModels):
-                    continuation.resume(returning: dataModels)
-                case .failure(let error):
-                    continuation.resume(throwing: error)
-                }
-            }
-        }
+        return try await read.getObjectsAsync(getObjectsType: getObjectsType, query: query)
     }
     
     @MainActor public func getObjectsPublisher(getObjectsType: GetObjectsType) -> AnyPublisher<[DataModelType], Error> {
-        
         return getObjectsPublisher(getObjectsType: getObjectsType, query: nil)
     }
     
     @MainActor public func getObjectsPublisher(getObjectsType: GetObjectsType, query: RealmDatabaseQuery?) -> AnyPublisher<[DataModelType], Error> {
-        
-        return Future { promise in
-            self.getObjectsBackground(getObjectsType: getObjectsType, query: query) { result in
-                switch result {
-                case .success(let dataModels):
-                    promise(.success(dataModels))
-                case .failure(let error):
-                    promise(.failure(error))
-                }
-            }
-        }
-        .eraseToAnyPublisher()
-    }
-
-    @MainActor private func getObjectsBackground(getObjectsType: GetObjectsType, query: RealmDatabaseQuery?, completion: @escaping ((_ result: Result<[DataModelType], Error>) -> Void)) {
-        
-        Task {
-            do {
-                
-                let realm: Realm = try self.database.openRealm()
-                let dataModels = try read.getObjects(realm: realm, getObjectsType: getObjectsType, query: query)
-                
-                await MainActor.run {
-                    completion(.success(dataModels))
-                }
-            }
-            catch let error {
-                await MainActor.run {
-                    completion(.failure(error))
-                }
-            }
-        }
+        return read.getObjectsPublisher(getObjectsType: getObjectsType, query: query)
     }
 }
 
