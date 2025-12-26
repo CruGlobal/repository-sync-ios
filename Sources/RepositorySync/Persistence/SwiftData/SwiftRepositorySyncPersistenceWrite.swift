@@ -29,26 +29,6 @@ public actor SwiftRepositorySyncPersistenceWrite<DataModelType: Sendable, Extern
     public var context: ModelContext {
         return modelContext
     }
-    
-    @MainActor public func writeObjectsPublisher(externalObjects: [ExternalObjectType], getObjectsType: GetObjectsType?) -> AnyPublisher<[DataModelType], Error> {
-        
-        return Future { promise in
-            
-            Task {
-                
-                do {
-                    let dataModels = try await self.writeObjectsAsync(externalObjects: externalObjects, getObjectsType: getObjectsType)
-                    
-                    promise(.success(dataModels))
-                }
-                catch let error {
-                    
-                    promise(.failure(error))
-                }
-            }
-        }
-        .eraseToAnyPublisher()
-    }
 
     public func writeObjectsAsync(externalObjects: [ExternalObjectType], getObjectsType: GetObjectsType?) async throws -> [DataModelType] {
         
@@ -101,6 +81,26 @@ public actor SwiftRepositorySyncPersistenceWrite<DataModelType: Sendable, Extern
         }
         
         return dataModels
+    }
+    
+    @MainActor public func writeObjectsPublisher(externalObjects: [ExternalObjectType], getObjectsType: GetObjectsType?) -> AnyPublisher<[DataModelType], Error> {
+        
+        return Future { promise in
+            
+            Task {
+                
+                do {
+                    let dataModels = try await self.writeObjectsAsync(externalObjects: externalObjects, getObjectsType: getObjectsType)
+                    
+                    promise(.success(dataModels))
+                }
+                catch let error {
+                    
+                    promise(.failure(error))
+                }
+            }
+        }
+        .eraseToAnyPublisher()
     }
 }
 
