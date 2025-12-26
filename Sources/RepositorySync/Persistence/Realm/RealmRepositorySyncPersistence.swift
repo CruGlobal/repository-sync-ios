@@ -28,25 +28,6 @@ public final class RealmRepositorySyncPersistence<DataModelType: Sendable, Exter
     }
 }
 
-// MARK: - Persisted Objects
-
-extension RealmRepositorySyncPersistence {
-    
-    public func getPersistedObject(id: String) throws -> PersistObjectType? {
-        let realm: Realm = try database.openRealm()
-        return database.read.object(realm: realm, id: id)
-    }
-    
-    public func getPersistedObjects() throws -> [PersistObjectType] {
-        return try getPersistedObjects(query: nil)
-    }
-    
-    public func getPersistedObjects(query: RealmDatabaseQuery?) throws -> [PersistObjectType] {
-        let realm: Realm = try database.openRealm()
-        return database.read.objects(realm: realm, query: query)
-    }
-}
-
 // MARK: - Observe
 
 extension RealmRepositorySyncPersistence {
