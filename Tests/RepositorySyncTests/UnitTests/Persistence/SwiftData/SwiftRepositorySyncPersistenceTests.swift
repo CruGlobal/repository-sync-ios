@@ -109,6 +109,7 @@ struct SwiftRepositorySyncPersistenceTests {
         
         let mappedDataModels: [MockDataModel] = try await persistence.writeObjectsAsync(
             externalObjects: externalObjects,
+            writeOption: nil,
             getObjectsType: .allObjects
         )
         
@@ -131,6 +132,7 @@ struct SwiftRepositorySyncPersistenceTests {
         
         let mappedDataModels: [MockDataModel] = try await persistence.writeObjectsAsync(
             externalObjects: externalObjects,
+            writeOption: nil,
             getObjectsType: nil
         )
         
@@ -140,6 +142,31 @@ struct SwiftRepositorySyncPersistenceTests {
         let allDataModels: [MockDataModel] = try await persistence.getObjectsAsync(getObjectsType: .allObjects)
         
         #expect(MockDataModel.getIdsSortedByPosition(dataModels: allDataModels) == allIds)
+    }
+    
+    @available(iOS 17.4, *)
+    @Test()
+    @MainActor func writeObjectsAsyncWithWriteOptionDeleteObjectsNotInExternal() async throws {
+        
+        let persistence = try getPersistence()
+        
+        let newObjectIds: [String] = ["10", "11", "12"]
+        
+        let externalObjects: [MockDataModel] = newObjectIds.compactMap {
+            MockDataModel.createFromStringId(id: $0)
+        }
+        
+        let mappedDataModels: [MockDataModel] = try await persistence.writeObjectsAsync(
+            externalObjects: externalObjects,
+            writeOption: .deleteObjectsNotInExternal,
+            getObjectsType: nil
+        )
+        
+        #expect(mappedDataModels.count == 0)
+        
+        let allDataModels: [MockDataModel] = try await persistence.getObjectsAsync(getObjectsType: .allObjects)
+        
+        #expect(MockDataModel.getIdsSortedByPosition(dataModels: allDataModels) == newObjectIds)
     }
     
     @available(iOS 17.4, *)
@@ -169,6 +196,7 @@ struct SwiftRepositorySyncPersistenceTests {
                 
                 persistence.writeObjectsPublisher(
                     externalObjects: externalObjects,
+                    writeOption: nil,
                     getObjectsType: .allObjects
                 )
                 .sink { completion in
@@ -220,6 +248,7 @@ struct SwiftRepositorySyncPersistenceTests {
                 
                 persistence.writeObjectsPublisher(
                     externalObjects: externalObjects,
+                    writeOption: nil,
                     getObjectsType: nil
                 )
                 .sink { completion in

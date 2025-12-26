@@ -80,6 +80,7 @@ extension RepositorySync {
             
             return self.getPersistence().writeObjectsPublisher(
                 externalObjects: externalObjects,
+                writeOption: nil,
                 getObjectsType: getObjectsType
             )
         }
