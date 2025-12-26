@@ -211,8 +211,8 @@ struct InMemoryRealmDatabaseTests {
                     continuation.resume(returning: ())
                 }
                 
-                database.asyncWrite.objects(
-                    writeClosure: { (realm: Realm) in
+                database.asyncWrite.write(
+                    writeAsync: { (realm: Realm) in
                         
                         realm.add(newObjects)
                         

@@ -35,8 +35,10 @@ struct SwiftRepositorySyncPersistenceTests {
         let persistence = try getPersistence()
         
         let dataModels: [MockDataModel] = try await persistence.getObjectsAsync(getObjectsType: .allObjects)
+        
+        let sortedDataModels: [String] = MockDataModel.getIdsSortedByPosition(dataModels: dataModels)
                                         
-        #expect(MockDataModel.getIdsSortedByPosition(dataModels: dataModels) == allObjectIds)
+        #expect(sortedDataModels == allObjectIds)
     }
     
     @available(iOS 17.4, *)
@@ -270,7 +272,7 @@ extension SwiftRepositorySyncPersistenceTests {
         }
         
         let database = try MockSwiftDatabase().createDatabase(
-            directoryName: "swift_\(String(describing: SwiftDatabaseTests.self))",
+            directoryName: "swift_\(String(describing: SwiftRepositorySyncPersistenceTests.self))",
             objects: objects,
             shouldDeleteExistingObjects: true
         )

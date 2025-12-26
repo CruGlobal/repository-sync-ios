@@ -1063,13 +1063,13 @@ import RealmSwift
 extension RepositorySyncTests {
     
     private func getSharedRealmDatabase(addObjects: [MockRealmObject], shouldDeleteExistingObjects: Bool) throws -> RealmDatabase {
-        let directoryName: String = "realm_publisher_\(String(describing: RepositorySyncTests.self))"
+        let directoryName: String = "realm_\(String(describing: RepositorySyncTests.self))"
         return try MockRealmDatabase().createDatabase(directoryName: directoryName, objects: addObjects, shouldDeleteExistingObjects: shouldDeleteExistingObjects)
     }
     
     @available(iOS 17.4, *)
     private func getSharedSwiftDatabase(addObjects: [MockSwiftObject], shouldDeleteExistingObjects: Bool) throws -> SwiftDatabase {
-        let directoryName: String = "swift_publisher_\(String(describing: RepositorySyncTests.self))"
+        let directoryName: String = "swift_\(String(describing: RepositorySyncTests.self))"
         return try MockSwiftDatabase().createDatabase(directoryName: directoryName, objects: addObjects, shouldDeleteExistingObjects: shouldDeleteExistingObjects)
     }
     

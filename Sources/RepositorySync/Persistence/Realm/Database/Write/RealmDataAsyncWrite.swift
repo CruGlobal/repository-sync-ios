@@ -51,10 +51,11 @@ public final class RealmDataAsyncWrite {
         }
     }
     
-    public func write(writeClosure: @escaping ((_ realm: Realm) -> Void)) async throws {
+    public func write(writeAsync: @escaping ((_ realm: Realm) -> Void)) async throws {
         
         return try await withCheckedThrowingContinuation { continuation in
             write(writeAsync: { (realm: Realm) in
+                writeAsync(realm)
                 continuation.resume(returning: Void())
             }, writeError: { (error: Error) in
                 continuation.resume(throwing: error)
