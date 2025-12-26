@@ -95,29 +95,6 @@ struct SwiftRepositorySyncPersistenceTests {
     
     @available(iOS 17.4, *)
     @Test()
-    @MainActor func mapPersistObjects() async throws {
-        
-        let persistence = try getPersistence()
-        
-        let sortedPeristObjectsIds: [String] = ["0", "1", "2"]
-        
-        let persistObjects: [MockSwiftObject] = sortedPeristObjectsIds.compactMap {
-            guard let dataModel = MockDataModel.createFromStringId(id: $0) else {
-                return nil
-            }
-            return MockSwiftObject.createFrom(interface: dataModel)
-        }
-
-        let dataModels: [MockDataModel] = persistence.mapPersistObjects(persistObjects: persistObjects)
-        
-        #expect(dataModels.count == persistObjects.count)
-        #expect(MockDataModel.getIdsSortedByPosition(dataModels: dataModels) == sortedPeristObjectsIds)
-    }
-    
-    /*
-    
-    @available(iOS 17.4, *)
-    @Test()
     @MainActor func writeObjectsAsyncWithMapping() async throws {
         
         let persistence = try getPersistence()
@@ -266,7 +243,7 @@ struct SwiftRepositorySyncPersistenceTests {
         let allDataModels: [MockDataModel] = try await persistence.getObjectsAsync(getObjectsType: .allObjects)
         
         #expect(MockDataModel.getIdsSortedByPosition(dataModels: allDataModels) == allIds)
-    }*/
+    }
 }
 
 extension SwiftRepositorySyncPersistenceTests {

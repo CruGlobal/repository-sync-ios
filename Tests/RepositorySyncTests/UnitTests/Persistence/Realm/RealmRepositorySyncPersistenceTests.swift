@@ -90,28 +90,6 @@ struct RealmRepositorySyncPersistenceTests {
     }
     
     @Test()
-    @MainActor func mapPersistObjects() async throws {
-        
-        let persistence = try getPersistence()
-        
-        let sortedPeristObjectsIds: [String] = ["0", "1", "2"]
-        
-        let persistObjects: [MockRealmObject] = sortedPeristObjectsIds.compactMap {
-            guard let dataModel = MockDataModel.createFromStringId(id: $0) else {
-                return nil
-            }
-            return MockRealmObject.createFrom(interface: dataModel)
-        }
-
-        let dataModels: [MockDataModel] = persistence.mapPersistObjects(persistObjects: persistObjects)
-        
-        #expect(dataModels.count == persistObjects.count)
-        #expect(MockDataModel.getIdsSortedByPosition(dataModels: dataModels) == sortedPeristObjectsIds)
-    }
-    
-    /*
-    
-    @Test()
     @MainActor func writeObjectsAsyncWithMapping() async throws {
         
         let persistence = try getPersistence()
@@ -257,7 +235,7 @@ struct RealmRepositorySyncPersistenceTests {
         let allDataModels: [MockDataModel] = try await persistence.getObjectsAsync(getObjectsType: .allObjects)
         
         #expect(MockDataModel.getIdsSortedByPosition(dataModels: allDataModels) == allIds)
-    }*/
+    }
 }
 
 extension RealmRepositorySyncPersistenceTests {

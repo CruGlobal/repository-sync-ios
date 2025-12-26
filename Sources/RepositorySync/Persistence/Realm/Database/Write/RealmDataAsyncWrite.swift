@@ -26,9 +26,12 @@ public final class RealmDataAsyncWrite {
         let config: Realm.Configuration = self.config
         
         guard config.isInMemory == false else {
+            
             let description: String = "Unable to perform async write on in memory realm.  In memory realm's require a shared realm instance."
             let error: Error = NSError(domain: String(describing: RealmDataAsyncWrite.self), code: -1, userInfo: [NSLocalizedDescriptionKey: description])
+            
             writeError(error)
+            
             return
         }
         

@@ -12,6 +12,9 @@ import Combine
 
 public final class RealmRepositorySyncPersistence<DataModelType: Sendable, ExternalObjectType: Sendable, PersistObjectType: IdentifiableRealmObject>: Persistence {
         
+    private let read: RealmRepositorySyncPersistenceRead<DataModelType, ExternalObjectType, PersistObjectType>
+    private let write: RealmRepositorySyncPersistenceWrite<DataModelType, ExternalObjectType, PersistObjectType>
+    
     public let database: RealmDatabase
     public let dataModelMapping: any Mapping<DataModelType, ExternalObjectType, PersistObjectType>
     
@@ -19,6 +22,9 @@ public final class RealmRepositorySyncPersistence<DataModelType: Sendable, Exter
         
         self.database = database
         self.dataModelMapping = dataModelMapping
+        
+        self.read = RealmRepositorySyncPersistenceRead(dataModelMapping: dataModelMapping)
+        self.write = RealmRepositorySyncPersistenceWrite(read: read, asyncWrite: database.asyncWrite, dataModelMapping: dataModelMapping)
     }
 }
 
@@ -57,24 +63,6 @@ extension RealmRepositorySyncPersistence {
         let results: Results<PersistObjectType> = database.read.results(realm: realm, query: nil)
         
         return results.count
-    }
-    
-    @MainActor private func getObjectsBackground(getObjectsType: GetObjectsType, query: RealmDatabaseQuery?, completion: @escaping ((_ result: Result<[DataModelType], Error>) -> Void)) {
-        
-        DispatchQueue.global().async {
-            do {
-                let realm: Realm = try self.database.openRealm()
-                let dataModels: [DataModelType] = self.getObjects(realm: realm, getObjectsType: getObjectsType, query: query)
-                DispatchQueue.main.async {
-                    completion(.success(dataModels))
-                }
-            }
-            catch let error {
-                DispatchQueue.main.async {
-                    completion(.failure(error))
-                }
-            }
-        }
     }
     
     @MainActor public func getObjectsAsync(getObjectsType: GetObjectsType) async throws -> [DataModelType] {
@@ -116,79 +104,30 @@ extension RealmRepositorySyncPersistence {
         .eraseToAnyPublisher()
     }
 
-    private func getObjects(realm: Realm, getObjectsType: GetObjectsType, query: RealmDatabaseQuery?) -> [DataModelType] {
-                
-        // TODO: Should an error be thrown if GetObjectsType is other than all and query is provided since query won't apply to object id? ~Levi
+    @MainActor private func getObjectsBackground(getObjectsType: GetObjectsType, query: RealmDatabaseQuery?, completion: @escaping ((_ result: Result<[DataModelType], Error>) -> Void)) {
         
-        let persistObjects: [PersistObjectType]
+        Task {
+            do {
                 
-        switch getObjectsType {
-            
-        case .allObjects:
-            persistObjects = database.read.objects(realm: realm, query: query)
-            
-        case .object(let id):
-            
-            let object: PersistObjectType? = database.read.object(realm: realm, id: id)
-            
-            if let object = object {
-                persistObjects = [object]
+                let realm: Realm = try self.database.openRealm()
+                let dataModels = try read.getObjects(realm: realm, getObjectsType: getObjectsType, query: query)
+                
+                await MainActor.run {
+                    completion(.success(dataModels))
+                }
             }
-            else {
-                persistObjects = []
+            catch let error {
+                await MainActor.run {
+                    completion(.failure(error))
+                }
             }
         }
-        
-        return mapPersistObjects(persistObjects: persistObjects)
-    }
-    
-    public func mapPersistObjects(persistObjects: [PersistObjectType]) -> [DataModelType] {
-                
-        let dataModels: [DataModelType] = persistObjects.compactMap { object in
-            self.dataModelMapping.toDataModel(persistObject: object)
-        }
-        
-        return dataModels
     }
 }
 
 // MARK: - Write
 
 extension RealmRepositorySyncPersistence {
-    
-    @MainActor private func writeObjectsBackground(externalObjects: [ExternalObjectType], getObjectsType: GetObjectsType?, completion: @escaping ((_ result: Result<[DataModelType], Error>) -> Void)) {
-                
-        self.database.asyncWrite.objects(writeClosure: { (realm: Realm) in
-            
-            for externalObject in externalObjects {
-                
-                guard let persistObject = self.dataModelMapping.toPersistObject(externalObject: externalObject) else {
-                    continue
-                }
-                
-                realm.add(persistObject, update: .modified)
-            }
-            
-            let dataModels: [DataModelType]
-            
-            if let getObjectsType = getObjectsType {
-                dataModels = self.getObjects(realm: realm, getObjectsType: getObjectsType, query: nil)
-            }
-            else {
-                dataModels = Array()
-            }
-            
-            DispatchQueue.main.async {
-                completion(.success(dataModels))
-            }
-            
-        }, writeError: { (error: Error) in
-            
-            DispatchQueue.main.async {
-                completion(.failure(error))
-            }
-        })
-    }
     
     @MainActor public func writeObjectsAsync(externalObjects: [ExternalObjectType], getObjectsType: GetObjectsType?) async throws -> [DataModelType] {
         
@@ -218,5 +157,24 @@ extension RealmRepositorySyncPersistence {
             }
         }
         .eraseToAnyPublisher()
+    }
+    
+    @MainActor private func writeObjectsBackground(externalObjects: [ExternalObjectType], getObjectsType: GetObjectsType?, completion: @escaping ((_ result: Result<[DataModelType], Error>) -> Void)) {
+        
+        Task {
+            do {
+                
+                let dataModels = try await write.writeObjectsAsync(externalObjects: externalObjects, getObjectsType: getObjectsType)
+                
+                await MainActor.run {
+                    completion(.success(dataModels))
+                }
+            }
+            catch let error {
+                await MainActor.run {
+                    completion(.failure(error))
+                }
+            }
+        }
     }
 }

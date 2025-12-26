@@ -15,13 +15,10 @@ public final class SwiftDatabase {
     public let container: SwiftDataContainer
     public let read: SwiftDataRead = SwiftDataRead()
     public let write: SwiftDataWrite = SwiftDataWrite()
-    public let asyncWrite: SwiftDataAsyncWrite
     
     public init(container: SwiftDataContainer) {
         
         self.container = container
-        
-        asyncWrite = SwiftDataAsyncWrite(container: container.modelContainer)
     }
     
     public func openContext(autosaveEnabled: Bool = false) -> ModelContext {
