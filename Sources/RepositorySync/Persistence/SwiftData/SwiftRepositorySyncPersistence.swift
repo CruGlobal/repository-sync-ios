@@ -30,6 +30,26 @@ public final class SwiftRepositorySyncPersistence<DataModelType: Sendable, Exter
     }
 }
 
+// MARK: - Persisted Objects
+
+@available(iOS 17.4, *)
+extension SwiftRepositorySyncPersistence {
+    
+    public func getPersistedObject(id: String) throws -> PersistObjectType? {
+        let context: ModelContext = database.openContext()
+        return try database.read.object(context: context, id: id)
+    }
+    
+    public func getPersistedObjects() throws -> [PersistObjectType] {
+        return try getPersistedObjects(query: nil)
+    }
+    
+    public func getPersistedObjects(query: SwiftDatabaseQuery<PersistObjectType>?) throws -> [PersistObjectType] {
+        let context: ModelContext = database.openContext()
+        return try database.read.objects(context: context, query: query)
+    }
+}
+
 // MARK: - Observe
 
 @available(iOS 17.4, *)
