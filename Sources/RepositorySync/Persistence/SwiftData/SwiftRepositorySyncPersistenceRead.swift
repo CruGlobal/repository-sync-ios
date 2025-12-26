@@ -20,9 +20,7 @@ public actor SwiftRepositorySyncPersistenceRead<DataModelType: Sendable, Externa
     }
     
     public func getObjects(context: ModelContext, getObjectsType: GetObjectsType, query: SwiftDatabaseQuery<PersistObjectType>?) throws -> [DataModelType] {
-           
-        // TODO: Should an error be thrown if GetObjectsType is other than all and query is provided since query won't apply to object id? ~Levi
-        
+                   
         let read = SwiftDataRead()
         
         let persistObjects: [PersistObjectType]

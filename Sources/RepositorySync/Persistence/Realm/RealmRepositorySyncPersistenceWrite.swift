@@ -8,6 +8,7 @@
 
 import Foundation
 import RealmSwift
+import Combine
 
 public final class RealmRepositorySyncPersistenceWrite<DataModelType: Sendable, ExternalObjectType: Sendable, PersistObjectType: IdentifiableRealmObject> {
     
@@ -22,9 +23,9 @@ public final class RealmRepositorySyncPersistenceWrite<DataModelType: Sendable, 
         self.dataModelMapping = dataModelMapping
     }
     
-    @MainActor private func writeObjectsBackground(externalObjects: [ExternalObjectType], getObjectsType: GetObjectsType?, completion: @escaping ((_ result: Result<[DataModelType], Error>) -> Void)) {
+    private func writeObjectsBackground(externalObjects: [ExternalObjectType], getObjectsType: GetObjectsType?, completion: @escaping ((_ result: Result<[DataModelType], Error>) -> Void)) {
      
-        asyncWrite.objects(writeClosure: { (realm: Realm) in
+        asyncWrite.write(writeAsync: { (realm: Realm) in
             
             do {
                 
@@ -71,5 +72,26 @@ public final class RealmRepositorySyncPersistenceWrite<DataModelType: Sendable, 
                 }
             }
         }
+    }
+    
+    @MainActor func writeObjectsPublisher(externalObjects: [ExternalObjectType], getObjectsType: GetObjectsType?) -> AnyPublisher<[DataModelType], Error> {
+                        
+        return Future { promise in
+            
+            Task {
+                
+                do {
+                    
+                    let dataModels: [DataModelType] = try await self.writeObjectsAsync(externalObjects: externalObjects, getObjectsType: getObjectsType)
+                    
+                    promise(.success(dataModels))
+                }
+                catch let error {
+                    
+                    promise(.failure(error))
+                }
+            }
+        }
+        .eraseToAnyPublisher()
     }
 }

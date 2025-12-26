@@ -21,7 +21,7 @@ public final class RealmDataAsyncWrite {
         self.config = config
     }
     
-    @MainActor public func objects(writeClosure: @escaping ((_ realm: Realm) -> Void), writeError: @escaping ((_ error: Error) -> Void)) {
+    public func write(writeAsync: @escaping ((_ realm: Realm) -> Void), writeError: @escaping ((_ error: Error) -> Void)) {
                         
         let config: Realm.Configuration = self.config
         
@@ -41,7 +41,7 @@ public final class RealmDataAsyncWrite {
                     let realm: Realm = try Realm(configuration: config)
                     
                     try realm.write {
-                        writeClosure(realm)
+                        writeAsync(realm)
                     }
                 }
                 catch let error {
@@ -51,10 +51,10 @@ public final class RealmDataAsyncWrite {
         }
     }
     
-    @MainActor public func objects(writeClosure: @escaping ((_ realm: Realm) -> Void)) async throws {
+    public func write(writeClosure: @escaping ((_ realm: Realm) -> Void)) async throws {
         
         return try await withCheckedThrowingContinuation { continuation in
-            objects(writeClosure: { (realm: Realm) in
+            write(writeAsync: { (realm: Realm) in
                 continuation.resume(returning: Void())
             }, writeError: { (error: Error) in
                 continuation.resume(throwing: error)

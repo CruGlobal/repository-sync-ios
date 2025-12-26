@@ -130,51 +130,10 @@ extension RealmRepositorySyncPersistence {
 extension RealmRepositorySyncPersistence {
     
     @MainActor public func writeObjectsAsync(externalObjects: [ExternalObjectType], getObjectsType: GetObjectsType?) async throws -> [DataModelType] {
-        
-        return try await withCheckedThrowingContinuation { continuation in
-            writeObjectsBackground(externalObjects: externalObjects, getObjectsType: getObjectsType) { (result: Result<[DataModelType], Error>) in
-                switch result {
-                case .success(let dataModels):
-                    continuation.resume(returning: dataModels)
-                case .failure(let error):
-                    continuation.resume(throwing: error)
-                }
-            }
-        }
+        return try await write.writeObjectsAsync(externalObjects: externalObjects, getObjectsType: getObjectsType)
     }
     
     @MainActor public func writeObjectsPublisher(externalObjects: [ExternalObjectType], getObjectsType: GetObjectsType?) -> AnyPublisher<[DataModelType], any Error> {
-                
-        return Future { promise in
-            
-            self.writeObjectsBackground(externalObjects: externalObjects, getObjectsType: getObjectsType) { result in
-                switch result {
-                case .success(let dataModels):
-                    promise(.success(dataModels))
-                case .failure(let error):
-                    promise(.failure(error))
-                }
-            }
-        }
-        .eraseToAnyPublisher()
-    }
-    
-    @MainActor private func writeObjectsBackground(externalObjects: [ExternalObjectType], getObjectsType: GetObjectsType?, completion: @escaping ((_ result: Result<[DataModelType], Error>) -> Void)) {
-        
-        Task {
-            do {
-                
-                let dataModels = try await write.writeObjectsAsync(externalObjects: externalObjects, getObjectsType: getObjectsType)
-                
-                await MainActor.run {
-                    completion(.success(dataModels))
-                }
-            }
-            catch let error {
-                await MainActor.run {
-                    completion(.failure(error))
-                }
-            }
-        }
+        return write.writeObjectsPublisher(externalObjects: externalObjects, getObjectsType: getObjectsType)
     }
 }

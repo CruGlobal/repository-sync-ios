@@ -8,6 +8,7 @@
 
 import Foundation
 import SwiftData
+import Combine
 
 @available(iOS 17.4, *)
 public actor SwiftRepositorySyncPersistenceWrite<DataModelType: Sendable, ExternalObjectType: Sendable, PersistObjectType: IdentifiableSwiftDataObject> {
@@ -27,6 +28,26 @@ public actor SwiftRepositorySyncPersistenceWrite<DataModelType: Sendable, Extern
     
     public var context: ModelContext {
         return modelContext
+    }
+    
+    @MainActor public func writeObjectsPublisher(externalObjects: [ExternalObjectType], getObjectsType: GetObjectsType?) -> AnyPublisher<[DataModelType], Error> {
+        
+        return Future { promise in
+            
+            Task {
+                
+                do {
+                    let dataModels = try await self.writeObjectsAsync(externalObjects: externalObjects, getObjectsType: getObjectsType)
+                    
+                    promise(.success(dataModels))
+                }
+                catch let error {
+                    
+                    promise(.failure(error))
+                }
+            }
+        }
+        .eraseToAnyPublisher()
     }
 
     public func writeObjectsAsync(externalObjects: [ExternalObjectType], getObjectsType: GetObjectsType?) async throws -> [DataModelType] {

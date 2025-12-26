@@ -10,7 +10,7 @@ import Foundation
 import SwiftData
 
 @available(iOS 17.4, *)
-public final class SwiftDataContainer {
+public final class SwiftDataContainer: Sendable {
     
     public let modelContainer: ModelContainer
     public let configName: String

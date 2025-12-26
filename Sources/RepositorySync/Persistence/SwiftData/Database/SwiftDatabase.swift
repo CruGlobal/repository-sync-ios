@@ -10,7 +10,7 @@ import Foundation
 import SwiftData
 
 @available(iOS 17.4, *)
-public final class SwiftDatabase {
+public final class SwiftDatabase: Sendable {
     
     public let container: SwiftDataContainer
     public let read: SwiftDataRead = SwiftDataRead()
