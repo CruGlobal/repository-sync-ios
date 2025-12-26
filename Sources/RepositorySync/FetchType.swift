@@ -8,7 +8,7 @@
 
 import Foundation
 
-public enum FetchType {
+public enum FetchType: Sendable {
     
     case get(cachePolicy: GetCachePolicy)
     case observe(cachePolicy: ObserveCachePolicy)

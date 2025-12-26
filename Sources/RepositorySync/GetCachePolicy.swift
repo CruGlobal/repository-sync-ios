@@ -8,7 +8,7 @@
 
 import Foundation
 
-public enum GetCachePolicy {
+public enum GetCachePolicy: Sendable {
     
     // Fetches remote data and stores remote data to cache.
     case ignoreCacheData

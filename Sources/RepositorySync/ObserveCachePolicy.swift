@@ -8,7 +8,7 @@
 
 import Foundation
 
-public enum ObserveCachePolicy {
+public enum ObserveCachePolicy: Sendable {
     
     // Fetches cached data, doesn't fetch data from remote.
     case returnCacheDataDontFetch
