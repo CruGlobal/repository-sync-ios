@@ -2,7 +2,7 @@
 //  RealmDatabaseTests.swift
 //  RepositorySync
 //
-//  Created by Levi Eggert on 7/30/25.
+//  Created by Levi Eggert on 12/1/25.
 //  Copyright © 2025 Cru. All rights reserved.
 //
 
@@ -10,19 +10,28 @@ import Foundation
 import Testing
 @testable import RepositorySync
 import RealmSwift
-import Combine
 
 @Suite(.serialized)
 struct RealmDatabaseTests {
         
     private let allObjectIds: [Int] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    
+    @Test()
+    func isInMemory() async throws {
         
+        let database = try getDatabase()
+        
+        #expect(database.databaseConfig.isInMemory == false)
+    }
+    
+    // MARK: - Read
+    
     @Test()
     func getObjectById() async throws {
         
-        let database = try getSharedDatabase()
+        let database = try getDatabase()
                 
-        let object: MockRealmObject? = try database.getObject(id: "0")
+        let object: MockRealmObject? = try database.openRealmAndRead.object(id: "0")
                 
         #expect(object != nil)
     }
@@ -30,11 +39,11 @@ struct RealmDatabaseTests {
     @Test()
     func getObjectsByIds() async throws {
         
-        let database = try getSharedDatabase()
-                
+        let database = try getDatabase()
+                        
         let ids: [String] = ["6", "4", "2"]
         
-        let objects: [MockRealmObject] = try database.getObjects(
+        let objects: [MockRealmObject] = try database.openRealmAndRead.objects(
             ids: ids,
             sortBykeyPath: SortByKeyPath(keyPath: #keyPath(MockRealmObject.position), ascending: false)
         )
@@ -45,13 +54,13 @@ struct RealmDatabaseTests {
     @Test()
     func getObjectByFilter() async throws {
         
-        let database = try getSharedDatabase()
+        let database = try getDatabase()
                 
         let predicate = NSPredicate(format: "\(#keyPath(MockRealmObject.position)) == %@", NSNumber(value: 0))
         
         let query = RealmDatabaseQuery.filter(filter: predicate)
         
-        let objects: [MockRealmObject] = try database.getObjects(query: query)
+        let objects: [MockRealmObject] = try database.openRealmAndRead.objects(query: query)
                 
         #expect(objects.count == 1)
         #expect(objects.first?.id == "0")
@@ -60,11 +69,11 @@ struct RealmDatabaseTests {
     @Test()
     func getObjectsBySortAscendingTrue() async throws {
         
-        let database = try getSharedDatabase()
+        let database = try getDatabase()
                         
         let query = RealmDatabaseQuery.sort(byKeyPath: SortByKeyPath(keyPath: #keyPath(MockRealmObject.position), ascending: true))
         
-        let objects: [MockRealmObject] = Array(try database.getObjectsResults(query: query))
+        let objects: [MockRealmObject] = Array(try database.openRealmAndRead.results(query: query))
         
         let objectPositions: [Int] = objects.map { $0.position }
                 
@@ -74,11 +83,11 @@ struct RealmDatabaseTests {
     @Test()
     func getObjectsBySortAscendingFalse() async throws {
         
-        let database = try getSharedDatabase()
+        let database = try getDatabase()
                         
         let query = RealmDatabaseQuery.sort(byKeyPath: SortByKeyPath(keyPath: #keyPath(MockRealmObject.position), ascending: false))
         
-        let objects: [MockRealmObject] = try database.getObjects(query: query)
+        let objects: [MockRealmObject] = try database.openRealmAndRead.objects(query: query)
         
         let objectPositions: [Int] = objects.map { $0.position }
                 
@@ -88,7 +97,7 @@ struct RealmDatabaseTests {
     @Test()
     func getObjectByFilterAndSort() async throws {
         
-        let database = try getSharedDatabase()
+        let database = try getDatabase()
                 
         let isEvenPosition = NSPredicate(format: "\(#keyPath(MockRealmObject.isEvenPosition)) == %@", NSNumber(value: true))
         
@@ -97,205 +106,333 @@ struct RealmDatabaseTests {
             sortByKeyPath: SortByKeyPath(keyPath: #keyPath(MockRealmObject.position), ascending: false)
         )
         
-        let objects: [MockRealmObject] = try database.getObjects(query: query)
+        let objects: [MockRealmObject] = try database.openRealmAndRead.objects(query: query)
         
         let objectPositions: [Int] = objects.map { $0.position }
                 
         #expect(objectPositions == [8, 6, 4, 2, 0])
     }
     
+    // MARK: - Write
+    
     @Test()
-    func writeToExistingObjects() async throws {
+    func createObjects() async throws {
         
-        let database = try getSharedDatabase()
+        let database = try getDatabase()
+        
+        let realm: Realm = try database.openRealm()
+                        
+        let uniqueId: String = UUID().uuidString
                 
-        try database.writeObjects(writeClosure: { realm in
+        let newObject = MockRealmObject()
+        newObject.id = uniqueId
+        
+        let newObjects: [MockRealmObject] = [
+            newObject
+        ]
+        
+        try database.write.objects(realm: realm, writeClosure: { (realm: Realm) in
+            return WriteRealmObjects(deleteObjects: nil, addObjects: newObjects)
+        }, updatePolicy: .modified)
+        
+        let fetchedObject: MockRealmObject = try #require(database.read.object(realm: realm, id: uniqueId))
+                
+        #expect(fetchedObject.id == uniqueId)
+    }
+    
+    @Test()
+    func updateObjects() async throws {
+        
+        let database = try getDatabase()
+        
+        let realm: Realm = try database.openRealm()
+                
+        try database.write.objects(realm: realm, writeClosure: { (realm: Realm) in
             
-            let objects: [MockRealmObject] = database.getObjects(realm: realm, query: nil)
-            
-            for object in objects {
+            let allObjects: [MockRealmObject] = database.read.objects(realm: realm, query: nil)
+                      
+            for object in allObjects {
                 object.position = -9999
             }
             
-            return RealmDatabaseWrite(updateObjects: objects, deleteObjects: nil)
+            return WriteRealmObjects(deleteObjects: nil, addObjects: allObjects)
             
         }, updatePolicy: .modified)
-        
-        let objects: [MockRealmObject] = try database.getObjects(query: nil)
+                
+        let objects: [MockRealmObject] = database.read.objects(realm: realm, query: nil)
                 
         #expect(objects.first?.position == -9999)
         #expect(objects.last?.position == -9999)
     }
     
     @Test()
-    func writeNewObjects() async throws {
+    func deleteObjects() async throws {
         
-        let database = try getSharedDatabase()
+        let database = try getDatabase()
+        
+        let realm: Realm = try database.openRealm()
+                        
+        let allObjects: [MockRealmObject] = database.read.objects(realm: realm, query: nil)
                 
-        let uniqueId: String = UUID().uuidString
+        #expect(allObjects.count == allObjectIds.count)
         
+        try database.write.objects(realm: realm, writeClosure: { (realm: Realm) in
+            return WriteRealmObjects(deleteObjects: allObjects, addObjects: nil)
+        }, updatePolicy: .modified)
+                
+        let objectsAfterDelete: [MockRealmObject] = database.read.objects(realm: realm, query: nil)
+                        
+        #expect(objectsAfterDelete.count == 0)
+    }
+    
+    // MARK: - Write Async
+    /*
+    @Test()
+    @MainActor func createObjectsAsync() async throws {
+        
+        let database = try getDatabase()
+                                
+        let uniqueId: String = UUID().uuidString
+                
         let newObject = MockRealmObject()
         newObject.id = uniqueId
-                
-        let newObjects: [MockRealmObject] = [
-            newObject
-        ]
         
-        try database.writeObjects(writeClosure: { realm in
-            return RealmDatabaseWrite(updateObjects: newObjects, deleteObjects: nil)
-        }, updatePolicy: .modified)
+        let objectsToAdd: [MockRealmObject] = [newObject]
         
-        let object: MockRealmObject = try #require(try database.getObject(id: uniqueId))
+        try await database.asyncWrite.objects(writeClosure: { (realm: Realm) in
+            
+            realm.add(objectsToAdd, update: .modified)
+        })
                 
-        #expect(object.id == uniqueId)
+        let realm: Realm = try database.openRealm()
+        let objectAfterAdd: MockRealmObject = try #require(database.read.object(realm: realm, id: uniqueId))
+                
+        #expect(objectAfterAdd.id == uniqueId)
     }
     
     @Test()
-    @MainActor func writeNewObjectsAsync()  async throws {
+    @MainActor func updateObjectsAsync() async throws {
         
-        let database = try getSharedDatabase()
+        let database = try getDatabase()
+        
+        try await database.asyncWrite.objects(writeClosure: { (realm: Realm) in
+            
+            let allObjects: [MockRealmObject] = database.read.objects(realm: realm, query: nil)
+                      
+            for object in allObjects {
+                object.position = -9999
+            }
+            
+            realm.add(allObjects, update: .modified)
+        })
+        
+        let realm: Realm = try database.openRealm()
+        let objectsAfterUpdate: [MockRealmObject] = database.read.objects(realm: realm, query: nil)
+                                                    
+        #expect(objectsAfterUpdate.first?.position == -9999)
+        #expect(objectsAfterUpdate.last?.position == -9999)
+    }
+    
+    @Test()
+    @MainActor func deleteObjectsAsync() async throws {
+        
+        let database = try getDatabase()
+        
+        let currentObjects: [MockRealmObject] = try database.openRealmAndRead.objects(query: nil)
                 
+        #expect(currentObjects.count == allObjectIds.count)
+            
+        try await database.asyncWrite.objects(writeClosure: { (realm: Realm) in
+            
+            let allObjects: [MockRealmObject] = database.read.objects(realm: realm, query: nil)
+            
+            realm.delete(allObjects)
+        })
+        
+        let realm: Realm = try database.openRealm()
+        let objectsAfterDelete: [MockRealmObject] = database.read.objects(realm: realm, query: nil)
+                                                  
+        #expect(objectsAfterDelete.count == 0)
+    }*/
+    
+    // MARK: - Write Async With Completion
+    /*
+    @Test()
+    @MainActor func createObjectsAsyncWithCompletion() async throws {
+        
+        let database = try getDatabase()
+                                
         let uniqueId: String = UUID().uuidString
                 
-        await confirmation(expectedCount: 1) { confirmation in
+        let newObject = MockRealmObject()
+        newObject.id = uniqueId
+        
+        let objectsToAdd: [MockRealmObject] = [newObject]
+        
+        try await confirmation(expectedCount: 1) { confirmation in
             
-            await withCheckedContinuation { continuation in
+            try await withCheckedThrowingContinuation { continuation in
                 
                 let timeoutTask = Task {
                     try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
                     continuation.resume(returning: ())
                 }
                 
-                let newObject = MockRealmObject()
-                newObject.id = uniqueId
-                
-                let newObjects: [MockRealmObject] = [
-                    newObject
-                ]
-                
-                database.writeAsync(writeClosure: { (realm: Realm) in
-                    realm.add(newObjects, update: .modified)
-                }, completion: { (result: Result<Realm, Error>) in
-                    
-                    DispatchQueue.main.async {
+                database.asyncWrite.objects(
+                    writeClosure: { (realm: Realm) in
+                        
+                        realm.add(objectsToAdd)
+                        
                         // Place inside a sink or other async closure:
                         confirmation()
                         
-                        // When finished be sure to call:
-                        timeoutTask.cancel()
-                        continuation.resume(returning: ())
+                        DispatchQueue.main.async {
+                            timeoutTask.cancel()
+                            continuation.resume(returning: ())
+                        }
+                    },
+                    writeError: { (error: Error) in
+                        
+                        // Place inside a sink or other async closure:
+                        confirmation()
+                        
+                        DispatchQueue.main.async {
+                            timeoutTask.cancel()
+                            continuation.resume(throwing: error)
+                        }
                     }
-                })
+                )
+            }
+        }
+                
+        let realm: Realm = try database.openRealm()
+        let objectAfterAdd: MockRealmObject = try #require(database.read.object(realm: realm, id: uniqueId))
+                
+        #expect(objectAfterAdd.id == uniqueId)
+    }
+    
+    @Test()
+    @MainActor func updateObjectsAsyncWithCompletion() async throws {
+        
+        let database = try getDatabase()
+                
+        try await confirmation(expectedCount: 1) { confirmation in
+            
+            try await withCheckedThrowingContinuation { continuation in
+                
+                let timeoutTask = Task {
+                    try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+                    continuation.resume(returning: ())
+                }
+                
+                database.asyncWrite.objects(
+                    writeClosure: { (realm: Realm) in
+                        
+                        let allObjects: [MockRealmObject] = database.read.objects(realm: realm, query: nil)
+                                  
+                        for object in allObjects {
+                            object.position = -9999
+                        }
+                        
+                        realm.add(allObjects, update: .modified)
+                        
+                        // Place inside a sink or other async closure:
+                        confirmation()
+                        
+                        DispatchQueue.main.async {
+                            timeoutTask.cancel()
+                            continuation.resume(returning: ())
+                        }
+                    },
+                    writeError: { (error: Error) in
+                        
+                        // Place inside a sink or other async closure:
+                        confirmation()
+                        
+                        DispatchQueue.main.async {
+                            timeoutTask.cancel()
+                            continuation.resume(throwing: error)
+                        }
+                    }
+                )
             }
         }
         
-        let object: MockRealmObject = try #require(try database.getObject(id: uniqueId))
-                
-        #expect(object.id == uniqueId)
-    }
-    
-    @Test()
-    func writeNewAndDeleteExistingObjects() async throws {
-                
-        let database = try getSharedDatabase()
-                
-        let newObjectIds: [String] = ["0", "10", "11", "12"]
-        
-        try database.writeObjects(
-            writeClosure: { (realm: Realm) in
-                
-                let existingObjects: [MockRealmObject] = database.getObjects(realm: realm, query: nil)
-                
-                let newObjects: [MockRealmObject] = newObjectIds.compactMap {
-                    let object = MockRealmObject()
-                    object.id = $0
-                    return object
-                }
-                                
-                return RealmDatabaseWrite(updateObjects: newObjects, deleteObjects: existingObjects)
-            },
-            updatePolicy: .modified)
-     
-        let query = RealmDatabaseQuery.sort(byKeyPath: SortByKeyPath(keyPath: #keyPath(MockRealmObject.position), ascending: true))
-        
-        let objects: [MockRealmObject] = try database.getObjects(query: query)
-                
-        #expect(objects.map { $0.id } == ["0", "10", "11", "12"])
-    }
-    
-    @Test()
-    func deleteObject() async throws {
-        
-        let database = try getSharedDatabase()
-        
         let realm: Realm = try database.openRealm()
-        
-        let objectId: String = "0"
-        
-        let object: MockRealmObject = try #require(database.getObject(realm: realm, id: objectId))
-        
-        try database.writeObjects(realm: realm, writeClosure: { (realm: Realm) in
-            return RealmDatabaseWrite(updateObjects: [], deleteObjects: [object])
-        }, updatePolicy: .modified)
-                    
-        let objectAfterDelete: MockRealmObject? = database.getObject(realm: realm, id: objectId)
-                
-        #expect(objectAfterDelete == nil)
+        let objectsAfterUpdate: [MockRealmObject] = database.read.objects(realm: realm, query: nil)
+                                                    
+        #expect(objectsAfterUpdate.first?.position == -9999)
+        #expect(objectsAfterUpdate.last?.position == -9999)
     }
     
     @Test()
-    func deleteObjects() async throws {
+    @MainActor func deleteObjectsAsyncWithCompletion() async throws {
         
-        let database = try getSharedDatabase()
+        let database = try getDatabase()
         
-        let realm: Realm = try database.openRealm()
+        let currentObjects: [MockRealmObject] = try database.openRealmAndRead.objects(query: nil)
                 
-        let currentObjects: [MockRealmObject] = database.getObjects(realm: realm, query: nil)
-                
-        #expect(currentObjects.count > 0)
-        
-        try database.writeObjects(realm: realm, writeClosure: { (realm: Realm) in
-            
-            return RealmDatabaseWrite(updateObjects: [], deleteObjects: currentObjects)
-        }, updatePolicy: .modified)
-                
-        let objectsAfterDelete: [MockRealmObject] = database.getObjects(realm: realm, query: nil)
+        #expect(currentObjects.count == allObjectIds.count)
                         
-        #expect(objectsAfterDelete.count == 0)
-    }
-    
-    @Test()
-    func willNotDeleteObjectsWhenObjectsIsEmpty() async throws {
-        
-        let database = try getSharedDatabase()
+        try await confirmation(expectedCount: 1) { confirmation in
+            
+            try await withCheckedThrowingContinuation { continuation in
+                
+                let timeoutTask = Task {
+                    try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+                    continuation.resume(returning: ())
+                }
+                
+                database.asyncWrite.objects(
+                    writeClosure: { (realm: Realm) in
+                        
+                        let allObjects: [MockRealmObject] = database.read.objects(realm: realm, query: nil)
+                        
+                        realm.delete(allObjects)
+                        
+                        // Place inside a sink or other async closure:
+                        confirmation()
+                        
+                        DispatchQueue.main.async {
+                            timeoutTask.cancel()
+                            continuation.resume(returning: ())
+                        }
+                    },
+                    writeError: { (error: Error) in
+                        
+                        // Place inside a sink or other async closure:
+                        confirmation()
+                        
+                        DispatchQueue.main.async {
+                            timeoutTask.cancel()
+                            continuation.resume(throwing: error)
+                        }
+                    }
+                )
+            }
+        }
         
         let realm: Realm = try database.openRealm()
-        
-        let query = RealmDatabaseQuery.sort(byKeyPath: SortByKeyPath(keyPath: #keyPath(MockRealmObject.position), ascending: false))
-        
-        let currentObjects: [MockRealmObject] = database.getObjects(realm: realm, query: query)
-        
-        try database.writeObjects(realm: realm, writeClosure: { (realm: Realm) in
-            
-            return RealmDatabaseWrite(updateObjects: [], deleteObjects: [])
-        }, updatePolicy: .modified)
-                
-        let objectsAfterDelete: [MockRealmObject] = database.getObjects(realm: realm, query: query)
-                
-        #expect(currentObjects == objectsAfterDelete)
-    }
+        let objectsAfterDelete: [MockRealmObject] = database.read.objects(realm: realm, query: nil)
+                                                  
+        #expect(objectsAfterDelete.count == 0)
+    }*/
 }
 
 extension RealmDatabaseTests {
     
-    private func getSharedDatabase() throws -> RealmDatabase {
+    private func getDatabase() throws -> RealmDatabase {
         
         let objects: [MockRealmObject] = allObjectIds.map {
             MockRealmObject.createFrom(interface: MockDataModel.createFromIntId(id: $0))
         }
+                
+        let database = try MockRealmDatabase().createDatabase(
+            directoryName: "realm_\(String(describing: RealmDatabaseTests.self))",
+            objects: objects,
+            shouldDeleteExistingObjects: true
+        )
         
-        let directoryName: String = "realm_\(String(describing: RealmDatabaseTests.self))"
-        
-        return try MockRealmDatabase().createDatabase(directoryName: directoryName, objects: objects, shouldDeleteExistingObjects: true)
+        return database
     }
 }

@@ -2,7 +2,7 @@
 //  SwiftDatabaseQuery.swift
 //  RepositorySync
 //
-//  Created by Levi Eggert on 12/3/25.
+//  Created by Levi Eggert on 12/1/25.
 //  Copyright © 2025 Cru. All rights reserved.
 //
 
@@ -10,7 +10,7 @@ import Foundation
 import SwiftData
 
 @available(iOS 17.4, *)
-public class SwiftDatabaseQuery<T: IdentifiableSwiftDataObject> {
+public final class SwiftDatabaseQuery<T: IdentifiableSwiftDataObject>: Sendable {
     
     public let fetchDescriptor: FetchDescriptor<T>
     

@@ -2,7 +2,7 @@
 //  MockSwiftDatabaseSchema.swift
 //  RepositorySync
 //
-//  Created by Levi Eggert on 7/30/25.
+//  Created by Levi Eggert on 12/1/25.
 //  Copyright © 2025 Cru. All rights reserved.
 //
 
@@ -16,7 +16,8 @@ enum MockSwiftDatabaseSchema: VersionedSchema {
         
     static var models: [any PersistentModel.Type] {
         return [
-            MockSwiftObject.self
+            MockSwiftObject.self,
+            MockOtherSwiftObject.self
         ]
     }
 }

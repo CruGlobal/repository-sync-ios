@@ -2,7 +2,7 @@
 //  MockRealmDatabase.swift
 //  RepositorySync
 //
-//  Created by Levi Eggert on 7/30/25.
+//  Created by Levi Eggert on 12/1/25.
 //  Copyright © 2025 Cru. All rights reserved.
 //
 
@@ -35,14 +35,19 @@ public class MockRealmDatabase {
         
         let database = try createDatabase(directoryName: directoryName)
         
-        let realm: Realm = try database.openRealm()
-        
-        try database.writeObjects(realm: realm, writeClosure: { realm in
-            
-            let existingObjects: [MockRealmObject] = shouldDeleteExistingObjects ? database.getObjects(realm: realm, query: nil) : Array()
-            
-            return RealmDatabaseWrite(updateObjects: objects, deleteObjects: existingObjects)
-        }, updatePolicy: .modified)
+        try database.write.objects(
+            realm: try database.openRealm(),
+            writeClosure: { (realm: Realm) in
+                
+                let existingObjects: [MockRealmObject] = shouldDeleteExistingObjects ? database.read.objects(realm: realm, query: nil) : Array()
+                
+                return WriteRealmObjects(
+                    deleteObjects: existingObjects,
+                    addObjects: objects
+                )
+            },
+            updatePolicy: .modified
+        )
         
         return database
     }

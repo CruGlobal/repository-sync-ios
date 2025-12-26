@@ -2,7 +2,7 @@
 //  MockSwiftDatabase.swift
 //  RepositorySync
 //
-//  Created by Levi Eggert on 7/30/25.
+//  Created by Levi Eggert on 12/1/25.
 //  Copyright © 2025 Cru. All rights reserved.
 //
 
@@ -38,14 +38,17 @@ public class MockSwiftDatabase {
         
         let context: ModelContext = database.openContext()
         
-        if shouldDeleteExistingObjects {
-            
-            let existingObjects: [MockSwiftObject] = try database.getObjects(context: context, query: nil)
-            
-            try database.deleteObjects(context: context, objects: existingObjects)
-        }
+        let deleteObjects: [MockSwiftObject]? = shouldDeleteExistingObjects ? try database.read.objects(context: context, query: nil) : nil
+
+        let writeObjects = WriteSwiftObjects(
+            deleteObjects: deleteObjects,
+            insertObjects: objects
+        )
         
-        try database.writeObjects(context: context, objects: objects)
+        try database.write.objects(
+            context: context,
+            writeObjects: writeObjects
+        )
         
         return database
     }
@@ -64,12 +67,14 @@ public class MockSwiftDatabase {
             cloudKitDatabase: .none
         )
         
-        let database = try SwiftDatabase(
+        let container = try SwiftDataContainer(
             modelConfiguration: config,
             schema: Schema(versionedSchema: MockSwiftDatabaseSchema.self),
             migrationPlan: nil
         )
-             
+        
+        let database = SwiftDatabase(container: container)
+        
         return database
     }
     

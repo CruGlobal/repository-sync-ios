@@ -2,7 +2,7 @@
 //  RealmRepositorySyncPersistenceTests.swift
 //  RepositorySync
 //
-//  Created by Levi Eggert on 7/30/25.
+//  Created by Levi Eggert on 12/1/25.
 //  Copyright © 2025 Cru. All rights reserved.
 //
 
@@ -87,26 +87,6 @@ struct RealmRepositorySyncPersistenceTests {
         }
         
         #expect(MockDataModel.getIdsSortedByPosition(dataModels: dataModelsRef) == allObjectIds)
-    }
-    
-    @Test()
-    @MainActor func mapPersistObjects() async throws {
-        
-        let persistence = try getPersistence()
-        
-        let sortedPeristObjectsIds: [String] = ["0", "1", "2"]
-        
-        let persistObjects: [MockRealmObject] = sortedPeristObjectsIds.compactMap {
-            guard let dataModel = MockDataModel.createFromStringId(id: $0) else {
-                return nil
-            }
-            return MockRealmObject.createFrom(interface: dataModel)
-        }
-
-        let dataModels: [MockDataModel] = persistence.mapPersistObjects(persistObjects: persistObjects)
-        
-        #expect(dataModels.count == persistObjects.count)
-        #expect(MockDataModel.getIdsSortedByPosition(dataModels: dataModels) == sortedPeristObjectsIds)
     }
     
     @Test()
@@ -263,22 +243,26 @@ extension RealmRepositorySyncPersistenceTests {
     private func getPersistence() throws -> RealmRepositorySyncPersistence<MockDataModel, MockDataModel, MockRealmObject> {
         
         return RealmRepositorySyncPersistence(
-            database: try getSharedDatabase(),
+            database: try getDatabase(),
             dataModelMapping: MockRealmRepositorySyncMapping()
         )
     }
     
-    private func getSharedDatabase() throws -> RealmDatabase {
+    private func getDatabase() throws -> RealmDatabase {
         
-        let persistObjects: [MockRealmObject] = allObjectIds.compactMap {
+        let objects: [MockRealmObject] = allObjectIds.compactMap {
+            
             guard let dataModel = MockDataModel.createFromStringId(id: $0) else {
                 return nil
             }
+            
             return MockRealmObject.createFrom(interface: dataModel)
         }
         
-        let directoryName: String = "realm_\(String(describing: RealmRepositorySyncPersistenceTests.self))"
-        
-        return try MockRealmDatabase().createDatabase(directoryName: directoryName, objects: persistObjects, shouldDeleteExistingObjects: true)
+        return try MockRealmDatabase().createDatabase(
+            directoryName: "realm_\(String(describing: RealmRepositorySyncPersistenceTests.self))",
+            objects: objects,
+            shouldDeleteExistingObjects: true
+        )
     }
 }

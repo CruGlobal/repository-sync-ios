@@ -2,13 +2,13 @@
 //  ObserveCachePolicy.swift
 //  RepositorySync
 //
-//  Created by Levi Eggert on 7/30/25.
+//  Created by Levi Eggert on 12/1/25.
 //  Copyright © 2025 Cru. All rights reserved.
 //
 
 import Foundation
 
-public enum ObserveCachePolicy {
+public enum ObserveCachePolicy: Sendable {
     
     // Fetches cached data, doesn't fetch data from remote.
     case returnCacheDataDontFetch
