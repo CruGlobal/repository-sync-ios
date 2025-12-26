@@ -87,11 +87,11 @@ extension RealmRepositorySyncPersistence {
 
 extension RealmRepositorySyncPersistence {
     
-    @MainActor public func writeObjectsAsync(externalObjects: [ExternalObjectType], getObjectsType: GetObjectsType?) async throws -> [DataModelType] {
-        return try await write.writeObjectsAsync(externalObjects: externalObjects, getObjectsType: getObjectsType)
+    @MainActor public func writeObjectsAsync(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getObjectsType: GetObjectsType?) async throws -> [DataModelType] {
+        return try await write.writeObjectsAsync(externalObjects: externalObjects, writeOption: writeOption, getObjectsType: getObjectsType)
     }
     
-    @MainActor public func writeObjectsPublisher(externalObjects: [ExternalObjectType], getObjectsType: GetObjectsType?) -> AnyPublisher<[DataModelType], any Error> {
-        return write.writeObjectsPublisher(externalObjects: externalObjects, getObjectsType: getObjectsType)
+    @MainActor public func writeObjectsPublisher(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getObjectsType: GetObjectsType?) -> AnyPublisher<[DataModelType], any Error> {
+        return write.writeObjectsPublisher(externalObjects: externalObjects, writeOption: writeOption, getObjectsType: getObjectsType)
     }
 }

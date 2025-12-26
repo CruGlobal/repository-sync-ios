@@ -21,19 +21,46 @@ public final class RealmRepositorySyncPersistenceWrite<DataModelType: Sendable, 
         self.dataModelMapping = dataModelMapping
     }
     
-    private func writeObjectsAsyncClosure(externalObjects: [ExternalObjectType], getObjectsType: GetObjectsType?, completion: @escaping ((_ result: Result<[DataModelType], Error>) -> Void)) {
+    private func writeObjectsAsyncClosure(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getObjectsType: GetObjectsType?, completion: @escaping ((_ result: Result<[DataModelType], Error>) -> Void)) {
      
         asyncWrite.write(writeAsync: { (realm: Realm) in
             
             do {
                 
+                var objectsToDelete: [PersistObjectType] = Array()
+                var objectsToInsert: [PersistObjectType] = Array()
+                
+                if let writeOption = writeOption {
+                    
+                    switch writeOption {
+                    case .deleteObjectsNotInExternal:
+                        objectsToDelete = RealmDataRead().objects(realm: realm, query: nil)
+                    }
+                }
+                
                 for externalObject in externalObjects {
                     
-                    guard let persistObject = self.dataModelMapping.toPersistObject(externalObject: externalObject) else {
+                    guard let dataModel = self.dataModelMapping.toPersistObject(externalObject: externalObject) else {
                         continue
                     }
                     
-                    realm.add(persistObject, update: .modified)
+                    if let index = objectsToDelete.firstIndex(where: { $0.id == dataModel.id }) {
+                        objectsToDelete.remove(at: index)
+                    }
+                    
+                    objectsToInsert.append(dataModel)
+                }
+
+                if objectsToDelete.count > 0 {
+                    for object in objectsToDelete {
+                        realm.delete(object)
+                    }
+                }
+                
+                if objectsToInsert.count > 0 {
+                    for object in objectsToInsert {
+                        realm.add(object, update: .modified)
+                    }
                 }
                 
                 guard let getObjectsType = getObjectsType else {
@@ -66,10 +93,10 @@ public final class RealmRepositorySyncPersistenceWrite<DataModelType: Sendable, 
         })
     }
     
-    @MainActor public func writeObjectsAsync(externalObjects: [ExternalObjectType], getObjectsType: GetObjectsType?) async throws -> [DataModelType] {
+    @MainActor public func writeObjectsAsync(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getObjectsType: GetObjectsType?) async throws -> [DataModelType] {
         
         return try await withCheckedThrowingContinuation { continuation in
-            self.writeObjectsAsyncClosure(externalObjects: externalObjects, getObjectsType: getObjectsType) { result in
+            self.writeObjectsAsyncClosure(externalObjects: externalObjects, writeOption: writeOption, getObjectsType: getObjectsType) { result in
                 switch result {
                 case .success(let dataModels):
                     continuation.resume(returning: dataModels)
@@ -80,7 +107,7 @@ public final class RealmRepositorySyncPersistenceWrite<DataModelType: Sendable, 
         }
     }
     
-    @MainActor func writeObjectsPublisher(externalObjects: [ExternalObjectType], getObjectsType: GetObjectsType?) -> AnyPublisher<[DataModelType], Error> {
+    @MainActor func writeObjectsPublisher(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getObjectsType: GetObjectsType?) -> AnyPublisher<[DataModelType], Error> {
                         
         return Future { promise in
             
@@ -88,7 +115,11 @@ public final class RealmRepositorySyncPersistenceWrite<DataModelType: Sendable, 
                 
                 do {
                     
-                    let dataModels: [DataModelType] = try await self.writeObjectsAsync(externalObjects: externalObjects, getObjectsType: getObjectsType)
+                    let dataModels: [DataModelType] = try await self.writeObjectsAsync(
+                        externalObjects: externalObjects,
+                        writeOption: writeOption,
+                        getObjectsType: getObjectsType
+                    )
                     
                     promise(.success(dataModels))
                 }

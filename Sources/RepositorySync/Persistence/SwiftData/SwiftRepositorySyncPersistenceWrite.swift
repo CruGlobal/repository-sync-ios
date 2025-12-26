@@ -30,16 +30,42 @@ public actor SwiftRepositorySyncPersistenceWrite<DataModelType: Sendable, Extern
         return modelContext
     }
 
-    public func writeObjectsAsync(externalObjects: [ExternalObjectType], getObjectsType: GetObjectsType?) async throws -> [DataModelType] {
+    public func writeObjectsAsync(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getObjectsType: GetObjectsType?) async throws -> [DataModelType] {
         
         let context: ModelContext = self.context
+
+        var objectsToDelete: [PersistObjectType] = Array()
+        var objectsToInsert: [PersistObjectType] = Array()
         
-        let persistObjects: [PersistObjectType] = externalObjects.compactMap {
-            self.dataModelMapping.toPersistObject(externalObject: $0)
+        if let writeOption = writeOption {
+            
+            switch writeOption {
+            case .deleteObjectsNotInExternal:
+                objectsToDelete = try SwiftDataRead().objects(context: context, query: nil)
+            }
         }
         
-        if persistObjects.count > 0 {
-            for object in persistObjects {
+        for externalObject in externalObjects {
+            
+            guard let dataModel = self.dataModelMapping.toPersistObject(externalObject: externalObject) else {
+                continue
+            }
+            
+            if let index = objectsToDelete.firstIndex(where: { $0.id == dataModel.id }) {
+                objectsToDelete.remove(at: index)
+            }
+            
+            objectsToInsert.append(dataModel)
+        }
+
+        if objectsToDelete.count > 0 {
+            for object in objectsToDelete {
+                context.delete(object)
+            }
+        }
+        
+        if objectsToInsert.count > 0 {
+            for object in objectsToInsert {
                 context.insert(object)
             }
         }
@@ -67,14 +93,19 @@ public actor SwiftRepositorySyncPersistenceWrite<DataModelType: Sendable, Extern
         return dataModels
     }
     
-    @MainActor public func writeObjectsPublisher(externalObjects: [ExternalObjectType], getObjectsType: GetObjectsType?) -> AnyPublisher<[DataModelType], Error> {
+    @MainActor public func writeObjectsPublisher(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getObjectsType: GetObjectsType?) -> AnyPublisher<[DataModelType], Error> {
         
         return Future { promise in
             
             Task {
                 
                 do {
-                    let dataModels = try await self.writeObjectsAsync(externalObjects: externalObjects, getObjectsType: getObjectsType)
+                    
+                    let dataModels = try await self.writeObjectsAsync(
+                        externalObjects: externalObjects,
+                        writeOption: writeOption,
+                        getObjectsType: getObjectsType
+                    )
                     
                     promise(.success(dataModels))
                 }
