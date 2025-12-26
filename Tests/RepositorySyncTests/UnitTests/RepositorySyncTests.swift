@@ -978,16 +978,20 @@ import RealmSwift
                         
                         switch completion {
                         case .finished:
-                            break
+                            if loggingEnabled {
+                                print("\n DID COMPLETE")
+                                print("\n    CACHED OBJECTS: \(cachedObjects.map{$0.id})")
+                                print("\n    RESPONSE OBJECTS: \(responseObjects.map{$0.id})")
+                                print("\n WITH ABOVE RESPONSE")
+                            }
                         case .failure(let error):
-                            
                             if loggingEnabled {
                                 print("\n DID COMPLETE WITH ERROR: \(error)")
                             }
-                            
-                            timeoutTask.cancel()
-                            continuation.resume(returning: ())
                         }
+                        
+                        timeoutTask.cancel()
+                        continuation.resume(returning: ())
                         
                     } receiveValue: { (objects: [MockDataModel]) in
                         
@@ -1018,9 +1022,6 @@ import RealmSwift
                             }
                             
                             responseObjects = objects
-                            
-                            timeoutTask.cancel()
-                            continuation.resume(returning: ())
                         }
                     }
                     .store(in: &cancellables)
