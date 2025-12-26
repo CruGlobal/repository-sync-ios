@@ -43,12 +43,10 @@ public actor SwiftRepositorySyncPersistenceWrite<DataModelType: Sendable, Extern
                 context.insert(object)
             }
         }
-                
-        guard context.hasChanges else {
-            return Array()
-        }
         
-        try context.save()
+        if context.hasChanges {
+            try context.save()
+        }
         
         guard let getObjectsType = getObjectsType else {
             return Array()
