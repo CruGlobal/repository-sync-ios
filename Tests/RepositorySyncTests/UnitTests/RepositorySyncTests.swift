@@ -1074,17 +1074,9 @@ extension RepositorySyncTests {
         return try MockSwiftDatabase().createDatabase(directoryName: directoryName, objects: addObjects, shouldDeleteExistingObjects: shouldDeleteExistingObjects)
     }
     
-    @MainActor private func getRepositorySync(externalDataFetch: MockExternalDataFetch, addObjectsToDatabase: [MockDataModel], shouldDeleteExistingObjectsInDatabase: Bool, shouldEnableSwiftDatabase: Bool) throws -> RepositorySync<MockDataModel, MockExternalDataFetch, MockRealmObject> {
+    @MainActor private func getRepositorySync(externalDataFetch: MockExternalDataFetch, addObjectsToDatabase: [MockDataModel], shouldDeleteExistingObjectsInDatabase: Bool, shouldEnableSwiftDatabase: Bool) throws -> RepositorySync<MockDataModel, MockExternalDataFetch> {
         
-        let realmObjects: [MockRealmObject] = addObjectsToDatabase.map {
-            MockRealmObject.createFrom(interface: $0)
-        }
-        
-        let realmDatabase: RealmDatabase = try getSharedRealmDatabase(addObjects: realmObjects, shouldDeleteExistingObjects: shouldDeleteExistingObjectsInDatabase)
-        
-        GlobalRealmDatabase.shared.enableRealmDatabase(
-            realmDatabase: realmDatabase
-        )
+        let persistence: any Persistence<MockDataModel, MockDataModel>
         
         if #available(iOS 17.4, *), shouldEnableSwiftDatabase {
             
@@ -1092,16 +1084,36 @@ extension RepositorySyncTests {
                 MockSwiftObject.createFrom(interface: $0)
             }
             
-            let swiftDatabase: SwiftDatabase = try getSharedSwiftDatabase(addObjects: swiftObjects, shouldDeleteExistingObjects: shouldDeleteExistingObjectsInDatabase)
+            let swiftDatabase: SwiftDatabase = try getSharedSwiftDatabase(
+                addObjects: swiftObjects,
+                shouldDeleteExistingObjects: shouldDeleteExistingObjectsInDatabase
+            )
             
-            GlobalSwiftDatabase.shared.enableSwiftDatabase(
-                swiftDatabase: swiftDatabase
+            persistence = SwiftRepositorySyncPersistence<MockDataModel, MockDataModel, MockSwiftObject>(
+                database: swiftDatabase,
+                dataModelMapping: MockSwiftRepositorySyncMapping()
+            )
+        }
+        else {
+            
+            let realmObjects: [MockRealmObject] = addObjectsToDatabase.map {
+                MockRealmObject.createFrom(interface: $0)
+            }
+            
+            let realmDatabase: RealmDatabase = try getSharedRealmDatabase(
+                addObjects: realmObjects,
+                shouldDeleteExistingObjects: shouldDeleteExistingObjectsInDatabase
+            )
+            
+            persistence = RealmRepositorySyncPersistence(
+                database: realmDatabase,
+                dataModelMapping: MockRealmRepositorySyncMapping()
             )
         }
         
-        let repositorySync = MockRepositorySync(
+        let repositorySync = RepositorySync(
             externalDataFetch: externalDataFetch,
-            realmMapping: MockRealmRepositorySyncMapping()
+            persistence: persistence
         )
         
         return repositorySync

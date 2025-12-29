@@ -9,55 +9,17 @@
 import Foundation
 import Combine
 
-open class RepositorySync<DataModelType: Sendable, ExternalDataFetchType: ExternalDataFetchInterface, RealmObjectType: IdentifiableRealmObject> {
-        
-    private let realmMapping: any Mapping<DataModelType, ExternalDataFetchType.ExternalObject, RealmObjectType>
+open class RepositorySync<DataModelType: Sendable, ExternalDataFetchType: ExternalDataFetchInterface> {
     
     private var cancellables: Set<AnyCancellable> = Set()
     
     public let externalDataFetch: ExternalDataFetchType
+    public let persistence: any Persistence<DataModelType, ExternalDataFetchType.ExternalObject>
     
-    public init(externalDataFetch: ExternalDataFetchType, realmMapping: any Mapping<DataModelType, ExternalDataFetchType.ExternalObject, RealmObjectType>) {
+    public init(externalDataFetch: ExternalDataFetchType, persistence: any Persistence<DataModelType, ExternalDataFetchType.ExternalObject>) {
         
         self.externalDataFetch = externalDataFetch
-        self.realmMapping = realmMapping
-    }
-    
-    @MainActor public var realmDatabase: RealmDatabase {
-        return GlobalRealmDatabase.shared.realmDatabase
-    }
-    
-    @MainActor public var realmPersistence: RealmRepositorySyncPersistence<DataModelType, ExternalDataFetchType.ExternalObject, RealmObjectType> {
-        return RealmRepositorySyncPersistence(
-            database: realmDatabase,
-            dataModelMapping: realmMapping
-        )
-    }
-    
-    @available(iOS 17.4, *)
-    @MainActor public var swiftDatabase: SwiftDatabase? {
-        return GlobalSwiftDatabase.shared.swiftDatabase
-    }
-    
-    @available(iOS 17.4, *)
-    @MainActor open func getSwiftPersistence(swiftDatabase: SwiftDatabase) -> (any Persistence<DataModelType, ExternalDataFetchType.ExternalObject>)? {
-        // NOTE: Subclasses should override and return a SwiftRepositorySyncPersistence. ~Levi
-        return nil
-    }
-    
-    @MainActor public func getPersistence() -> (any Persistence<DataModelType, ExternalDataFetchType.ExternalObject>) {
-        
-        if #available(iOS 17.4, *),
-           let swiftDatabase = swiftDatabase,
-           let swiftPersistence = getSwiftPersistence(swiftDatabase: swiftDatabase) {
-            
-            return swiftPersistence
-        }
-
-        return RealmRepositorySyncPersistence(
-            database: realmDatabase,
-            dataModelMapping: realmMapping
-        )
+        self.persistence = persistence
     }
 }
 
@@ -103,7 +65,7 @@ extension RepositorySync {
         .receive(on: DispatchQueue.main)
         .flatMap { (externalObjects: [ExternalDataFetchType.ExternalObject]) in
             
-            return self.getPersistence().writeObjectsPublisher(
+            return self.persistence.writeObjectsPublisher(
                 externalObjects: externalObjects,
                 writeOption: nil,
                 getObjectsType: getObjectsType
@@ -154,7 +116,7 @@ extension RepositorySync {
             
         case .returnCacheDataDontFetch:
             
-            return getPersistence()
+            return persistence
                 .getObjectsPublisher(getObjectsType: getObjectsType)
                 .eraseToAnyPublisher()
         
@@ -171,10 +133,10 @@ extension RepositorySync {
             
         case .returnCacheDataDontFetch:
             
-            return getPersistence()
+            return persistence
                 .observeCollectionChangesPublisher()
                 .flatMap { _ in
-                    return self.getPersistence().getObjectsPublisher(
+                    return self.persistence.getObjectsPublisher(
                         getObjectsType: getObjectsType
                     )
                 }
@@ -185,7 +147,7 @@ extension RepositorySync {
             let persistedObjectCount: Int
             
             do {
-                persistedObjectCount = try getPersistence().getObjectCount()
+                persistedObjectCount = try persistence.getObjectCount()
             }
             catch let error {
                 return Fail(error: error)
@@ -200,10 +162,10 @@ extension RepositorySync {
                 )
             }
 
-            return getPersistence()
+            return persistence
                 .observeCollectionChangesPublisher()
                 .flatMap { _ in
-                    return self.getPersistence().getObjectsPublisher(
+                    return self.persistence.getObjectsPublisher(
                         getObjectsType: getObjectsType
                     )
                 }
@@ -216,10 +178,10 @@ extension RepositorySync {
                 context: context
             )
 
-            return getPersistence()
+            return persistence
                 .observeCollectionChangesPublisher()
                 .flatMap { _ in
-                    return self.getPersistence().getObjectsPublisher(
+                    return self.persistence.getObjectsPublisher(
                         getObjectsType: getObjectsType
                     )
                 }
