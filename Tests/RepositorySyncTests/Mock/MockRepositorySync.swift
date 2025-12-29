@@ -10,12 +10,12 @@ import Foundation
 @testable import RepositorySync
 
 public class MockRepositorySync: RepositorySync<MockDataModel, MockExternalDataFetch, MockRealmObject> {
-    
-    public init(externalDataFetch: MockExternalDataFetch, swiftElseRealmPersistence: MockSwiftElseRealmPersistence) {
-        
-        super.init(
-            externalDataFetch: externalDataFetch,
-            swiftElseRealmPersistence: swiftElseRealmPersistence
+
+    @available(iOS 17.4, *)
+    public override func getSwiftPersistence(swiftDatabase: SwiftDatabase) -> (any Persistence<MockDataModel, MockDataModel>)? {
+        return SwiftRepositorySyncPersistence(
+            database: swiftDatabase,
+            dataModelMapping: MockSwiftRepositorySyncMapping()
         )
     }
 }

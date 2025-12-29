@@ -13,7 +13,7 @@ import SwiftData
 //  This is needed while supporting realm with swift database fallback.
 //  Clients should enable swiftdatabase by injecting here in enableSwiftDatabase method. ~Levi
 @available(iOS 17.4, *)
-@MainActor class GlobalSwiftDatabase {
+@MainActor public class GlobalSwiftDatabase {
         
     static let shared: GlobalSwiftDatabase = GlobalSwiftDatabase()
     
@@ -22,8 +22,12 @@ import SwiftData
     private init() {
         
     }
-
-    func enableSwiftDatabase(swiftDatabase: SwiftDatabase) {
+    
+    public var swiftDatabaseEnabled: Bool {
+        return swiftDatabase != nil
+    }
+    
+    public func enableSwiftDatabase(swiftDatabase: SwiftDatabase) {
         self.swiftDatabase = swiftDatabase
     }
 }

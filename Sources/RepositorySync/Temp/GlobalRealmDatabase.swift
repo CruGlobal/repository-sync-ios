@@ -9,7 +9,7 @@ import Foundation
 
 // TODO: This singleton can be removed once RealmSwift is dropped.
 //  Clients should enable realm database by injecting here in enableRealmDatabase method. ~Levi
-@MainActor class GlobalRealmDatabase {
+@MainActor public class GlobalRealmDatabase {
         
     static let shared: GlobalRealmDatabase = GlobalRealmDatabase()
     
@@ -19,7 +19,7 @@ import Foundation
         
     }
     
-    func enableRealmDatabase(realmDatabase: RealmDatabase) {
+    public func enableRealmDatabase(realmDatabase: RealmDatabase) {
         self.realmDatabase = realmDatabase
     }
 }
