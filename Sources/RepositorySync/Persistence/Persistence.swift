@@ -14,12 +14,14 @@ public protocol Persistence<DataModelType, ExternalObjectType> {
     associatedtype DataModelType
     associatedtype ExternalObjectType
     associatedtype PersistObjectType
+    associatedtype QueryType
+    associatedtype SortByType
     
     @MainActor func observeCollectionChangesPublisher() -> AnyPublisher<Void, Error>
     func getObjectCount() throws -> Int
     func getPersistedObject(id: String) throws -> PersistObjectType?
-    func getPersistedObjects() throws -> [PersistObjectType]
-    func getPersistedObjects(ids: [String]) throws -> [PersistObjectType]
+    func getPersistedObjects(query: QueryType?) throws -> [PersistObjectType]
+    func getPersistedObjects(ids: [String], sortBy: SortByType?) throws -> [PersistObjectType]
     // TODO: Once RealmSwift is removed and NSPredicate dropped, MainActor can be removed here. ~Levi
     @MainActor func getObjectsAsync(getObjectsType: GetObjectsType) async throws -> [DataModelType]
     @MainActor func getObjectsPublisher(getObjectsType: GetObjectsType) -> AnyPublisher<[DataModelType], Error>
