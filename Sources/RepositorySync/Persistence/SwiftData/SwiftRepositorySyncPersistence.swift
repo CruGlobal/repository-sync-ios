@@ -48,7 +48,7 @@ extension SwiftRepositorySyncPersistence {
 @available(iOS 17.4, *)
 extension SwiftRepositorySyncPersistence {
     
-    @MainActor public func getObjectCount() throws -> Int {
+    public func getObjectCount() throws -> Int {
         
         let context: ModelContext = database.openContext()
         
@@ -59,6 +59,18 @@ extension SwiftRepositorySyncPersistence {
                     fetchDescriptor: FetchDescriptor<PersistObjectType>()
                 )
             )
+    }
+    
+    public func getPersistedObject(id: String) throws -> PersistObjectType? {
+        return try database.read.object(context: database.openContext(), id: id)
+    }
+    
+    public func getPersistedObjects(query: SwiftDatabaseQuery<PersistObjectType>?) throws -> [PersistObjectType] {
+        return try database.read.objects(context: database.openContext(), query: query)
+    }
+    
+    public func getPersistedObjects(ids: [String], sortBy: [SortDescriptor<PersistObjectType>]?) throws -> [PersistObjectType] {
+        return try database.read.objects(context: database.openContext(), ids: ids, sortBy: sortBy)
     }
     
     @MainActor public func getObjectsAsync(getObjectsType: GetObjectsType) async throws -> [DataModelType] {
