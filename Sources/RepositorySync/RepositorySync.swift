@@ -10,29 +10,74 @@ import Foundation
 import Combine
 
 @MainActor open class RepositorySync<DataModelType: Sendable, ExternalDataFetchType: ExternalDataFetchInterface, RealmObjectType: IdentifiableRealmObject> {
-    
+        
     private var cancellables: Set<AnyCancellable> = Set()
     
     public let externalDataFetch: ExternalDataFetchType
-    public let swiftElseRealmPersistence: SwiftElseRealmPersistence<DataModelType, ExternalDataFetchType.ExternalObject, RealmObjectType>
     
-    public init(externalDataFetch: ExternalDataFetchType, swiftElseRealmPersistence: SwiftElseRealmPersistence<DataModelType, ExternalDataFetchType.ExternalObject, RealmObjectType>) {
+    public init(externalDataFetch: ExternalDataFetchType) {
         
         self.externalDataFetch = externalDataFetch
-        self.swiftElseRealmPersistence = swiftElseRealmPersistence
+    }
+    
+    // TODO: This method can be removed once RealmSwift is dropped. ~Levi
+    @available(iOS 17.4, *)
+    public static func enableRealm(realmDatabase: RealmDatabase) {
+        GlobalRealmDatabase.shared.enableRealmDatabase(realmDatabase: realmDatabase)
+    }
+    
+    // TODO: This method can be removed once RealmSwift is dropped. ~Levi
+    @available(iOS 17.4, *)
+    public static func enableRealmAndSwift(realmDatabase: RealmDatabase, swiftDatabase: SwiftDatabase) {
+        GlobalRealmDatabase.shared.enableRealmDatabase(realmDatabase: realmDatabase)
+        GlobalSwiftDatabase.shared.enableSwiftDatabase(swiftDatabase: swiftDatabase)
     }
     
     public var realmDatabase: RealmDatabase {
-        return swiftElseRealmPersistence.realmPersistence.database
+        return GlobalRealmDatabase.shared.realmDatabase
+    }
+    
+    private var realmMapping: any Mapping<DataModelType, ExternalDataFetchType.ExternalObject, RealmObjectType> {
+        assertionFailure("Subclasses should override and return realm mapping.")
+        return getRealmMapping()!
+    }
+    
+    open func getRealmMapping() -> (any Mapping<DataModelType, ExternalDataFetchType.ExternalObject, RealmObjectType>)? {
+        // NOTE: Subclasses should override and return a mapping. ~Levi
+        return nil
+    }
+    
+    public func getRealmPersistence(realmDatabase: RealmDatabase) -> (any Persistence<DataModelType, ExternalDataFetchType.ExternalObject>)? {
+        return RealmRepositorySyncPersistence(
+            database: realmDatabase,
+            dataModelMapping: realmMapping
+        )
     }
     
     @available(iOS 17.4, *)
     public var swiftDatabase: SwiftDatabase? {
-        return swiftElseRealmPersistence.swiftDatabase
+        return GlobalSwiftDatabase.shared.swiftDatabase
     }
     
-    public func getPersistence() -> any Persistence<DataModelType, ExternalDataFetchType.ExternalObject> {
-        return swiftElseRealmPersistence.getPersistence()
+    @available(iOS 17.4, *)
+    open func getSwiftPersistence(swiftDatabase: SwiftDatabase) -> (any Persistence<DataModelType, ExternalDataFetchType.ExternalObject>)? {
+        // NOTE: Subclasses should override and return a SwiftRepositorySyncPersistence. ~Levi
+        return nil
+    }
+    
+    public func getPersistence() -> (any Persistence<DataModelType, ExternalDataFetchType.ExternalObject>) {
+        
+        if #available(iOS 17.4, *),
+           let swiftDatabase = swiftDatabase,
+           let swiftPersistence = getSwiftPersistence(swiftDatabase: swiftDatabase) {
+            
+            return swiftPersistence
+        }
+
+        return RealmRepositorySyncPersistence(
+            database: realmDatabase,
+            dataModelMapping: realmMapping
+        )
     }
 }
 
