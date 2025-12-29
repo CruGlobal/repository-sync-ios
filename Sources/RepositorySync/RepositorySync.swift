@@ -9,7 +9,7 @@
 import Foundation
 import Combine
 
-@MainActor open class RepositorySync<DataModelType: Sendable, ExternalDataFetchType: ExternalDataFetchInterface, RealmObjectType: IdentifiableRealmObject> {
+open class RepositorySync<DataModelType: Sendable, ExternalDataFetchType: ExternalDataFetchInterface, RealmObjectType: IdentifiableRealmObject> {
         
     private let realmMapping: any Mapping<DataModelType, ExternalDataFetchType.ExternalObject, RealmObjectType>
     
@@ -23,11 +23,11 @@ import Combine
         self.realmMapping = realmMapping
     }
     
-    public var realmDatabase: RealmDatabase {
+    @MainActor public var realmDatabase: RealmDatabase {
         return GlobalRealmDatabase.shared.realmDatabase
     }
     
-    public var realmPersistence: RealmRepositorySyncPersistence<DataModelType, ExternalDataFetchType.ExternalObject, RealmObjectType> {
+    @MainActor public var realmPersistence: RealmRepositorySyncPersistence<DataModelType, ExternalDataFetchType.ExternalObject, RealmObjectType> {
         return RealmRepositorySyncPersistence(
             database: realmDatabase,
             dataModelMapping: realmMapping
@@ -35,17 +35,17 @@ import Combine
     }
     
     @available(iOS 17.4, *)
-    public var swiftDatabase: SwiftDatabase? {
+    @MainActor public var swiftDatabase: SwiftDatabase? {
         return GlobalSwiftDatabase.shared.swiftDatabase
     }
     
     @available(iOS 17.4, *)
-    open func getSwiftPersistence(swiftDatabase: SwiftDatabase) -> (any Persistence<DataModelType, ExternalDataFetchType.ExternalObject>)? {
+    @MainActor open func getSwiftPersistence(swiftDatabase: SwiftDatabase) -> (any Persistence<DataModelType, ExternalDataFetchType.ExternalObject>)? {
         // NOTE: Subclasses should override and return a SwiftRepositorySyncPersistence. ~Levi
         return nil
     }
     
-    public func getPersistence() -> (any Persistence<DataModelType, ExternalDataFetchType.ExternalObject>) {
+    @MainActor public func getPersistence() -> (any Persistence<DataModelType, ExternalDataFetchType.ExternalObject>) {
         
         if #available(iOS 17.4, *),
            let swiftDatabase = swiftDatabase,
@@ -80,7 +80,7 @@ extension RepositorySync {
         }
     }
     
-    private func makeSinkingfetchAndStoreObjectsFromExternalDataFetch(getObjectsType: GetObjectsType, context: ExternalDataFetchType.ExternalDataFetchContext) {
+    @MainActor private func makeSinkingfetchAndStoreObjectsFromExternalDataFetch(getObjectsType: GetObjectsType, context: ExternalDataFetchType.ExternalDataFetchContext) {
         
         fetchAndStoreObjectsFromExternalDataFetchPublisher(
             getObjectsType: getObjectsType,
@@ -94,7 +94,7 @@ extension RepositorySync {
         .store(in: &cancellables)
     }
     
-    private func fetchAndStoreObjectsFromExternalDataFetchPublisher(getObjectsType: GetObjectsType, context: ExternalDataFetchType.ExternalDataFetchContext) -> AnyPublisher<[DataModelType], Error> {
+    @MainActor private func fetchAndStoreObjectsFromExternalDataFetchPublisher(getObjectsType: GetObjectsType, context: ExternalDataFetchType.ExternalDataFetchContext) -> AnyPublisher<[DataModelType], Error> {
                 
         return fetchExternalObjectsPublisher(
             getObjectsType: getObjectsType,
@@ -117,7 +117,7 @@ extension RepositorySync {
 
 extension RepositorySync {
     
-    public func fetchObjectsPublisher(fetchType: FetchType, getObjectsType: GetObjectsType, context: ExternalDataFetchType.ExternalDataFetchContext) -> AnyPublisher<[DataModelType], Error> {
+    @MainActor public func fetchObjectsPublisher(fetchType: FetchType, getObjectsType: GetObjectsType, context: ExternalDataFetchType.ExternalDataFetchContext) -> AnyPublisher<[DataModelType], Error> {
         
         switch fetchType {
             
@@ -139,7 +139,7 @@ extension RepositorySync {
         }
     }
     
-    private func getObjectsPublisher(getObjectsType: GetObjectsType, cachePolicy: GetCachePolicy, context: ExternalDataFetchType.ExternalDataFetchContext) -> AnyPublisher<[DataModelType], Error> {
+    @MainActor private func getObjectsPublisher(getObjectsType: GetObjectsType, cachePolicy: GetCachePolicy, context: ExternalDataFetchType.ExternalDataFetchContext) -> AnyPublisher<[DataModelType], Error> {
         
         switch cachePolicy {
             
@@ -165,7 +165,7 @@ extension RepositorySync {
         }
     }
     
-    private func observeObjects(getObjectsType: GetObjectsType, cachePolicy: ObserveCachePolicy, context: ExternalDataFetchType.ExternalDataFetchContext) -> AnyPublisher<[DataModelType], Error> {
+    @MainActor private func observeObjects(getObjectsType: GetObjectsType, cachePolicy: ObserveCachePolicy, context: ExternalDataFetchType.ExternalDataFetchContext) -> AnyPublisher<[DataModelType], Error> {
                 
         switch cachePolicy {
             
