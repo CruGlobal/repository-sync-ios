@@ -20,7 +20,7 @@ public protocol ExternalDataFetchInterface {
 
 extension ExternalDataFetchInterface {
     
-    func emptyResponsePublisher() -> AnyPublisher<[ExternalObject], Error> {
+    public func emptyResponsePublisher() -> AnyPublisher<[ExternalObject], Error> {
         
         return Just(Array<ExternalObject>())
             .setFailureType(to: Error.self)
