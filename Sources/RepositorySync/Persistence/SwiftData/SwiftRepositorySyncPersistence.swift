@@ -48,7 +48,7 @@ extension SwiftRepositorySyncPersistence {
 @available(iOS 17.4, *)
 extension SwiftRepositorySyncPersistence {
     
-    @MainActor public func getObjectCount() throws -> Int {
+    public func getObjectCount() throws -> Int {
         
         let context: ModelContext = database.openContext()
         

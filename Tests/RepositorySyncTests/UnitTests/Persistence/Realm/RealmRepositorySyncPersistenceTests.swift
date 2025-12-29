@@ -18,7 +18,7 @@ struct RealmRepositorySyncPersistenceTests {
     private let allObjectIds: [String] = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
     
     @Test()
-    @MainActor func getObjectCount() async throws {
+    func getObjectCount() async throws {
         
         let persistence = try getPersistence()
         

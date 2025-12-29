@@ -19,7 +19,7 @@ struct SwiftRepositorySyncPersistenceTests {
     
     @available(iOS 17.4, *)
     @Test()
-    @MainActor func getObjectCount() async throws {
+    func getObjectCount() async throws {
         
         let persistence = try getPersistence()
         

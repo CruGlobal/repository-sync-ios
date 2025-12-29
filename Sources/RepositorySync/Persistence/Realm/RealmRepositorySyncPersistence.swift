@@ -56,7 +56,7 @@ extension RealmRepositorySyncPersistence {
 
 extension RealmRepositorySyncPersistence {
     
-    @MainActor public func getObjectCount() throws -> Int {
+    public func getObjectCount() throws -> Int {
         
         let realm: Realm = try database.openRealm()
         
