@@ -61,6 +61,10 @@ extension SwiftRepositorySyncPersistence {
             )
     }
     
+    public func getPersistedObject(id: String) throws -> PersistObjectType? {
+        return try database.openContextAndRead.object(id: id)
+    }
+    
     @MainActor public func getObjectsAsync(getObjectsType: GetObjectsType) async throws -> [DataModelType] {
         return try await getObjectsAsync(getObjectsType: getObjectsType, query: nil)
     }

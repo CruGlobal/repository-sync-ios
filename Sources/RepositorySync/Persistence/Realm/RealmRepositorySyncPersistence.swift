@@ -65,6 +65,10 @@ extension RealmRepositorySyncPersistence {
         return results.count
     }
     
+    public func getPersistedObject(id: String) throws -> PersistObjectType? {
+        return try database.openRealmAndRead.object(id: id)
+    }
+    
     @MainActor public func getObjectsAsync(getObjectsType: GetObjectsType) async throws -> [DataModelType] {
         
         return try await getObjectsAsync(getObjectsType: getObjectsType, query: nil)

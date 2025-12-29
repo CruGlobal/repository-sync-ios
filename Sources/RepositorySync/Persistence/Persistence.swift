@@ -13,9 +13,11 @@ public protocol Persistence<DataModelType, ExternalObjectType> {
     
     associatedtype DataModelType
     associatedtype ExternalObjectType
+    associatedtype PersistObjectType
     
     @MainActor func observeCollectionChangesPublisher() -> AnyPublisher<Void, Error>
     func getObjectCount() throws -> Int
+    func getPersistedObject(id: String) throws -> PersistObjectType?
     @MainActor func getObjectsAsync(getObjectsType: GetObjectsType) async throws -> [DataModelType]
     @MainActor func getObjectsPublisher(getObjectsType: GetObjectsType) -> AnyPublisher<[DataModelType], Error>
     @MainActor func writeObjectsAsync(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getObjectsType: GetObjectsType?) async throws -> [DataModelType]
