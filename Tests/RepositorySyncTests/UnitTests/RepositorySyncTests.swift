@@ -1082,9 +1082,8 @@ extension RepositorySyncTests {
         
         let realmDatabase: RealmDatabase = try getSharedRealmDatabase(addObjects: realmObjects, shouldDeleteExistingObjects: shouldDeleteExistingObjectsInDatabase)
         
-        let realmPersistence = RealmRepositorySyncPersistence(
-            database: realmDatabase,
-            dataModelMapping: MockRealmRepositorySyncMapping()
+        GlobalRealmDatabase.shared.enableRealmDatabase(
+            realmDatabase: realmDatabase
         )
         
         if #available(iOS 17.4, *), shouldEnableSwiftDatabase {
@@ -1100,13 +1099,9 @@ extension RepositorySyncTests {
             )
         }
         
-        let swiftElseRealmPersistence = MockSwiftElseRealmPersistence(
-            realmPersistence: realmPersistence
-        )
-        
         let repositorySync = MockRepositorySync(
             externalDataFetch: externalDataFetch,
-            swiftElseRealmPersistence: swiftElseRealmPersistence
+            realmMapping: MockRealmRepositorySyncMapping()
         )
         
         return repositorySync
