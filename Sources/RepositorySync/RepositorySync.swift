@@ -27,7 +27,7 @@ import Combine
         return GlobalRealmDatabase.shared.realmDatabase
     }
     
-    public func getRealmPersistence(realmDatabase: RealmDatabase) -> (any Persistence<DataModelType, ExternalDataFetchType.ExternalObject>) {
+    public func getRealmPersistence() -> (any Persistence<DataModelType, ExternalDataFetchType.ExternalObject>) {
         return RealmRepositorySyncPersistence(
             database: realmDatabase,
             dataModelMapping: realmMapping
