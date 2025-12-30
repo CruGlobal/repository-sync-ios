@@ -68,7 +68,7 @@ extension RepositorySync {
             return self.persistence.writeObjectsPublisher(
                 externalObjects: externalObjects,
                 writeOption: nil,
-                getObjectsType: getObjectsType
+                getOption: getObjectsType.toGetOption()
             )
         }
         .eraseToAnyPublisher()
@@ -79,7 +79,7 @@ extension RepositorySync {
 
 extension RepositorySync {
     
-    @MainActor public func fetchObjectsPublisher(fetchType: FetchType, getObjectsType: GetObjectsType, context: ExternalDataFetchType.ExternalDataFetchContext) -> AnyPublisher<[DataModelType], Error> {
+    @MainActor public func syncObjectsPublisher(fetchType: FetchType, getObjectsType: GetObjectsType, context: ExternalDataFetchType.ExternalDataFetchContext) -> AnyPublisher<[DataModelType], Error> {
         
         switch fetchType {
             
@@ -117,7 +117,7 @@ extension RepositorySync {
         case .returnCacheDataDontFetch:
             
             return persistence
-                .getObjectsPublisher(getObjectsType: getObjectsType)
+                .getObjectsPublisher(getOption: getObjectsType.toGetOption())
                 .eraseToAnyPublisher()
         
         case .returnCacheDataElseFetch:
@@ -137,7 +137,7 @@ extension RepositorySync {
                 .observeCollectionChangesPublisher()
                 .flatMap { _ in
                     return self.persistence.getObjectsPublisher(
-                        getObjectsType: getObjectsType
+                        getOption: getObjectsType.toGetOption()
                     )
                 }
                 .eraseToAnyPublisher()
@@ -166,7 +166,7 @@ extension RepositorySync {
                 .observeCollectionChangesPublisher()
                 .flatMap { _ in
                     return self.persistence.getObjectsPublisher(
-                        getObjectsType: getObjectsType
+                        getOption: getObjectsType.toGetOption()
                     )
                 }
                 .eraseToAnyPublisher()
@@ -182,7 +182,7 @@ extension RepositorySync {
                 .observeCollectionChangesPublisher()
                 .flatMap { _ in
                     return self.persistence.getObjectsPublisher(
-                        getObjectsType: getObjectsType
+                        getOption: getObjectsType.toGetOption()
                     )
                 }
                 .eraseToAnyPublisher()

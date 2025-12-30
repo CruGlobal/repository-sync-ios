@@ -15,13 +15,13 @@ public final class RealmRepositorySyncGetObjects<PersistObjectType: Identifiable
         
     }
     
-    public func getObjects(realm: Realm, getObjectsType: GetObjectsType, query: RealmDatabaseQuery?) throws -> [PersistObjectType] {
+    public func getObjects(realm: Realm, getOption: PersistenceGetOption, query: RealmDatabaseQuery?) throws -> [PersistObjectType] {
         
         let read = RealmDataRead()
         
         let persistObjects: [PersistObjectType]
                 
-        switch getObjectsType {
+        switch getOption {
             
         case .allObjects:
             persistObjects = read.objects(realm: realm, query: query)
@@ -36,6 +36,9 @@ public final class RealmRepositorySyncGetObjects<PersistObjectType: Identifiable
             else {
                 persistObjects = []
             }
+            
+        case .objectsByIds(let ids):
+            persistObjects = read.objects(realm: realm, ids: ids, sortBykeyPath: nil)
         }
         
         return persistObjects

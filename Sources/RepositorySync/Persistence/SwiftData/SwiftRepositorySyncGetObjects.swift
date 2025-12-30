@@ -16,13 +16,13 @@ public final class SwiftRepositorySyncGetObjects<PersistObjectType: Identifiable
         
     }
     
-    public func getObjects(context: ModelContext, getObjectsType: GetObjectsType, query: SwiftDatabaseQuery<PersistObjectType>?) throws -> [PersistObjectType] {
+    public func getObjects(context: ModelContext, getOption: PersistenceGetOption, query: SwiftDatabaseQuery<PersistObjectType>?) throws -> [PersistObjectType] {
         
         let read = SwiftDataRead()
         
         let persistObjects: [PersistObjectType]
                 
-        switch getObjectsType {
+        switch getOption {
             
         case .allObjects:
             persistObjects = try read.objects(context: context, query: query)
@@ -37,6 +37,9 @@ public final class SwiftRepositorySyncGetObjects<PersistObjectType: Identifiable
             else {
                 persistObjects = []
             }
+            
+        case .objectsByIds(let ids):
+            persistObjects = try read.objects(context: context, ids: ids, sortBy: nil)
         }
         
         return persistObjects

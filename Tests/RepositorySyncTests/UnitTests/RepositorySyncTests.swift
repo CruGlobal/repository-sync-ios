@@ -909,7 +909,7 @@ import RealmSwift
                     )
                     
                     additionalRepositorySync
-                        .fetchObjectsPublisher(
+                        .syncObjectsPublisher(
                             fetchType: .get(cachePolicy: .ignoreCacheData),
                             getObjectsType: .allObjects,
                             context: MockExternalDataFetchContext()
@@ -969,7 +969,7 @@ import RealmSwift
                 }
                 
                 repositorySync
-                    .fetchObjectsPublisher(
+                    .syncObjectsPublisher(
                         fetchType: fetchType,
                         getObjectsType: getObjectsType,
                         context: MockExternalDataFetchContext()

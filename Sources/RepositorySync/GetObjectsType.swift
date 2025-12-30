@@ -12,3 +12,14 @@ public enum GetObjectsType: Sendable {
     case allObjects
     case object(id: String)
 }
+
+extension GetObjectsType {
+    public func toGetOption() -> PersistenceGetOption {
+        switch self {
+        case .allObjects:
+            return .allObjects
+        case .object(let id):
+            return .object(id: id)
+        }
+    }
+}

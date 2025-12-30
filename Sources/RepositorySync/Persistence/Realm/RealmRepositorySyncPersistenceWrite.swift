@@ -21,7 +21,7 @@ public final class RealmRepositorySyncPersistenceWrite<DataModelType: Sendable, 
         self.dataModelMapping = dataModelMapping
     }
     
-    private func writeObjectsAsyncClosure(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getObjectsType: GetObjectsType?, completion: @escaping ((_ result: Result<[DataModelType], Error>) -> Void)) {
+    private func writeObjectsAsyncClosure(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getOption: PersistenceGetOption?, completion: @escaping ((_ result: Result<[DataModelType], Error>) -> Void)) {
      
         asyncWrite.write(writeAsync: { (realm: Realm) in
             
@@ -63,7 +63,7 @@ public final class RealmRepositorySyncPersistenceWrite<DataModelType: Sendable, 
                     }
                 }
                 
-                guard let getObjectsType = getObjectsType else {
+                guard let getOption = getOption else {
                     completion(.success(Array()))
                     return
                 }
@@ -72,7 +72,7 @@ public final class RealmRepositorySyncPersistenceWrite<DataModelType: Sendable, 
                 
                 let getObjects: [PersistObjectType] = try getObjectsByType.getObjects(
                     realm: realm,
-                    getObjectsType: getObjectsType,
+                    getOption: getOption,
                     query: nil
                 )
                 
@@ -93,10 +93,10 @@ public final class RealmRepositorySyncPersistenceWrite<DataModelType: Sendable, 
         })
     }
     
-    @MainActor public func writeObjectsAsync(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getObjectsType: GetObjectsType?) async throws -> [DataModelType] {
+    @MainActor public func writeObjectsAsync(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getOption: PersistenceGetOption?) async throws -> [DataModelType] {
         
         return try await withCheckedThrowingContinuation { continuation in
-            self.writeObjectsAsyncClosure(externalObjects: externalObjects, writeOption: writeOption, getObjectsType: getObjectsType) { result in
+            self.writeObjectsAsyncClosure(externalObjects: externalObjects, writeOption: writeOption, getOption: getOption) { result in
                 switch result {
                 case .success(let dataModels):
                     continuation.resume(returning: dataModels)
@@ -107,7 +107,7 @@ public final class RealmRepositorySyncPersistenceWrite<DataModelType: Sendable, 
         }
     }
     
-    @MainActor func writeObjectsPublisher(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getObjectsType: GetObjectsType?) -> AnyPublisher<[DataModelType], Error> {
+    @MainActor func writeObjectsPublisher(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getOption: PersistenceGetOption?) -> AnyPublisher<[DataModelType], Error> {
                         
         return Future { promise in
             
@@ -118,7 +118,7 @@ public final class RealmRepositorySyncPersistenceWrite<DataModelType: Sendable, 
                     let dataModels: [DataModelType] = try await self.writeObjectsAsync(
                         externalObjects: externalObjects,
                         writeOption: writeOption,
-                        getObjectsType: getObjectsType
+                        getOption: getOption
                     )
                     
                     promise(.success(dataModels))
