@@ -69,8 +69,16 @@ extension RealmRepositorySyncPersistence {
         return database.read.object(realm: try database.openRealm(), id: id)
     }
     
+    public func getPersistedObjects() throws -> [PersistObjectType] {
+        return try getPersistedObjects(query: nil)
+    }
+    
     public func getPersistedObjects(query: RealmDatabaseQuery?) throws -> [PersistObjectType] {
         return database.read.objects(realm: try database.openRealm(), query: query)
+    }
+    
+    public func getPersistedObjects(ids: [String]) throws -> [PersistObjectType] {
+        return try getPersistedObjects(ids: ids, sortBy: nil)
     }
     
     public func getPersistedObjects(ids: [String], sortBy: SortByKeyPath?) throws -> [PersistObjectType] {
