@@ -65,41 +65,20 @@ extension RealmRepositorySyncPersistence {
         return results.count
     }
     
-    public func getPersistedObject(id: String) throws -> PersistObjectType? {
-        return database.read.object(realm: try database.openRealm(), id: id)
+    @MainActor public func getDataModelsAsync(getOption: PersistenceGetOption) async throws -> [DataModelType] {
+        return try await getDataModelsAsync(getOption: getOption, query: nil)
     }
     
-    public func getPersistedObjects() throws -> [PersistObjectType] {
-        return try getPersistedObjects(query: nil)
+    @MainActor public func getDataModelsAsync(getOption: PersistenceGetOption, query: RealmDatabaseQuery?) async throws -> [DataModelType] {
+        return try await read.getDataModelsAsync(getOption: getOption, query: query)
     }
     
-    public func getPersistedObjects(query: RealmDatabaseQuery?) throws -> [PersistObjectType] {
-        return database.read.objects(realm: try database.openRealm(), query: query)
+    @MainActor public func getDataModelsPublisher(getOption: PersistenceGetOption) -> AnyPublisher<[DataModelType], Error> {
+        return getDataModelsPublisher(getOption: getOption, query: nil)
     }
     
-    public func getPersistedObjects(ids: [String]) throws -> [PersistObjectType] {
-        return try getPersistedObjects(ids: ids, sortBy: nil)
-    }
-    
-    public func getPersistedObjects(ids: [String], sortBy: SortByKeyPath?) throws -> [PersistObjectType] {
-        return database.read.objects(realm: try database.openRealm(), ids: ids, sortBykeyPath: sortBy)
-    }
-    
-    @MainActor public func getObjectsAsync(getObjectsType: GetObjectsType) async throws -> [DataModelType] {
-        
-        return try await getObjectsAsync(getObjectsType: getObjectsType, query: nil)
-    }
-    
-    @MainActor public func getObjectsAsync(getObjectsType: GetObjectsType, query: RealmDatabaseQuery?) async throws -> [DataModelType] {
-        return try await read.getObjectsAsync(getObjectsType: getObjectsType, query: query)
-    }
-    
-    @MainActor public func getObjectsPublisher(getObjectsType: GetObjectsType) -> AnyPublisher<[DataModelType], Error> {
-        return getObjectsPublisher(getObjectsType: getObjectsType, query: nil)
-    }
-    
-    @MainActor public func getObjectsPublisher(getObjectsType: GetObjectsType, query: RealmDatabaseQuery?) -> AnyPublisher<[DataModelType], Error> {
-        return read.getObjectsPublisher(getObjectsType: getObjectsType, query: query)
+    @MainActor public func getDataModelsPublisher(getOption: PersistenceGetOption, query: RealmDatabaseQuery?) -> AnyPublisher<[DataModelType], Error> {
+        return read.getDataModelsPublisher(getOption: getOption, query: query)
     }
 }
 
@@ -107,11 +86,11 @@ extension RealmRepositorySyncPersistence {
 
 extension RealmRepositorySyncPersistence {
     
-    @MainActor public func writeObjectsAsync(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getObjectsType: GetObjectsType?) async throws -> [DataModelType] {
-        return try await write.writeObjectsAsync(externalObjects: externalObjects, writeOption: writeOption, getObjectsType: getObjectsType)
+    @MainActor public func writeObjectsAsync(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getOption: PersistenceGetOption?) async throws -> [DataModelType] {
+        return try await write.writeObjectsAsync(externalObjects: externalObjects, writeOption: writeOption, getOption: getOption)
     }
     
-    @MainActor public func writeObjectsPublisher(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getObjectsType: GetObjectsType?) -> AnyPublisher<[DataModelType], any Error> {
-        return write.writeObjectsPublisher(externalObjects: externalObjects, writeOption: writeOption, getObjectsType: getObjectsType)
+    @MainActor public func writeObjectsPublisher(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getOption: PersistenceGetOption?) -> AnyPublisher<[DataModelType], any Error> {
+        return write.writeObjectsPublisher(externalObjects: externalObjects, writeOption: writeOption, getOption: getOption)
     }
 }

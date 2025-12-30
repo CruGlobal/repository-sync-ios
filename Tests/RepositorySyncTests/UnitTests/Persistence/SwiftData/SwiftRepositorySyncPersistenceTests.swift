@@ -30,11 +30,11 @@ struct SwiftRepositorySyncPersistenceTests {
     
     @available(iOS 17.4, *)
     @Test()
-    @MainActor func getObjectsAsync() async throws {
+    @MainActor func getDataModelsAsync() async throws {
         
         let persistence = try getPersistence()
         
-        let dataModels: [MockDataModel] = try await persistence.getObjectsAsync(getObjectsType: .allObjects)
+        let dataModels: [MockDataModel] = try await persistence.getDataModelsAsync(getOption: .allObjects)
         
         let sortedDataModels: [String] = MockDataModel.getIdsSortedByPosition(dataModels: dataModels)
                                         
@@ -43,11 +43,11 @@ struct SwiftRepositorySyncPersistenceTests {
     
     @available(iOS 17.4, *)
     @Test()
-    @MainActor func getObjectAsync() async throws {
+    @MainActor func getDataModelAsync() async throws {
         
         let persistence = try getPersistence()
         
-        let dataModels: [MockDataModel] = try await persistence.getObjectsAsync(getObjectsType: .object(id: "3"))
+        let dataModels: [MockDataModel] = try await persistence.getDataModelsAsync(getOption: .object(id: "3"))
         
         let dataModel: MockDataModel = try #require(dataModels.first)
         
@@ -56,7 +56,7 @@ struct SwiftRepositorySyncPersistenceTests {
     
     @available(iOS 17.4, *)
     @Test()
-    @MainActor func getObjectsPublisher() async throws {
+    @MainActor func getDataModelsPublisher() async throws {
         
         let persistence = try getPersistence()
         
@@ -74,7 +74,7 @@ struct SwiftRepositorySyncPersistenceTests {
                 }
                 
                 persistence
-                    .getObjectsPublisher(getObjectsType: .allObjects)
+                    .getDataModelsPublisher(getOption: .allObjects)
                     .sink { completion in
                         
                         // Place inside a sink or other async closure:
@@ -110,7 +110,7 @@ struct SwiftRepositorySyncPersistenceTests {
         let mappedDataModels: [MockDataModel] = try await persistence.writeObjectsAsync(
             externalObjects: externalObjects,
             writeOption: nil,
-            getObjectsType: .allObjects
+            getOption: .allObjects
         )
         
         let allIds: [String] = allObjectIds + newObjectIds
@@ -133,13 +133,13 @@ struct SwiftRepositorySyncPersistenceTests {
         let mappedDataModels: [MockDataModel] = try await persistence.writeObjectsAsync(
             externalObjects: externalObjects,
             writeOption: nil,
-            getObjectsType: nil
+            getOption: nil
         )
         
         #expect(mappedDataModels.count == 0)
         
         let allIds: [String] = allObjectIds + newObjectIds
-        let allDataModels: [MockDataModel] = try await persistence.getObjectsAsync(getObjectsType: .allObjects)
+        let allDataModels: [MockDataModel] = try await persistence.getDataModelsAsync(getOption: .allObjects)
         
         #expect(MockDataModel.getIdsSortedByPosition(dataModels: allDataModels) == allIds)
     }
@@ -159,12 +159,12 @@ struct SwiftRepositorySyncPersistenceTests {
         let mappedDataModels: [MockDataModel] = try await persistence.writeObjectsAsync(
             externalObjects: externalObjects,
             writeOption: .deleteObjectsNotInExternal,
-            getObjectsType: nil
+            getOption: nil
         )
         
         #expect(mappedDataModels.count == 0)
         
-        let allDataModels: [MockDataModel] = try await persistence.getObjectsAsync(getObjectsType: .allObjects)
+        let allDataModels: [MockDataModel] = try await persistence.getDataModelsAsync(getOption: .allObjects)
         
         #expect(MockDataModel.getIdsSortedByPosition(dataModels: allDataModels) == newObjectIds)
     }
@@ -197,7 +197,7 @@ struct SwiftRepositorySyncPersistenceTests {
                 persistence.writeObjectsPublisher(
                     externalObjects: externalObjects,
                     writeOption: nil,
-                    getObjectsType: .allObjects
+                    getOption: .allObjects
                 )
                 .sink { completion in
                 
@@ -249,7 +249,7 @@ struct SwiftRepositorySyncPersistenceTests {
                 persistence.writeObjectsPublisher(
                     externalObjects: externalObjects,
                     writeOption: nil,
-                    getObjectsType: nil
+                    getOption: nil
                 )
                 .sink { completion in
                 
@@ -271,7 +271,7 @@ struct SwiftRepositorySyncPersistenceTests {
         #expect(mappedDataModels.count == 0)
         
         let allIds: [String] = allObjectIds + newObjectIds
-        let allDataModels: [MockDataModel] = try await persistence.getObjectsAsync(getObjectsType: .allObjects)
+        let allDataModels: [MockDataModel] = try await persistence.getDataModelsAsync(getOption: .allObjects)
         
         #expect(MockDataModel.getIdsSortedByPosition(dataModels: allDataModels) == allIds)
     }
@@ -304,7 +304,7 @@ struct SwiftRepositorySyncPersistenceTests {
                 persistence.writeObjectsPublisher(
                     externalObjects: externalObjects,
                     writeOption: .deleteObjectsNotInExternal,
-                    getObjectsType: nil
+                    getOption: nil
                 )
                 .sink { completion in
                 
@@ -325,7 +325,7 @@ struct SwiftRepositorySyncPersistenceTests {
         
         #expect(mappedDataModels.count == 0)
         
-        let allDataModels: [MockDataModel] = try await persistence.getObjectsAsync(getObjectsType: .allObjects)
+        let allDataModels: [MockDataModel] = try await persistence.getDataModelsAsync(getOption: .allObjects)
         
         #expect(MockDataModel.getIdsSortedByPosition(dataModels: allDataModels) == newObjectIds)
     }

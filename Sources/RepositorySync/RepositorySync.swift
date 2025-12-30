@@ -68,7 +68,7 @@ extension RepositorySync {
             return self.persistence.writeObjectsPublisher(
                 externalObjects: externalObjects,
                 writeOption: nil,
-                getObjectsType: getObjectsType
+                getOption: getObjectsType.toGetOption()
             )
         }
         .eraseToAnyPublisher()
@@ -79,13 +79,13 @@ extension RepositorySync {
 
 extension RepositorySync {
     
-    @MainActor public func fetchObjectsPublisher(fetchType: FetchType, getObjectsType: GetObjectsType, context: ExternalDataFetchType.ExternalDataFetchContext) -> AnyPublisher<[DataModelType], Error> {
+    @MainActor public func syncObjectsPublisher(fetchType: FetchType, getObjectsType: GetObjectsType, context: ExternalDataFetchType.ExternalDataFetchContext) -> AnyPublisher<[DataModelType], Error> {
         
         switch fetchType {
             
         case .get(let getCachePolicy):
             
-            return getObjectsPublisher(
+            return getDataModelsPublisher(
                 getObjectsType: getObjectsType,
                 cachePolicy: getCachePolicy,
                 context: context
@@ -101,7 +101,7 @@ extension RepositorySync {
         }
     }
     
-    @MainActor private func getObjectsPublisher(getObjectsType: GetObjectsType, cachePolicy: GetCachePolicy, context: ExternalDataFetchType.ExternalDataFetchContext) -> AnyPublisher<[DataModelType], Error> {
+    @MainActor private func getDataModelsPublisher(getObjectsType: GetObjectsType, cachePolicy: GetCachePolicy, context: ExternalDataFetchType.ExternalDataFetchContext) -> AnyPublisher<[DataModelType], Error> {
         
         switch cachePolicy {
             
@@ -117,7 +117,7 @@ extension RepositorySync {
         case .returnCacheDataDontFetch:
             
             return persistence
-                .getObjectsPublisher(getObjectsType: getObjectsType)
+                .getDataModelsPublisher(getOption: getObjectsType.toGetOption())
                 .eraseToAnyPublisher()
         
         case .returnCacheDataElseFetch:
@@ -136,8 +136,8 @@ extension RepositorySync {
             return persistence
                 .observeCollectionChangesPublisher()
                 .flatMap { _ in
-                    return self.persistence.getObjectsPublisher(
-                        getObjectsType: getObjectsType
+                    return self.persistence.getDataModelsPublisher(
+                        getOption: getObjectsType.toGetOption()
                     )
                 }
                 .eraseToAnyPublisher()
@@ -165,8 +165,8 @@ extension RepositorySync {
             return persistence
                 .observeCollectionChangesPublisher()
                 .flatMap { _ in
-                    return self.persistence.getObjectsPublisher(
-                        getObjectsType: getObjectsType
+                    return self.persistence.getDataModelsPublisher(
+                        getOption: getObjectsType.toGetOption()
                     )
                 }
                 .eraseToAnyPublisher()
@@ -181,8 +181,8 @@ extension RepositorySync {
             return persistence
                 .observeCollectionChangesPublisher()
                 .flatMap { _ in
-                    return self.persistence.getObjectsPublisher(
-                        getObjectsType: getObjectsType
+                    return self.persistence.getDataModelsPublisher(
+                        getOption: getObjectsType.toGetOption()
                     )
                 }
                 .eraseToAnyPublisher()

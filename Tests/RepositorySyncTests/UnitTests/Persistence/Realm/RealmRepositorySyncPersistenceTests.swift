@@ -28,21 +28,21 @@ struct RealmRepositorySyncPersistenceTests {
     }
     
     @Test()
-    @MainActor func getObjectsAsync() async throws {
+    @MainActor func getDataModelsAsync() async throws {
         
         let persistence = try getPersistence()
         
-        let dataModels: [MockDataModel] = try await persistence.getObjectsAsync(getObjectsType: .allObjects)
+        let dataModels: [MockDataModel] = try await persistence.getDataModelsAsync(getOption: .allObjects)
                                         
         #expect(MockDataModel.getIdsSortedByPosition(dataModels: dataModels) == allObjectIds)
     }
     
     @Test()
-    @MainActor func getObjectAsync() async throws {
+    @MainActor func getDataModelAsync() async throws {
         
         let persistence = try getPersistence()
         
-        let dataModels: [MockDataModel] = try await persistence.getObjectsAsync(getObjectsType: .object(id: "3"))
+        let dataModels: [MockDataModel] = try await persistence.getDataModelsAsync(getOption: .object(id: "3"))
         
         let dataModel: MockDataModel = try #require(dataModels.first)
         
@@ -50,7 +50,7 @@ struct RealmRepositorySyncPersistenceTests {
     }
     
     @Test()
-    @MainActor func getObjectsPublisher() async throws {
+    @MainActor func getDataModelsPublisher() async throws {
         
         let persistence = try getPersistence()
         
@@ -68,7 +68,7 @@ struct RealmRepositorySyncPersistenceTests {
                 }
                 
                 persistence
-                    .getObjectsPublisher(getObjectsType: .allObjects)
+                    .getDataModelsPublisher(getOption: .allObjects)
                     .sink { completion in
                         
                         // Place inside a sink or other async closure:
@@ -103,7 +103,7 @@ struct RealmRepositorySyncPersistenceTests {
         let mappedDataModels: [MockDataModel] = try await persistence.writeObjectsAsync(
             externalObjects: externalObjects,
             writeOption: nil,
-            getObjectsType: .allObjects
+            getOption: .allObjects
         )
         
         let allIds: [String] = allObjectIds + newObjectIds
@@ -125,13 +125,13 @@ struct RealmRepositorySyncPersistenceTests {
         let mappedDataModels: [MockDataModel] = try await persistence.writeObjectsAsync(
             externalObjects: externalObjects,
             writeOption: nil,
-            getObjectsType: nil
+            getOption: nil
         )
         
         #expect(mappedDataModels.count == 0)
         
         let allIds: [String] = allObjectIds + newObjectIds
-        let allDataModels: [MockDataModel] = try await persistence.getObjectsAsync(getObjectsType: .allObjects)
+        let allDataModels: [MockDataModel] = try await persistence.getDataModelsAsync(getOption: .allObjects)
         
         #expect(MockDataModel.getIdsSortedByPosition(dataModels: allDataModels) == allIds)
     }
@@ -151,12 +151,12 @@ struct RealmRepositorySyncPersistenceTests {
         let mappedDataModels: [MockDataModel] = try await persistence.writeObjectsAsync(
             externalObjects: externalObjects,
             writeOption: .deleteObjectsNotInExternal,
-            getObjectsType: nil
+            getOption: nil
         )
         
         #expect(mappedDataModels.count == 0)
         
-        let allDataModels: [MockDataModel] = try await persistence.getObjectsAsync(getObjectsType: .allObjects)
+        let allDataModels: [MockDataModel] = try await persistence.getDataModelsAsync(getOption: .allObjects)
         
         #expect(MockDataModel.getIdsSortedByPosition(dataModels: allDataModels) == newObjectIds)
     }
@@ -188,7 +188,7 @@ struct RealmRepositorySyncPersistenceTests {
                 persistence.writeObjectsPublisher(
                     externalObjects: externalObjects,
                     writeOption: nil,
-                    getObjectsType: .allObjects
+                    getOption: .allObjects
                 )
                 .sink { completion in
                 
@@ -239,7 +239,7 @@ struct RealmRepositorySyncPersistenceTests {
                 persistence.writeObjectsPublisher(
                     externalObjects: externalObjects,
                     writeOption: nil,
-                    getObjectsType: nil
+                    getOption: nil
                 )
                 .sink { completion in
                 
@@ -261,7 +261,7 @@ struct RealmRepositorySyncPersistenceTests {
         #expect(mappedDataModels.count == 0)
         
         let allIds: [String] = allObjectIds + newObjectIds
-        let allDataModels: [MockDataModel] = try await persistence.getObjectsAsync(getObjectsType: .allObjects)
+        let allDataModels: [MockDataModel] = try await persistence.getDataModelsAsync(getOption: .allObjects)
         
         #expect(MockDataModel.getIdsSortedByPosition(dataModels: allDataModels) == allIds)
     }
@@ -294,7 +294,7 @@ struct RealmRepositorySyncPersistenceTests {
                 persistence.writeObjectsPublisher(
                     externalObjects: externalObjects,
                     writeOption: .deleteObjectsNotInExternal,
-                    getObjectsType: nil
+                    getOption: nil
                 )
                 .sink { completion in
                 
@@ -315,7 +315,7 @@ struct RealmRepositorySyncPersistenceTests {
         
         #expect(mappedDataModels.count == 0)
         
-        let allDataModels: [MockDataModel] = try await persistence.getObjectsAsync(getObjectsType: .allObjects)
+        let allDataModels: [MockDataModel] = try await persistence.getDataModelsAsync(getOption: .allObjects)
         
         #expect(MockDataModel.getIdsSortedByPosition(dataModels: allDataModels) == newObjectIds)
     }

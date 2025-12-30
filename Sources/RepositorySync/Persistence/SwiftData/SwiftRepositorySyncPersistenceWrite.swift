@@ -30,7 +30,7 @@ public actor SwiftRepositorySyncPersistenceWrite<DataModelType: Sendable, Extern
         return modelContext
     }
 
-    public func writeObjectsAsync(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getObjectsType: GetObjectsType?) async throws -> [DataModelType] {
+    public func writeObjectsAsync(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getOption: PersistenceGetOption?) async throws -> [DataModelType] {
         
         let context: ModelContext = self.context
 
@@ -74,7 +74,7 @@ public actor SwiftRepositorySyncPersistenceWrite<DataModelType: Sendable, Extern
             try context.save()
         }
         
-        guard let getObjectsType = getObjectsType else {
+        guard let getOption = getOption else {
             return Array()
         }
                 
@@ -82,7 +82,7 @@ public actor SwiftRepositorySyncPersistenceWrite<DataModelType: Sendable, Extern
         
         let getObjects: [PersistObjectType] = try getObjectsByType.getObjects(
             context: context,
-            getObjectsType: getObjectsType,
+            getOption: getOption,
             query: nil
         )
         
@@ -93,7 +93,7 @@ public actor SwiftRepositorySyncPersistenceWrite<DataModelType: Sendable, Extern
         return dataModels
     }
     
-    @MainActor public func writeObjectsPublisher(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getObjectsType: GetObjectsType?) -> AnyPublisher<[DataModelType], Error> {
+    @MainActor public func writeObjectsPublisher(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getOption: PersistenceGetOption?) -> AnyPublisher<[DataModelType], Error> {
         
         return Future { promise in
             
@@ -104,7 +104,7 @@ public actor SwiftRepositorySyncPersistenceWrite<DataModelType: Sendable, Extern
                     let dataModels = try await self.writeObjectsAsync(
                         externalObjects: externalObjects,
                         writeOption: writeOption,
-                        getObjectsType: getObjectsType
+                        getOption: getOption
                     )
                     
                     promise(.success(dataModels))
