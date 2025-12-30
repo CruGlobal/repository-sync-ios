@@ -23,6 +23,20 @@ open class RepositorySync<DataModelType: Sendable, ExternalDataFetchType: Extern
     }
 }
 
+// MARK: - Concrete Persistence
+
+extension RepositorySync {
+
+    public func getRealmPersistence<T: IdentifiableRealmObject>() -> RealmRepositorySyncPersistence<DataModelType, ExternalDataFetchType.ExternalObject, T>? {
+        return persistence as? RealmRepositorySyncPersistence<DataModelType, ExternalDataFetchType.ExternalObject, T>
+    }
+    
+    @available(iOS 17.4, *)
+    public func getSwiftPersistence<T: IdentifiableSwiftDataObject>() -> SwiftRepositorySyncPersistence<DataModelType, ExternalDataFetchType.ExternalObject, T>? {
+        return persistence as? SwiftRepositorySyncPersistence<DataModelType, ExternalDataFetchType.ExternalObject, T>
+    }
+}
+
 // MARK: - External Data Fetch
 
 extension RepositorySync {
