@@ -21,7 +21,7 @@ public final class RealmRepositorySyncPersistenceRead<DataModelType: Sendable, E
         self.dataModelMapping = dataModelMapping
     }
     
-    private func getObjectsAsyncClosure(getOption: PersistenceGetOption, query: RealmDatabaseQuery?, completion: @escaping ((_ result: Result<[DataModelType], Error>) -> Void)) {
+    private func getDataModelsAsyncClosure(getOption: PersistenceGetOption, query: RealmDatabaseQuery?, completion: @escaping ((_ result: Result<[DataModelType], Error>) -> Void)) {
         
         DispatchQueue.global().async {
             
@@ -49,10 +49,10 @@ public final class RealmRepositorySyncPersistenceRead<DataModelType: Sendable, E
         }
     }
     
-    @MainActor public func getObjectsAsync(getOption: PersistenceGetOption, query: RealmDatabaseQuery?) async throws -> [DataModelType] {
+    @MainActor public func getDataModelsAsync(getOption: PersistenceGetOption, query: RealmDatabaseQuery?) async throws -> [DataModelType] {
         
         return try await withCheckedThrowingContinuation { continuation in
-            getObjectsAsyncClosure(getOption: getOption, query: query) { (result: Result<[DataModelType], Error>) in
+            getDataModelsAsyncClosure(getOption: getOption, query: query) { (result: Result<[DataModelType], Error>) in
                 switch result {
                 case .success(let dataModels):
                     continuation.resume(returning: dataModels)
@@ -63,14 +63,14 @@ public final class RealmRepositorySyncPersistenceRead<DataModelType: Sendable, E
         }
     }
     
-    @MainActor public func getObjectsPublisher(getOption: PersistenceGetOption, query: RealmDatabaseQuery?) -> AnyPublisher<[DataModelType], Error> {
+    @MainActor public func getDataModelsPublisher(getOption: PersistenceGetOption, query: RealmDatabaseQuery?) -> AnyPublisher<[DataModelType], Error> {
         
         return Future { promise in
             
             Task {
                 
                 do {
-                    let dataModels = try await self.getObjectsAsync(getOption: getOption, query: query)
+                    let dataModels = try await self.getDataModelsAsync(getOption: getOption, query: query)
                     
                     promise(.success(dataModels))
                 }

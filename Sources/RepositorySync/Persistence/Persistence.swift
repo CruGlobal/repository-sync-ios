@@ -17,8 +17,8 @@ public protocol Persistence<DataModelType, ExternalObjectType> {
     @MainActor func observeCollectionChangesPublisher() -> AnyPublisher<Void, Error>
     func getObjectCount() throws -> Int
     // TODO: Once RealmSwift is removed and NSPredicate dropped, can MainActor can be removed here? ~Levi
-    @MainActor func getObjectsAsync(getOption: PersistenceGetOption) async throws -> [DataModelType]
-    @MainActor func getObjectsPublisher(getOption: PersistenceGetOption) -> AnyPublisher<[DataModelType], Error>
+    @MainActor func getDataModelsAsync(getOption: PersistenceGetOption) async throws -> [DataModelType]
+    @MainActor func getDataModelsPublisher(getOption: PersistenceGetOption) -> AnyPublisher<[DataModelType], Error>
     @MainActor func writeObjectsAsync(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getOption: PersistenceGetOption?) async throws -> [DataModelType]
     @MainActor func writeObjectsPublisher(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getOption: PersistenceGetOption?) -> AnyPublisher<[DataModelType], Error>
 }

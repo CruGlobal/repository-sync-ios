@@ -30,7 +30,7 @@ public actor SwiftRepositorySyncPersistenceRead<DataModelType: Sendable, Externa
         return modelContext
     }
     
-    public func getObjectsAsync(getOption: PersistenceGetOption, query: SwiftDatabaseQuery<PersistObjectType>?) async throws -> [DataModelType] {
+    public func getDataModelsAsync(getOption: PersistenceGetOption, query: SwiftDatabaseQuery<PersistObjectType>?) async throws -> [DataModelType] {
                    
         let context: ModelContext = self.context
         
@@ -49,14 +49,14 @@ public actor SwiftRepositorySyncPersistenceRead<DataModelType: Sendable, Externa
         return dataModels
     }
     
-    @MainActor public func getObjectsPublisher(getOption: PersistenceGetOption, query: SwiftDatabaseQuery<PersistObjectType>?) -> AnyPublisher<[DataModelType], Error> {
+    @MainActor public func getDataModelsPublisher(getOption: PersistenceGetOption, query: SwiftDatabaseQuery<PersistObjectType>?) -> AnyPublisher<[DataModelType], Error> {
         
         return Future { promise in
             
             Task {
                 
                 do {
-                    let dataModels = try await self.getObjectsAsync(getOption: getOption, query: query)
+                    let dataModels = try await self.getDataModelsAsync(getOption: getOption, query: query)
                     
                     promise(.success(dataModels))
                 }

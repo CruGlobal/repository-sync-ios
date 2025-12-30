@@ -65,20 +65,20 @@ extension RealmRepositorySyncPersistence {
         return results.count
     }
     
-    @MainActor public func getObjectsAsync(getOption: PersistenceGetOption) async throws -> [DataModelType] {
-        return try await getObjectsAsync(getOption: getOption, query: nil)
+    @MainActor public func getDataModelsAsync(getOption: PersistenceGetOption) async throws -> [DataModelType] {
+        return try await getDataModelsAsync(getOption: getOption, query: nil)
     }
     
-    @MainActor public func getObjectsAsync(getOption: PersistenceGetOption, query: RealmDatabaseQuery?) async throws -> [DataModelType] {
-        return try await read.getObjectsAsync(getOption: getOption, query: query)
+    @MainActor public func getDataModelsAsync(getOption: PersistenceGetOption, query: RealmDatabaseQuery?) async throws -> [DataModelType] {
+        return try await read.getDataModelsAsync(getOption: getOption, query: query)
     }
     
-    @MainActor public func getObjectsPublisher(getOption: PersistenceGetOption) -> AnyPublisher<[DataModelType], Error> {
-        return getObjectsPublisher(getOption: getOption, query: nil)
+    @MainActor public func getDataModelsPublisher(getOption: PersistenceGetOption) -> AnyPublisher<[DataModelType], Error> {
+        return getDataModelsPublisher(getOption: getOption, query: nil)
     }
     
-    @MainActor public func getObjectsPublisher(getOption: PersistenceGetOption, query: RealmDatabaseQuery?) -> AnyPublisher<[DataModelType], Error> {
-        return read.getObjectsPublisher(getOption: getOption, query: query)
+    @MainActor public func getDataModelsPublisher(getOption: PersistenceGetOption, query: RealmDatabaseQuery?) -> AnyPublisher<[DataModelType], Error> {
+        return read.getDataModelsPublisher(getOption: getOption, query: query)
     }
 }
 

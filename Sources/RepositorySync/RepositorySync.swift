@@ -85,7 +85,7 @@ extension RepositorySync {
             
         case .get(let getCachePolicy):
             
-            return getObjectsPublisher(
+            return getDataModelsPublisher(
                 getObjectsType: getObjectsType,
                 cachePolicy: getCachePolicy,
                 context: context
@@ -101,7 +101,7 @@ extension RepositorySync {
         }
     }
     
-    @MainActor private func getObjectsPublisher(getObjectsType: GetObjectsType, cachePolicy: GetCachePolicy, context: ExternalDataFetchType.ExternalDataFetchContext) -> AnyPublisher<[DataModelType], Error> {
+    @MainActor private func getDataModelsPublisher(getObjectsType: GetObjectsType, cachePolicy: GetCachePolicy, context: ExternalDataFetchType.ExternalDataFetchContext) -> AnyPublisher<[DataModelType], Error> {
         
         switch cachePolicy {
             
@@ -117,7 +117,7 @@ extension RepositorySync {
         case .returnCacheDataDontFetch:
             
             return persistence
-                .getObjectsPublisher(getOption: getObjectsType.toGetOption())
+                .getDataModelsPublisher(getOption: getObjectsType.toGetOption())
                 .eraseToAnyPublisher()
         
         case .returnCacheDataElseFetch:
@@ -136,7 +136,7 @@ extension RepositorySync {
             return persistence
                 .observeCollectionChangesPublisher()
                 .flatMap { _ in
-                    return self.persistence.getObjectsPublisher(
+                    return self.persistence.getDataModelsPublisher(
                         getOption: getObjectsType.toGetOption()
                     )
                 }
@@ -165,7 +165,7 @@ extension RepositorySync {
             return persistence
                 .observeCollectionChangesPublisher()
                 .flatMap { _ in
-                    return self.persistence.getObjectsPublisher(
+                    return self.persistence.getDataModelsPublisher(
                         getOption: getObjectsType.toGetOption()
                     )
                 }
@@ -181,7 +181,7 @@ extension RepositorySync {
             return persistence
                 .observeCollectionChangesPublisher()
                 .flatMap { _ in
-                    return self.persistence.getObjectsPublisher(
+                    return self.persistence.getDataModelsPublisher(
                         getOption: getObjectsType.toGetOption()
                     )
                 }
