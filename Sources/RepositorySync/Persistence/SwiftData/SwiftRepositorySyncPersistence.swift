@@ -65,8 +65,16 @@ extension SwiftRepositorySyncPersistence {
         return try database.read.object(context: database.openContext(), id: id)
     }
     
+    public func getPersistedObjects() throws -> [PersistObjectType] {
+        return try getPersistedObjects(query: nil)
+    }
+    
     public func getPersistedObjects(query: SwiftDatabaseQuery<PersistObjectType>?) throws -> [PersistObjectType] {
         return try database.read.objects(context: database.openContext(), query: query)
+    }
+    
+    public func getPersistedObjects(ids: [String]) throws -> [PersistObjectType] {
+        return try getPersistedObjects(ids: ids, sortBy: nil)
     }
     
     public func getPersistedObjects(ids: [String], sortBy: [SortDescriptor<PersistObjectType>]?) throws -> [PersistObjectType] {
