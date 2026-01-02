@@ -75,7 +75,7 @@ extension RepositorySync {
     }
 }
 
-// MARK: - Get Objects
+// MARK: - Sync Objects
 
 extension RepositorySync {
     

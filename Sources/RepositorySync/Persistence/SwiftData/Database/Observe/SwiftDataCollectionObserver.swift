@@ -28,15 +28,15 @@ public final class SwiftDataCollectionObserver<PersistObjectType: IdentifiableSw
             entityName = PersistObjectType.entityName
         }
     }
-    
-    @MainActor public func observeCollectionChangesPublisher(database: SwiftDatabase) -> AnyPublisher<Void, Error> {
+
+    public func observeCollectionChangesPublisher(database: SwiftDatabase) -> AnyPublisher<Void, Error> {
         
         return observeSwiftDataCollectionChangesPublisher(database: database)
             .setFailureType(to: Error.self)
             .eraseToAnyPublisher()
     }
     
-    @MainActor private func observeSwiftDataCollectionChangesPublisher(database: SwiftDatabase) -> AnyPublisher<Void, Never> {
+    private func observeSwiftDataCollectionChangesPublisher(database: SwiftDatabase) -> AnyPublisher<Void, Never> {
                 
         let swiftDatabaseRef: SwiftDatabase = database
         let swiftDatabaseEntityNameRef: String = entityName
