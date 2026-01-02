@@ -30,11 +30,30 @@ public actor SwiftRepositorySyncPersistenceRead<DataModelType: Sendable, Externa
         return modelContext
     }
     
+    @MainActor public func getDataModel(id: String) throws -> DataModelType? {
+        
+        let context: ModelContext = container.mainContext
+        
+        let getObjectsByType = SwiftRepositorySyncGetObjects<PersistObjectType>()
+        
+        let persistObjects: [PersistObjectType] = try getObjectsByType.getObjects(
+            context: context,
+            getOption: .object(id: id),
+            query: nil
+        )
+        
+        guard let persistObject = persistObjects.first else {
+            return nil
+        }
+        
+        return dataModelMapping.toDataModel(persistObject: persistObject)
+    }
+    
     public func getDataModelsAsync(getOption: PersistenceGetOption, query: SwiftDatabaseQuery<PersistObjectType>?) async throws -> [DataModelType] {
                    
         let context: ModelContext = self.context
         
-        let getObjectsByType: SwiftRepositorySyncGetObjects<PersistObjectType> = SwiftRepositorySyncGetObjects()
+        let getObjectsByType = SwiftRepositorySyncGetObjects<PersistObjectType>()
         
         let persistObjects: [PersistObjectType] = try getObjectsByType.getObjects(
             context: context,

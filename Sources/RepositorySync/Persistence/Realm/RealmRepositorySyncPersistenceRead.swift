@@ -21,6 +21,25 @@ public final class RealmRepositorySyncPersistenceRead<DataModelType: Sendable, E
         self.dataModelMapping = dataModelMapping
     }
     
+    @MainActor public func getDataModel(id: String) throws -> DataModelType? {
+        
+        let realm: Realm = try database.openRealm()
+        
+        let getObjectsByType = RealmRepositorySyncGetObjects<PersistObjectType>()
+        
+        let persistObjects: [PersistObjectType] = try getObjectsByType.getObjects(
+            realm: realm,
+            getOption: .object(id: id),
+            query: nil
+        )
+        
+        guard let persistObject = persistObjects.first else {
+            return nil
+        }
+        
+        return dataModelMapping.toDataModel(persistObject: persistObject)
+    }
+    
     private func getDataModelsAsyncClosure(getOption: PersistenceGetOption, query: RealmDatabaseQuery?, completion: @escaping ((_ result: Result<[DataModelType], Error>) -> Void)) {
         
         DispatchQueue.global().async {
@@ -29,7 +48,7 @@ public final class RealmRepositorySyncPersistenceRead<DataModelType: Sendable, E
                 
                 let realm: Realm = try self.database.openRealm()
                 
-                let getObjectsByType: RealmRepositorySyncGetObjects<PersistObjectType> = RealmRepositorySyncGetObjects()
+                let getObjectsByType = RealmRepositorySyncGetObjects<PersistObjectType>()
                 
                 let persistObjects: [PersistObjectType] = try getObjectsByType.getObjects(
                     realm: realm,

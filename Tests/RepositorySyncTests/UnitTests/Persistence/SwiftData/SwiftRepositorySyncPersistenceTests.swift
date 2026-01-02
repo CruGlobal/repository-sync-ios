@@ -30,6 +30,19 @@ struct SwiftRepositorySyncPersistenceTests {
     
     @available(iOS 17.4, *)
     @Test()
+    @MainActor func getDataModel() async throws {
+        
+        let persistence = try getPersistence()
+        
+        let dataModelId: String = "4"
+        
+        let dataModel: MockDataModel = try #require(try persistence.getDataModel(id: dataModelId))
+                                                
+        #expect(dataModel.id == dataModelId)
+    }
+    
+    @available(iOS 17.4, *)
+    @Test()
     @MainActor func getDataModelsAsync() async throws {
         
         let persistence = try getPersistence()

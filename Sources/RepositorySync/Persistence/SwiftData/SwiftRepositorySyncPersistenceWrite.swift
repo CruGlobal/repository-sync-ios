@@ -78,7 +78,7 @@ public actor SwiftRepositorySyncPersistenceWrite<DataModelType: Sendable, Extern
             return Array()
         }
                 
-        let getObjectsByType: SwiftRepositorySyncGetObjects<PersistObjectType> = SwiftRepositorySyncGetObjects()
+        let getObjectsByType = SwiftRepositorySyncGetObjects<PersistObjectType>()
         
         let getObjects: [PersistObjectType] = try getObjectsByType.getObjects(
             context: context,
