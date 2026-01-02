@@ -68,7 +68,7 @@ public final class RealmRepositorySyncPersistenceWrite<DataModelType: Sendable, 
                     return
                 }
                   
-                let getObjectsByType: RealmRepositorySyncGetObjects<PersistObjectType> = RealmRepositorySyncGetObjects()
+                let getObjectsByType = RealmRepositorySyncGetObjects<PersistObjectType>()
                 
                 let getObjects: [PersistObjectType] = try getObjectsByType.getObjects(
                     realm: realm,

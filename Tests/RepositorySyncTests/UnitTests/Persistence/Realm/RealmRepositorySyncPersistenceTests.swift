@@ -28,6 +28,18 @@ struct RealmRepositorySyncPersistenceTests {
     }
     
     @Test()
+    @MainActor func getDataModel() async throws {
+        
+        let persistence = try getPersistence()
+        
+        let dataModelId: String = "4"
+        
+        let dataModel: MockDataModel = try #require(try persistence.getDataModel(id: dataModelId))
+                                                
+        #expect(dataModel.id == dataModelId)
+    }
+    
+    @Test()
     @MainActor func getDataModelsAsync() async throws {
         
         let persistence = try getPersistence()
