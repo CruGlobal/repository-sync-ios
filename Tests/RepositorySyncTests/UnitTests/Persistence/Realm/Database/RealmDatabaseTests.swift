@@ -30,8 +30,10 @@ struct RealmDatabaseTests {
     func getObjectById() async throws {
         
         let database = try getDatabase()
+        
+        let realm: Realm = try database.openRealm()
                 
-        let object: MockRealmObject? = try database.openRealmAndRead.object(id: "0")
+        let object: MockRealmObject? = database.read.object(realm: realm, id: "0")
                 
         #expect(object != nil)
     }
@@ -40,10 +42,13 @@ struct RealmDatabaseTests {
     func getObjectsByIds() async throws {
         
         let database = try getDatabase()
+        
+        let realm: Realm = try database.openRealm()
                         
         let ids: [String] = ["6", "4", "2"]
         
-        let objects: [MockRealmObject] = try database.openRealmAndRead.objects(
+        let objects: [MockRealmObject] = database.read.objects(
+            realm: realm,
             ids: ids,
             sortBykeyPath: SortByKeyPath(keyPath: #keyPath(MockRealmObject.position), ascending: false)
         )
@@ -55,12 +60,14 @@ struct RealmDatabaseTests {
     func getObjectByFilter() async throws {
         
         let database = try getDatabase()
+        
+        let realm: Realm = try database.openRealm()
                 
         let predicate = NSPredicate(format: "\(#keyPath(MockRealmObject.position)) == %@", NSNumber(value: 0))
         
         let query = RealmDatabaseQuery.filter(filter: predicate)
         
-        let objects: [MockRealmObject] = try database.openRealmAndRead.objects(query: query)
+        let objects: [MockRealmObject] = database.read.objects(realm: realm, query: query)
                 
         #expect(objects.count == 1)
         #expect(objects.first?.id == "0")
@@ -70,10 +77,12 @@ struct RealmDatabaseTests {
     func getObjectsBySortAscendingTrue() async throws {
         
         let database = try getDatabase()
+        
+        let realm: Realm = try database.openRealm()
                         
         let query = RealmDatabaseQuery.sort(byKeyPath: SortByKeyPath(keyPath: #keyPath(MockRealmObject.position), ascending: true))
         
-        let objects: [MockRealmObject] = Array(try database.openRealmAndRead.results(query: query))
+        let objects: [MockRealmObject] = Array(database.read.results(realm: realm, query: query))
         
         let objectPositions: [Int] = objects.map { $0.position }
                 
@@ -84,10 +93,12 @@ struct RealmDatabaseTests {
     func getObjectsBySortAscendingFalse() async throws {
         
         let database = try getDatabase()
+        
+        let realm: Realm = try database.openRealm()
                         
         let query = RealmDatabaseQuery.sort(byKeyPath: SortByKeyPath(keyPath: #keyPath(MockRealmObject.position), ascending: false))
         
-        let objects: [MockRealmObject] = try database.openRealmAndRead.objects(query: query)
+        let objects: [MockRealmObject] = database.read.objects(realm: realm, query: query)
         
         let objectPositions: [Int] = objects.map { $0.position }
                 
@@ -98,6 +109,8 @@ struct RealmDatabaseTests {
     func getObjectByFilterAndSort() async throws {
         
         let database = try getDatabase()
+        
+        let realm: Realm = try database.openRealm()
                 
         let isEvenPosition = NSPredicate(format: "\(#keyPath(MockRealmObject.isEvenPosition)) == %@", NSNumber(value: true))
         
@@ -106,7 +119,7 @@ struct RealmDatabaseTests {
             sortByKeyPath: SortByKeyPath(keyPath: #keyPath(MockRealmObject.position), ascending: false)
         )
         
-        let objects: [MockRealmObject] = try database.openRealmAndRead.objects(query: query)
+        let objects: [MockRealmObject] = database.read.objects(realm: realm, query: query)
         
         let objectPositions: [Int] = objects.map { $0.position }
                 
@@ -237,8 +250,10 @@ struct RealmDatabaseTests {
     @MainActor func deleteObjectsAsync() async throws {
         
         let database = try getDatabase()
+     
+        let realm: Realm = try database.openRealm()
         
-        let currentObjects: [MockRealmObject] = try database.openRealmAndRead.objects(query: nil)
+        let currentObjects: [MockRealmObject] = database.read.objects(realm: realm, query: nil)
                 
         #expect(currentObjects.count == allObjectIds.count)
             
@@ -261,6 +276,8 @@ struct RealmDatabaseTests {
     @MainActor func createObjectsAsyncWithCompletion() async throws {
         
         let database = try getDatabase()
+     
+        let realm: Realm = try database.openRealm()
                                 
         let uniqueId: String = UUID().uuidString
                 
@@ -315,6 +332,8 @@ struct RealmDatabaseTests {
     @MainActor func updateObjectsAsyncWithCompletion() async throws {
         
         let database = try getDatabase()
+     
+        let realm: Realm = try database.openRealm()
                 
         try await confirmation(expectedCount: 1) { confirmation in
             
@@ -369,8 +388,10 @@ struct RealmDatabaseTests {
     @MainActor func deleteObjectsAsyncWithCompletion() async throws {
         
         let database = try getDatabase()
+     
+        let realm: Realm = try database.openRealm()
         
-        let currentObjects: [MockRealmObject] = try database.openRealmAndRead.objects(query: nil)
+        let currentObjects: [MockRealmObject] = database.read.objects(realm: realm, query: nil)
                 
         #expect(currentObjects.count == allObjectIds.count)
                         

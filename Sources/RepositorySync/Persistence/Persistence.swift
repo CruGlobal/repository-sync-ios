@@ -22,4 +22,7 @@ public protocol Persistence<DataModelType, ExternalObjectType> {
     @MainActor func getDataModelsPublisher(getOption: PersistenceGetOption) -> AnyPublisher<[DataModelType], Error>
     @MainActor func writeObjectsAsync(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getOption: PersistenceGetOption?) async throws -> [DataModelType]
     @MainActor func writeObjectsPublisher(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getOption: PersistenceGetOption?) -> AnyPublisher<[DataModelType], Error>
+    
+    @available(*, deprecated)
+    @MainActor func getDataModelNonThrowing(id: String) -> DataModelType?
 }

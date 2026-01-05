@@ -40,6 +40,17 @@ public final class RealmRepositorySyncPersistenceRead<DataModelType: Sendable, E
         return dataModelMapping.toDataModel(persistObject: persistObject)
     }
     
+    @available(*, deprecated)
+    @MainActor public func getDataModelNonThrowing(id: String) -> DataModelType? {
+        
+        do {
+            return try getDataModel(id: id)
+        }
+        catch _ {
+            return nil
+        }
+    }
+    
     private func getDataModelsAsyncClosure(getOption: PersistenceGetOption, query: RealmDatabaseQuery?, completion: @escaping ((_ result: Result<[DataModelType], Error>) -> Void)) {
         
         DispatchQueue.global().async {

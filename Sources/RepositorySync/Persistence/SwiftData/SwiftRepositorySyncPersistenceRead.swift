@@ -49,6 +49,17 @@ public actor SwiftRepositorySyncPersistenceRead<DataModelType: Sendable, Externa
         return dataModelMapping.toDataModel(persistObject: persistObject)
     }
     
+    @available(*, deprecated)
+    @MainActor public func getDataModelNonThrowing(id: String) -> DataModelType? {
+        
+        do {
+            return try getDataModel(id: id)
+        }
+        catch _ {
+            return nil
+        }
+    }
+    
     public func getDataModelsAsync(getOption: PersistenceGetOption, query: SwiftDatabaseQuery<PersistObjectType>?) async throws -> [DataModelType] {
                    
         let context: ModelContext = self.context
