@@ -26,8 +26,4 @@ public final class SwiftDatabase: Sendable {
         context.autosaveEnabled = autosaveEnabled
         return context
     }
-    
-    public var openContextAndRead: SwiftDataContextRead {
-        return SwiftDataContextRead(context: openContext())
-    }
 }

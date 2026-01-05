@@ -30,10 +30,4 @@ public final class RealmDatabase {
             configuration: databaseConfig.config
         )
     }
-    
-    public var openRealmAndRead: RealmDataRealmRead {
-        get throws {
-            return RealmDataRealmRead(realm: try openRealm())
-        }
-    }
 }

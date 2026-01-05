@@ -65,6 +65,11 @@ extension SwiftRepositorySyncPersistence {
         return try read.getDataModel(id: id)
     }
     
+    @available(*, deprecated)
+    @MainActor public func getDataModelNonThrowing(id: String) -> DataModelType? {
+        return read.getDataModelNonThrowing(id: id)
+    }
+    
     @MainActor public func getDataModelsAsync(getOption: PersistenceGetOption) async throws -> [DataModelType] {
         return try await getDataModelsAsync(getOption: getOption, query: nil)
     }

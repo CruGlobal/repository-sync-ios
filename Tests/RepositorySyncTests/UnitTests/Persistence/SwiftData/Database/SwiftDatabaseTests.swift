@@ -24,11 +24,13 @@ struct SwiftDatabaseTests {
         
         let database = try getDatabase()
         
+        let context: ModelContext = database.openContext()
+        
         let query = SwiftDatabaseQuery(
             fetchDescriptor: FetchDescriptor<MockSwiftObject>()
         )
         
-        let objectCount: Int = try database.openContextAndRead.objectCount(query: query)
+        let objectCount: Int = try database.read.objectCount(context: context, query: query)
                 
         #expect(objectCount == allObjectIds.count)
     }
@@ -39,7 +41,9 @@ struct SwiftDatabaseTests {
         
         let database = try getDatabase()
         
-        let object: MockSwiftObject? = try database.openContextAndRead.object(id: "0")
+        let context: ModelContext = database.openContext()
+        
+        let object: MockSwiftObject? = try database.read.object(context: context, id: "0")
         
         #expect(object != nil)
     }
@@ -50,9 +54,12 @@ struct SwiftDatabaseTests {
         
         let database = try getDatabase()
         
+        let context: ModelContext = database.openContext()
+        
         let ids: [String] = ["6", "4", "2"]
         
-        let objects: [MockSwiftObject] = try database.openContextAndRead.objects(
+        let objects: [MockSwiftObject] = try database.read.objects(
+            context: context,
             ids: ids,
             sortBy: [SortDescriptor(\MockSwiftObject.position, order: .reverse)]
         )
@@ -66,13 +73,15 @@ struct SwiftDatabaseTests {
         
         let database = try getDatabase()
         
+        let context: ModelContext = database.openContext()
+        
         let positionPredicate = #Predicate<MockSwiftObject> { object in
             object.position == 0
         }
                 
         let query = SwiftDatabaseQuery.filter(filter: positionPredicate)
         
-        let objects: [MockSwiftObject] = try database.openContextAndRead.objects(query: query)
+        let objects: [MockSwiftObject] = try database.read.objects(context: context, query: query)
                 
         #expect(objects.count == 1)
         #expect(objects.first?.id == "0")
@@ -84,9 +93,11 @@ struct SwiftDatabaseTests {
         
         let database = try getDatabase()
         
+        let context: ModelContext = database.openContext()
+        
         let query = SwiftDatabaseQuery.sort(sortBy: [SortDescriptor(\MockSwiftObject.position, order: .forward)])
                 
-        let objects: [MockSwiftObject] = try database.openContextAndRead.objects(query: query)
+        let objects: [MockSwiftObject] = try database.read.objects(context: context, query: query)
         
         let objectPositions: [Int] = objects.map { $0.position }
                 
@@ -99,9 +110,11 @@ struct SwiftDatabaseTests {
         
         let database = try getDatabase()
         
+        let context: ModelContext = database.openContext()
+        
         let query = SwiftDatabaseQuery.sort(sortBy: [SortDescriptor(\MockSwiftObject.position, order: .reverse)])
                 
-        let objects: [MockSwiftObject] = try database.openContextAndRead.objects(query: query)
+        let objects: [MockSwiftObject] = try database.read.objects(context: context, query: query)
         
         let objectPositions: [Int] = objects.map { $0.position }
                 
@@ -114,6 +127,8 @@ struct SwiftDatabaseTests {
         
         let database = try getDatabase()
         
+        let context: ModelContext = database.openContext()
+        
         let isEvenPosition = #Predicate<MockSwiftObject> { object in
             object.isEvenPosition == true
         }
@@ -123,7 +138,7 @@ struct SwiftDatabaseTests {
             sortBy: [SortDescriptor(\MockSwiftObject.position, order: .reverse)]
         )
         
-        let objects: [MockSwiftObject] = try database.openContextAndRead.objects(query: query)
+        let objects: [MockSwiftObject] = try database.read.objects(context: context, query: query)
         
         let objectPositions: [Int] = objects.map { $0.position }
                 

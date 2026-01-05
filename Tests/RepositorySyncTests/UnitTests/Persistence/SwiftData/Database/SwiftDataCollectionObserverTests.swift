@@ -17,15 +17,6 @@ struct SwiftDataCollectionObserverTests {
     @Test()
     func template() async throws {
         
-//        let database = try getDatabase()
-//        
-//        let query = SwiftDatabaseQuery(
-//            fetchDescriptor: FetchDescriptor<MockSwiftObject>()
-//        )
-//        
-//        let objectCount: Int = try database.openContextAndRead.objectCount(query: query)
-//                
-//        #expect(objectCount == allObjectIds.count)
     }
 }
 
