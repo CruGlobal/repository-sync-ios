@@ -25,11 +25,11 @@ public final class RealmDatabaseConfig: Sendable {
         return config.isInMemory
     }
     
-    public static func createInMemoryConfig(inMemoryIdentifier: String = UUID().uuidString) -> RealmDatabaseConfig {
+    public static func createInMemoryConfig(inMemoryIdentifier: String = UUID().uuidString, schemaVersion: UInt64 = 1) -> RealmDatabaseConfig {
         
         let config = Realm.Configuration(
             inMemoryIdentifier: inMemoryIdentifier,
-            schemaVersion: 1
+            schemaVersion: schemaVersion
         )
         
         return RealmDatabaseConfig(config: config)
