@@ -143,7 +143,7 @@ struct InMemoryRealmDatabaseTests {
             newObject
         ]
         
-        try database.write.objects(realm: realm, writeClosure: { (realm: Realm) in
+        try database.write.realm(realm: realm, writeClosure: { (realm: Realm) in
             return WriteRealmObjects(deleteObjects: nil, addObjects: newObjects)
         }, updatePolicy: .modified)
         
@@ -159,7 +159,7 @@ struct InMemoryRealmDatabaseTests {
         
         let realm: Realm = try database.openRealm()
                 
-        try database.write.objects(realm: realm, writeClosure: { (realm: Realm) in
+        try database.write.realm(realm: realm, writeClosure: { (realm: Realm) in
             
             let allObjects: [MockRealmObject] = database.read.objects(realm: realm, query: nil)
                       
@@ -188,7 +188,7 @@ struct InMemoryRealmDatabaseTests {
                 
         #expect(allObjects.count == allObjectIds.count)
         
-        try database.write.objects(realm: realm, writeClosure: { (realm: Realm) in
+        try database.write.realm(realm: realm, writeClosure: { (realm: Realm) in
             return WriteRealmObjects(deleteObjects: allObjects, addObjects: nil)
         }, updatePolicy: .modified)
                 
@@ -200,7 +200,7 @@ struct InMemoryRealmDatabaseTests {
     // MARK: - Write Async With Completion Will Error
     
     @Test()
-    @MainActor func createObjectsAsyncWillErrorSinceNotSupportedOnInMemoryRealms() async throws {
+    func createObjectsAsyncWillErrorSinceNotSupportedOnInMemoryRealms() async throws {
         
         let database = try getDatabase()
                                 
@@ -224,7 +224,7 @@ struct InMemoryRealmDatabaseTests {
                     continuation.resume(returning: ())
                 }
                 
-                database.asyncWrite.write(
+                database.write.async(
                     writeAsync: { (realm: Realm) in
                         
                         realm.add(newObjects)
@@ -269,7 +269,7 @@ extension InMemoryRealmDatabaseTests {
         
         let realm: Realm = try database.openRealm()
         
-        try database.write.objects(
+        try database.write.realm(
             realm: realm,
             writeClosure: { (realm: Realm) in
                 return WriteRealmObjects(

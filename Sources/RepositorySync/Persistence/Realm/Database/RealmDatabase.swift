@@ -11,17 +11,16 @@ import RealmSwift
 import Realm
 
 public final class RealmDatabase {
-            
+                
     public let databaseConfig: RealmDatabaseConfig
     public let read: RealmDataRead = RealmDataRead()
-    public let write: RealmDataWrite = RealmDataWrite()
-    public let asyncWrite: RealmDataAsyncWrite
+    public let write: RealmDataWrite
         
     public init(databaseConfig: RealmDatabaseConfig) {
         
         self.databaseConfig = databaseConfig
         
-        asyncWrite = RealmDataAsyncWrite(config: databaseConfig.config)
+        write = RealmDataWrite(config: databaseConfig.config)
     }
     
     public func openRealm() throws -> Realm {

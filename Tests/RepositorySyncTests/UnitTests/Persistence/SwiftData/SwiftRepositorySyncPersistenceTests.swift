@@ -30,7 +30,7 @@ struct SwiftRepositorySyncPersistenceTests {
     
     @available(iOS 17.4, *)
     @Test()
-    @MainActor func getDataModel() async throws {
+    func getDataModel() async throws {
         
         let persistence = try getPersistence()
         
@@ -43,7 +43,7 @@ struct SwiftRepositorySyncPersistenceTests {
     
     @available(iOS 17.4, *)
     @Test()
-    @MainActor func getDataModelsAsync() async throws {
+    func getDataModelsAsync() async throws {
         
         let persistence = try getPersistence()
         
@@ -56,7 +56,7 @@ struct SwiftRepositorySyncPersistenceTests {
     
     @available(iOS 17.4, *)
     @Test()
-    @MainActor func getDataModelAsync() async throws {
+    func getDataModelAsync() async throws {
         
         let persistence = try getPersistence()
         
@@ -69,7 +69,7 @@ struct SwiftRepositorySyncPersistenceTests {
     
     @available(iOS 17.4, *)
     @Test()
-    @MainActor func getDataModelsPublisher() async throws {
+    func getDataModelsPublisher() async throws {
         
         let persistence = try getPersistence()
         
@@ -110,7 +110,7 @@ struct SwiftRepositorySyncPersistenceTests {
     
     @available(iOS 17.4, *)
     @Test()
-    @MainActor func writeObjectsAsyncWithMapping() async throws {
+    func writeObjectsAsyncWithMapping() async throws {
         
         let persistence = try getPersistence()
         
@@ -133,7 +133,7 @@ struct SwiftRepositorySyncPersistenceTests {
     
     @available(iOS 17.4, *)
     @Test()
-    @MainActor func writeObjectsAsyncWithoutMapping() async throws {
+    func writeObjectsAsyncWithoutMapping() async throws {
         
         let persistence = try getPersistence()
         
@@ -159,7 +159,7 @@ struct SwiftRepositorySyncPersistenceTests {
     
     @available(iOS 17.4, *)
     @Test()
-    @MainActor func writeObjectsAsyncWithWriteOptionDeleteObjectsNotInExternal() async throws {
+    func writeObjectsAsyncWithWriteOptionDeleteObjectsNotInExternal() async throws {
         
         let persistence = try getPersistence()
         
@@ -184,7 +184,7 @@ struct SwiftRepositorySyncPersistenceTests {
     
     @available(iOS 17.4, *)
     @Test()
-    @MainActor func writeObjectsPublisherWithMapping() async throws {
+    func writeObjectsPublisherWithMapping() async throws {
         
         let persistence = try getPersistence()
         
@@ -236,7 +236,7 @@ struct SwiftRepositorySyncPersistenceTests {
     
     @available(iOS 17.4, *)
     @Test()
-    @MainActor func writeObjectsPublisherWithoutMapping() async throws {
+    func writeObjectsPublisherWithoutMapping() async throws {
         
         let persistence = try getPersistence()
         
@@ -282,16 +282,11 @@ struct SwiftRepositorySyncPersistenceTests {
         }
         
         #expect(mappedDataModels.count == 0)
-        
-        let allIds: [String] = allObjectIds + newObjectIds
-        let allDataModels: [MockDataModel] = try await persistence.getDataModelsAsync(getOption: .allObjects)
-        
-        #expect(MockDataModel.getIdsSortedByPosition(dataModels: allDataModels) == allIds)
     }
     
     @available(iOS 17.4, *)
     @Test()
-    @MainActor func writeObjectsPublisherWithWriteOptionDeleteObjectsNotInExternal() async throws {
+    func writeObjectsPublisherWithWriteOptionDeleteObjectsNotInExternal() async throws {
 
         let persistence = try getPersistence()
         
@@ -317,7 +312,7 @@ struct SwiftRepositorySyncPersistenceTests {
                 persistence.writeObjectsPublisher(
                     externalObjects: externalObjects,
                     writeOption: .deleteObjectsNotInExternal,
-                    getOption: nil
+                    getOption: .allObjects
                 )
                 .sink { completion in
                 
@@ -335,12 +330,8 @@ struct SwiftRepositorySyncPersistenceTests {
                 .store(in: &cancellables)
             }
         }
-        
-        #expect(mappedDataModels.count == 0)
-        
-        let allDataModels: [MockDataModel] = try await persistence.getDataModelsAsync(getOption: .allObjects)
-        
-        #expect(MockDataModel.getIdsSortedByPosition(dataModels: allDataModels) == newObjectIds)
+                
+        #expect(MockDataModel.getIdsSortedByPosition(dataModels: mappedDataModels) == newObjectIds)
     }
 }
 

@@ -16,7 +16,7 @@ public final class SwiftDataWrite: Sendable {
         
     }
     
-    public func objects(context: ModelContext, writeObjects: WriteSwiftObjects) throws {
+    public func context(context: ModelContext, writeObjects: WriteSwiftObjects) throws {
         
         if let deleteObjects = writeObjects.deleteObjects, deleteObjects.count > 0 {
             for object in deleteObjects {

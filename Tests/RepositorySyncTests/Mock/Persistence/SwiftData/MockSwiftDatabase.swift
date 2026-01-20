@@ -45,7 +45,7 @@ public class MockSwiftDatabase {
             insertObjects: objects
         )
         
-        try database.write.objects(
+        try database.write.context(
             context: context,
             writeObjects: writeObjects
         )

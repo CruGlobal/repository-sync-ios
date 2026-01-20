@@ -1,0 +1,394 @@
+//
+//  RealmRepositorySyncGetTests.swift
+//  RepositorySync
+//
+//  Created by Levi Eggert on 12/1/25.
+//  Copyright © 2025 Cru. All rights reserved.
+//
+
+import Testing
+@testable import RepositorySync
+import Foundation
+import RealmSwift
+
+@Suite(.serialized)
+struct RealmRepositorySyncGetTests {
+    
+    private let runTestWaitFor: UInt64 = 3_000_000_000 // 3 seconds
+    private let mockExternalDataFetchDelayRequestForSeconds: TimeInterval = 1
+    private let triggerSecondaryExternalDataFetchWithDelayForSeconds: TimeInterval = 1
+    
+    struct TestArgument {
+        let initialPersistedObjectsIds: [String]
+        let externalDataModelIds: [String]
+        let expectedCachedResponseDataModelIds: [String]?
+        let expectedResponseDataModelIds: [String]
+    }
+    
+    // MARK: - REALM TESTS
+    
+    // MARK: - Realm Test Cache Policy (Get Ignoring Cache Data) - Objects
+    
+    @Test(arguments: [
+        TestArgument(
+            initialPersistedObjectsIds: ["0", "1"],
+            externalDataModelIds: ["5", "6", "7", "8", "9"],
+            expectedCachedResponseDataModelIds: nil,
+            expectedResponseDataModelIds: ["0", "1", "5", "6", "7", "8", "9"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: ["1", "2"],
+            expectedCachedResponseDataModelIds: nil,
+            expectedResponseDataModelIds: ["1", "2"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: ["2", "3"],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: nil,
+            expectedResponseDataModelIds: ["2", "3"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: nil,
+            expectedResponseDataModelIds: []
+        )
+    ])
+    func realmGetIgnoreCacheDataWillTriggerOnceOnExternalFetchWithAllObjects(argument: TestArgument) async throws {
+        
+        try await runTest(
+            argument: argument,
+            getObjectsType: .allObjects,
+            cachePolicy: .ignoreCacheData,
+            expectedNumberOfChanges: 1,
+            loggingEnabled: false
+        )
+    }
+    
+    // MARK: - Realm Test Cache Policy (Get Ignoring Cache Data) - Object ID
+    
+    @Test(arguments: [
+        TestArgument(
+            initialPersistedObjectsIds: ["0", "1"],
+            externalDataModelIds: ["5", "6", "7", "8", "9"],
+            expectedCachedResponseDataModelIds: nil,
+            expectedResponseDataModelIds: ["1"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: ["1", "2"],
+            expectedCachedResponseDataModelIds: nil,
+            expectedResponseDataModelIds: ["1"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: ["1", "2", "3"],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: nil,
+            expectedResponseDataModelIds: ["1"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: ["2", "3"],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: nil,
+            expectedResponseDataModelIds: []
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: nil,
+            expectedResponseDataModelIds: []
+        )
+    ])
+    func realmGetIgnoreCacheDataWillTriggerOnceOnExternalFetchWithObject(argument: TestArgument) async throws {
+        
+        try await runTest(
+            argument: argument,
+            getObjectsType: .object(id: "1"),
+            cachePolicy: .ignoreCacheData,
+            expectedNumberOfChanges: 1,
+            loggingEnabled: false
+        )
+    }
+    
+    // MARK: - Realm Test Cache Policy (Get Return Cache Data Don't Fetch) - Objects
+    
+    @Test(arguments: [
+        TestArgument(
+            initialPersistedObjectsIds: ["0", "1"],
+            externalDataModelIds: ["5", "6", "7", "8", "9"],
+            expectedCachedResponseDataModelIds: ["0", "1"],
+            expectedResponseDataModelIds: ["0", "1"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: ["1", "2"],
+            expectedCachedResponseDataModelIds: [],
+            expectedResponseDataModelIds: []
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: ["2", "3"],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: ["2", "3"],
+            expectedResponseDataModelIds: ["2", "3"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: [],
+            expectedResponseDataModelIds: []
+        )
+    ])
+    func realmGetReturnCacheDataDontFetchWillTriggerOnceWithAllObjects(argument: TestArgument) async throws {
+        
+        try await runTest(
+            argument: argument,
+            getObjectsType: .allObjects,
+            cachePolicy: .returnCacheDataDontFetch,
+            expectedNumberOfChanges: 1,
+            loggingEnabled: false
+        )
+    }
+    
+    // MARK: - Realm Test Cache Policy (Get Return Cache Data Don't Fetch) - Object ID
+    
+    @Test(arguments: [
+        TestArgument(
+            initialPersistedObjectsIds: ["0", "1"],
+            externalDataModelIds: ["5", "6", "7", "8", "9"],
+            expectedCachedResponseDataModelIds: ["1"],
+            expectedResponseDataModelIds: ["1"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: ["1", "2"],
+            expectedCachedResponseDataModelIds: [],
+            expectedResponseDataModelIds: []
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: ["1", "2", "3"],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: ["1"],
+            expectedResponseDataModelIds: ["1"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: ["2", "3"],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: nil,
+            expectedResponseDataModelIds: []
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: nil,
+            expectedResponseDataModelIds: []
+        )
+    ])
+    func realmGetReturnCacheDataDontFetchWillTriggerOnceWithObject(argument: TestArgument) async throws {
+        
+        try await runTest(
+            argument: argument,
+            getObjectsType: .object(id: "1"),
+            cachePolicy: .returnCacheDataDontFetch,
+            expectedNumberOfChanges: 1,
+            loggingEnabled: false
+        )
+    }
+    
+    // MARK: - Realm Test Cache Policy (Get Return Cache Data Else Fetch) - Objects
+    
+    @Test(arguments: [
+        TestArgument(
+            initialPersistedObjectsIds: ["0", "1"],
+            externalDataModelIds: ["5", "6", "7", "8", "9"],
+            expectedCachedResponseDataModelIds: ["0", "1"],
+            expectedResponseDataModelIds: ["0", "1"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: ["1", "2"],
+            expectedCachedResponseDataModelIds: ["1", "2"],
+            expectedResponseDataModelIds: ["1", "2"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: ["1", "2", "3"],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: ["1", "2", "3"],
+            expectedResponseDataModelIds: ["1", "2", "3"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: nil,
+            expectedResponseDataModelIds: []
+        )
+    ])
+    func realmGetReturnCacheDataElseFetchWillTriggerOnceWithAllObjects(argument: TestArgument) async throws {
+        
+        try await runTest(
+            argument: argument,
+            getObjectsType: .allObjects,
+            cachePolicy: .returnCacheDataElseFetch,
+            expectedNumberOfChanges: 1,
+            loggingEnabled: false
+        )
+    }
+    
+    // MARK: - Realm Test Cache Policy (Get Return Cache Data Else Fetch) - Object ID
+    
+    @Test(arguments: [
+        TestArgument(
+            initialPersistedObjectsIds: ["0", "1"],
+            externalDataModelIds: ["5", "6", "7", "8", "9"],
+            expectedCachedResponseDataModelIds: ["1"],
+            expectedResponseDataModelIds: ["1"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: ["1", "2"],
+            expectedCachedResponseDataModelIds: ["1"],
+            expectedResponseDataModelIds: ["1"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: ["1", "2", "3"],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: ["1"],
+            expectedResponseDataModelIds: ["1"]
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: ["2", "3"],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: nil,
+            expectedResponseDataModelIds: []
+        ),
+        TestArgument(
+            initialPersistedObjectsIds: [],
+            externalDataModelIds: [],
+            expectedCachedResponseDataModelIds: nil,
+            expectedResponseDataModelIds: []
+        )
+    ])
+    func realmGetReturnCacheDataElseFetchWillTriggerOnceWithObject(argument: TestArgument) async throws {
+        
+        try await runTest(
+            argument: argument,
+            getObjectsType: .object(id: "1"),
+            cachePolicy: .returnCacheDataElseFetch,
+            expectedNumberOfChanges: 1,
+            loggingEnabled: false
+        )
+    }
+    
+    // MARK: - Run Test
+    
+    private func runTest(argument: TestArgument, getObjectsType: GetObjectsType, cachePolicy: GetCachePolicy, expectedNumberOfChanges: Int, loggingEnabled: Bool) async throws {
+        
+        let testName: String = "REALM"
+        let testId: String = UUID().uuidString
+        
+        let initialPersistedObjectsIds: [String] = argument.initialPersistedObjectsIds
+        let externalDataModelIds: [String] = argument.externalDataModelIds
+        let expectedCachedResponseDataModelIds: [String]? = argument.expectedCachedResponseDataModelIds
+        let expectedResponseDataModelIds: [String] = argument.expectedResponseDataModelIds
+        
+        if loggingEnabled {
+            print("\n *** RUNNING \(testName) TEST *** \n")
+            print("  testId: \(testId)")
+            print("  initial persisted object ids: \(initialPersistedObjectsIds) ")
+            print("  external data model ids: \(externalDataModelIds) ")
+        }
+                
+        let repositorySync = try getRepositorySync(
+            externalDataFetch: getExternalDataFetch(dataModels: MockDataModel.createDataModelsFromIds(ids: externalDataModelIds)),
+            addObjectsToDatabase: MockDataModel.createDataModelsFromIds(ids: initialPersistedObjectsIds),
+            shouldDeleteExistingObjectsInDatabase: true
+        )
+                    
+        let responseDataModels: [MockDataModel] = try await repositorySync
+            .getDataModels(
+                getObjectsType: getObjectsType,
+                cachePolicy: cachePolicy,
+                context: MockExternalDataFetchContext()
+            )
+        
+        if let expectedCachedResponseDataModelIds = expectedCachedResponseDataModelIds {
+            
+            let cachedResponseDataModelIds: [String] = MockDataModel.getIdsSortedByPosition(dataModels: responseDataModels)
+                        
+            if loggingEnabled {
+                print("\n EXPECT")
+                print("  CACHE RESPONSE: \(cachedResponseDataModelIds)")
+                print("  TO EQUAL: \(expectedCachedResponseDataModelIds)")
+            }
+            
+            #expect(cachedResponseDataModelIds == expectedCachedResponseDataModelIds)
+        }
+        
+        let responseDataModelIds: [String] = MockDataModel.getIdsSortedByPosition(dataModels: responseDataModels)
+        
+        if loggingEnabled {
+            print("\n EXPECT")
+            print("  RESPONSE: \(responseDataModelIds)")
+            print("  TO EQUAL: \(expectedResponseDataModelIds)")
+        }
+        
+        #expect(responseDataModelIds == expectedResponseDataModelIds)
+        
+        if loggingEnabled {
+            print("\n\n END \(testName) TEST")
+            print("  testId: \(testId)")
+            print("\n\n")
+        }
+    }
+}
+
+// MARK: - RepositorySync
+
+extension RealmRepositorySyncGetTests {
+    
+    private func getSharedRealmDatabase(addObjects: [MockRealmObject], shouldDeleteExistingObjects: Bool) throws -> RealmDatabase {
+        let directoryName: String = "realm_\(String(describing: RealmRepositorySyncGetTests.self))"
+        return try MockRealmDatabase().createDatabase(directoryName: directoryName, objects: addObjects, shouldDeleteExistingObjects: shouldDeleteExistingObjects)
+    }
+
+    private func getRepositorySync(externalDataFetch: MockExternalDataFetch, addObjectsToDatabase: [MockDataModel], shouldDeleteExistingObjectsInDatabase: Bool) throws -> RepositorySync<MockDataModel, MockExternalDataFetch> {
+        
+        let persistence: any Persistence<MockDataModel, MockDataModel>
+        
+        let realmObjects: [MockRealmObject] = addObjectsToDatabase.map {
+            MockRealmObject.createFrom(interface: $0)
+        }
+        
+        let realmDatabase: RealmDatabase = try getSharedRealmDatabase(
+            addObjects: realmObjects,
+            shouldDeleteExistingObjects: shouldDeleteExistingObjectsInDatabase
+        )
+        
+        persistence = RealmRepositorySyncPersistence(
+            database: realmDatabase,
+            dataModelMapping: MockRealmRepositorySyncMapping()
+        )
+        
+        let repositorySync = RepositorySync(
+            externalDataFetch: externalDataFetch,
+            persistence: persistence
+        )
+        
+        return repositorySync
+    }
+}
+
+// MARK: - Get External Data Fetch
+
+extension RealmRepositorySyncGetTests {
+
+    private func getExternalDataFetch(dataModels: [MockDataModel]) -> MockExternalDataFetch {
+        
+        let externalDataFetch = MockExternalDataFetch(
+            objects: dataModels,
+            delayRequestSeconds: mockExternalDataFetchDelayRequestForSeconds
+        )
+        
+        return externalDataFetch
+    }
+}

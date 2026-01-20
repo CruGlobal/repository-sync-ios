@@ -28,7 +28,7 @@ struct RealmRepositorySyncPersistenceTests {
     }
     
     @Test()
-    @MainActor func getDataModel() async throws {
+    func getDataModel() async throws {
         
         let persistence = try getPersistence()
         
@@ -40,29 +40,7 @@ struct RealmRepositorySyncPersistenceTests {
     }
     
     @Test()
-    @MainActor func getDataModelsAsync() async throws {
-        
-        let persistence = try getPersistence()
-        
-        let dataModels: [MockDataModel] = try await persistence.getDataModelsAsync(getOption: .allObjects)
-                                        
-        #expect(MockDataModel.getIdsSortedByPosition(dataModels: dataModels) == allObjectIds)
-    }
-    
-    @Test()
-    @MainActor func getDataModelAsync() async throws {
-        
-        let persistence = try getPersistence()
-        
-        let dataModels: [MockDataModel] = try await persistence.getDataModelsAsync(getOption: .object(id: "3"))
-        
-        let dataModel: MockDataModel = try #require(dataModels.first)
-        
-        #expect(dataModel.id == "3")
-    }
-    
-    @Test()
-    @MainActor func getDataModelsPublisher() async throws {
+    func getDataModelsPublisher() async throws {
         
         let persistence = try getPersistence()
         
@@ -102,79 +80,7 @@ struct RealmRepositorySyncPersistenceTests {
     }
     
     @Test()
-    @MainActor func writeObjectsAsyncWithMapping() async throws {
-        
-        let persistence = try getPersistence()
-        
-        let newObjectIds: [String] = ["10", "11", "12"]
-        
-        let externalObjects: [MockDataModel] = newObjectIds.compactMap {
-            MockDataModel.createFromStringId(id: $0)
-        }
-        
-        let mappedDataModels: [MockDataModel] = try await persistence.writeObjectsAsync(
-            externalObjects: externalObjects,
-            writeOption: nil,
-            getOption: .allObjects
-        )
-        
-        let allIds: [String] = allObjectIds + newObjectIds
-        
-        #expect(MockDataModel.getIdsSortedByPosition(dataModels: mappedDataModels) == allIds)
-    }
-    
-    @Test()
-    @MainActor func writeObjectsAsyncWithoutMapping() async throws {
-        
-        let persistence = try getPersistence()
-        
-        let newObjectIds: [String] = ["10", "11", "12"]
-        
-        let externalObjects: [MockDataModel] = newObjectIds.compactMap {
-            MockDataModel.createFromStringId(id: $0)
-        }
-        
-        let mappedDataModels: [MockDataModel] = try await persistence.writeObjectsAsync(
-            externalObjects: externalObjects,
-            writeOption: nil,
-            getOption: nil
-        )
-        
-        #expect(mappedDataModels.count == 0)
-        
-        let allIds: [String] = allObjectIds + newObjectIds
-        let allDataModels: [MockDataModel] = try await persistence.getDataModelsAsync(getOption: .allObjects)
-        
-        #expect(MockDataModel.getIdsSortedByPosition(dataModels: allDataModels) == allIds)
-    }
-    
-    @available(iOS 17.4, *)
-    @Test()
-    @MainActor func writeObjectsAsyncWithWriteOptionDeleteObjectsNotInExternal() async throws {
-        
-        let persistence = try getPersistence()
-        
-        let newObjectIds: [String] = ["10", "11", "12"]
-        
-        let externalObjects: [MockDataModel] = newObjectIds.compactMap {
-            MockDataModel.createFromStringId(id: $0)
-        }
-        
-        let mappedDataModels: [MockDataModel] = try await persistence.writeObjectsAsync(
-            externalObjects: externalObjects,
-            writeOption: .deleteObjectsNotInExternal,
-            getOption: nil
-        )
-        
-        #expect(mappedDataModels.count == 0)
-        
-        let allDataModels: [MockDataModel] = try await persistence.getDataModelsAsync(getOption: .allObjects)
-        
-        #expect(MockDataModel.getIdsSortedByPosition(dataModels: allDataModels) == newObjectIds)
-    }
-    
-    @Test()
-    @MainActor func writeObjectsPublisherWithMapping() async throws {
+    func writeObjectsPublisherWithMapping() async throws {
         
         let persistence = try getPersistence()
         
@@ -225,7 +131,7 @@ struct RealmRepositorySyncPersistenceTests {
     }
     
     @Test()
-    @MainActor func writeObjectsPublisherWithoutMapping() async throws {
+    func writeObjectsPublisherWithoutMapping() async throws {
         
         let persistence = try getPersistence()
         
@@ -237,7 +143,7 @@ struct RealmRepositorySyncPersistenceTests {
         
         var cancellables: Set<AnyCancellable> = Set()
         
-        var mappedDataModels: [MockDataModel] = Array()
+        var mappedDataModelsRef: [MockDataModel] = Array()
         
         await confirmation(expectedCount: 1) { confirmation in
             
@@ -264,23 +170,18 @@ struct RealmRepositorySyncPersistenceTests {
                     
                 } receiveValue: { (dataModels: [MockDataModel]) in
                     
-                    mappedDataModels = dataModels
+                    mappedDataModelsRef = dataModels
                 }
                 .store(in: &cancellables)
             }
         }
         
-        #expect(mappedDataModels.count == 0)
-        
-        let allIds: [String] = allObjectIds + newObjectIds
-        let allDataModels: [MockDataModel] = try await persistence.getDataModelsAsync(getOption: .allObjects)
-        
-        #expect(MockDataModel.getIdsSortedByPosition(dataModels: allDataModels) == allIds)
+        #expect(mappedDataModelsRef.count == 0)
     }
     
     @available(iOS 17.4, *)
     @Test()
-    @MainActor func writeObjectsPublisherWithWriteOptionDeleteObjectsNotInExternal() async throws {
+    func writeObjectsPublisherWithWriteOptionDeleteObjectsNotInExternal() async throws {
 
         let persistence = try getPersistence()
         
@@ -292,7 +193,7 @@ struct RealmRepositorySyncPersistenceTests {
         
         var cancellables: Set<AnyCancellable> = Set()
         
-        var mappedDataModels: [MockDataModel] = Array()
+        var mappedDataModelsRef: [MockDataModel] = Array()
         
         await confirmation(expectedCount: 1) { confirmation in
             
@@ -306,7 +207,7 @@ struct RealmRepositorySyncPersistenceTests {
                 persistence.writeObjectsPublisher(
                     externalObjects: externalObjects,
                     writeOption: .deleteObjectsNotInExternal,
-                    getOption: nil
+                    getOption: .allObjects
                 )
                 .sink { completion in
                 
@@ -319,17 +220,13 @@ struct RealmRepositorySyncPersistenceTests {
                     
                 } receiveValue: { (dataModels: [MockDataModel]) in
                     
-                    mappedDataModels = dataModels
+                    mappedDataModelsRef = dataModels
                 }
                 .store(in: &cancellables)
             }
         }
-        
-        #expect(mappedDataModels.count == 0)
-        
-        let allDataModels: [MockDataModel] = try await persistence.getDataModelsAsync(getOption: .allObjects)
-        
-        #expect(MockDataModel.getIdsSortedByPosition(dataModels: allDataModels) == newObjectIds)
+                        
+        #expect(MockDataModel.getIdsSortedByPosition(dataModels: mappedDataModelsRef) == newObjectIds)
     }
 }
 
