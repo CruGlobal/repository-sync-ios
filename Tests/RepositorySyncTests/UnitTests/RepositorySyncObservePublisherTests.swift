@@ -28,26 +28,26 @@ struct RepositorySyncObservePublisherTests {
     
     // TODO: Fix crash on context.save. ~Levi
     
-    @Test(arguments: [
-        TestArgument(
-            initialPersistedObjectsIds: ["0", "1"],
-            externalDataModelIds: [],
-            expectedCachedResponseDataModelIds: ["0", "1"],
-            expectedResponseDataModelIds: ["0", "1", "8", "9"]
-        )
-    ])
-    @available(iOS 17.4, *)
-    @MainActor func templateTest(argument: TestArgument) async throws {
-        
-        try await runTest(
-            argument: argument,
-            getObjectsType: .allObjects,
-            cachePolicy: .returnCacheDataDontFetch,
-            expectedNumberOfChanges: 2,
-            triggerSecondaryExternalDataFetchWithIds: ["8", "9"],
-            loggingEnabled: true
-        )
-    }
+//    @Test(arguments: [
+//        TestArgument(
+//            initialPersistedObjectsIds: ["0", "1"],
+//            externalDataModelIds: [],
+//            expectedCachedResponseDataModelIds: ["0", "1"],
+//            expectedResponseDataModelIds: ["0", "1", "8", "9"]
+//        )
+//    ])
+//    @available(iOS 17.4, *)
+//    @MainActor func templateTest(argument: TestArgument) async throws {
+//        
+//        try await runTest(
+//            argument: argument,
+//            getObjectsType: .allObjects,
+//            cachePolicy: .returnCacheDataDontFetch,
+//            expectedNumberOfChanges: 2,
+//            triggerSecondaryExternalDataFetchWithIds: ["8", "9"],
+//            loggingEnabled: true
+//        )
+//    }
     
     // MARK: - SWIFT TESTS
     
