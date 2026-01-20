@@ -10,7 +10,7 @@ import Foundation
 import SwiftData
 
 @available(iOS 17.4, *)
-public final class SwiftRepositorySyncGetObjects<PersistObjectType: IdentifiableSwiftDataObject> {
+public final class SwiftRepositorySyncGetObjects<PersistObjectType: IdentifiableSwiftDataObject>: Sendable {
     
     public init() {
         

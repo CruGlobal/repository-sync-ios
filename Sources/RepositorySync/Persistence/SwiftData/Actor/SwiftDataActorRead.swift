@@ -1,5 +1,5 @@
 //
-//  SwiftRepositorySyncPersistenceRead.swift
+//  SwiftDataActorRead.swift
 //  RepositorySync
 //
 //  Created by Levi Eggert on 12/1/25.
@@ -8,10 +8,9 @@
 
 import Foundation
 import SwiftData
-import Combine
 
 @available(iOS 17.4, *)
-public actor SwiftRepositorySyncPersistenceRead<DataModelType: Sendable, ExternalObjectType: Sendable, PersistObjectType: IdentifiableSwiftDataObject> {
+public actor SwiftDataActorRead<DataModelType: Sendable, ExternalObjectType: Sendable, PersistObjectType: IdentifiableSwiftDataObject> {
     
     private let container: ModelContainer
     private let executor: ModelExecutor
@@ -26,18 +25,12 @@ public actor SwiftRepositorySyncPersistenceRead<DataModelType: Sendable, Externa
         self.dataModelMapping = dataModelMapping
     }
     
-    public var context: ModelContext {
-        return modelContext
-    }
-    
-    @MainActor public func getDataModel(id: String) throws -> DataModelType? {
-        
-        let context: ModelContext = container.mainContext
-        
+    public func getDataModel(id: String) async throws -> DataModelType? {
+                
         let getObjectsByType = SwiftRepositorySyncGetObjects<PersistObjectType>()
         
         let persistObjects: [PersistObjectType] = try getObjectsByType.getObjects(
-            context: context,
+            context: executor.modelContext,
             getOption: .object(id: id),
             query: nil
         )
@@ -49,25 +42,12 @@ public actor SwiftRepositorySyncPersistenceRead<DataModelType: Sendable, Externa
         return dataModelMapping.toDataModel(persistObject: persistObject)
     }
     
-    @available(*, deprecated)
-    @MainActor public func getDataModelNonThrowing(id: String) -> DataModelType? {
-        
-        do {
-            return try getDataModel(id: id)
-        }
-        catch _ {
-            return nil
-        }
-    }
-    
-    public func getDataModelsAsync(getOption: PersistenceGetOption, query: SwiftDatabaseQuery<PersistObjectType>?) async throws -> [DataModelType] {
-                   
-        let context: ModelContext = self.context
-        
+    public func getDataModels(getOption: PersistenceGetOption, query: SwiftDatabaseQuery<PersistObjectType>?) async throws -> [DataModelType] {
+                           
         let getObjectsByType = SwiftRepositorySyncGetObjects<PersistObjectType>()
         
         let persistObjects: [PersistObjectType] = try getObjectsByType.getObjects(
-            context: context,
+            context: executor.modelContext,
             getOption: getOption,
             query: query
         )
@@ -78,30 +58,10 @@ public actor SwiftRepositorySyncPersistenceRead<DataModelType: Sendable, Externa
         
         return dataModels
     }
-    
-    @MainActor public func getDataModelsPublisher(getOption: PersistenceGetOption, query: SwiftDatabaseQuery<PersistObjectType>?) -> AnyPublisher<[DataModelType], Error> {
-        
-        return Future { promise in
-            
-            Task {
-                
-                do {
-                    let dataModels = try await self.getDataModelsAsync(getOption: getOption, query: query)
-                    
-                    promise(.success(dataModels))
-                }
-                catch let error {
-                    
-                    promise(.failure(error))
-                }
-            }
-        }
-        .eraseToAnyPublisher()
-    }
 }
 
 @available(iOS 17.4, *)
-extension SwiftRepositorySyncPersistenceRead: ModelActor {
+extension SwiftDataActorRead: ModelActor {
     
     nonisolated
     public var modelContainer: ModelContainer {

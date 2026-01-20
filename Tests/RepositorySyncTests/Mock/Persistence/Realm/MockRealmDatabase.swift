@@ -35,7 +35,7 @@ public class MockRealmDatabase {
         
         let database = try createDatabase(directoryName: directoryName)
         
-        try database.write.objects(
+        try database.write.realm(
             realm: try database.openRealm(),
             writeClosure: { (realm: Realm) in
                 

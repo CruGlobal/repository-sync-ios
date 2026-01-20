@@ -11,7 +11,7 @@ import SwiftData
 import Combine
 
 @available(iOS 17.4, *)
-public final class SwiftDataCollectionObserver<PersistObjectType: IdentifiableSwiftDataObject> {
+public final class SwiftDataCollectionObserver<PersistObjectType: IdentifiableSwiftDataObject>: Sendable {
     
     private let userInfoKeyPrependNotification: String = "RepositorySync.notificationKey.prepend"
     private let userInfoKeyEntityName: String = "RepositorySync.notificationKey.entityName"

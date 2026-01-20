@@ -165,7 +165,7 @@ struct InMemorySwiftDatabaseTests {
         
         let writeObjects = WriteSwiftObjects(deleteObjects: nil, insertObjects: newObjects)
         
-        try database.write.objects(context: context, writeObjects: writeObjects)
+        try database.write.context(context: context, writeObjects: writeObjects)
         
         let fetchedObject: MockSwiftObject = try #require(try database.read.object(context: context, id: uniqueId))
                 
@@ -188,7 +188,7 @@ struct InMemorySwiftDatabaseTests {
         
         let writeObjects = WriteSwiftObjects(deleteObjects: nil, insertObjects: allObjects)
         
-        try database.write.objects(context: context, writeObjects: writeObjects)
+        try database.write.context(context: context, writeObjects: writeObjects)
         
         let objects: [MockSwiftObject] = try database.read.objects(context: context, query: nil)
                 
@@ -210,79 +210,12 @@ struct InMemorySwiftDatabaseTests {
         
         let writeObjects = WriteSwiftObjects(deleteObjects: allObjects, insertObjects: nil)
         
-        try database.write.objects(context: context, writeObjects: writeObjects)
+        try database.write.context(context: context, writeObjects: writeObjects)
         
         let objectsAfterDelete: [MockSwiftObject] = try database.read.objects(context: context, query: nil)
                         
         #expect(objectsAfterDelete.count == 0)
     }
-    
-    // MARK: - Write Async
-//    
-//    @available(iOS 17.4, *)
-//    @Test()
-//    func createObjectsAsync() async throws {
-//               
-//        let database = try getDatabase()
-//                        
-//        let uniqueId: String = UUID().uuidString
-//                
-//        let newObject = MockSwiftObject()
-//        newObject.id = uniqueId
-//        
-//        let newObjects: [MockSwiftObject] = [
-//            newObject
-//        ]
-//        
-//        let writeObjects = WriteSwiftObjects(deleteObjects: nil, insertObjects: newObjects)
-//        
-//        try await database.asyncWrite.objects(writeObjects: writeObjects)
-//        
-//        let fetchedObject: MockSwiftObject = try #require(try database.read.object(context: database.openContext(), id: uniqueId))
-//                
-//        #expect(fetchedObject.id == uniqueId)
-//    }
-//    
-//    @available(iOS 17.4, *)
-//    @Test()
-//    func updateObjectsAsync() async throws {
-//                
-//        let database = try getDatabase()
-//        
-//        let allObjects: [MockSwiftObject] = try database.read.objects(context: database.openContext(), query: nil)
-//                  
-//        for object in allObjects {
-//            object.position = -9999
-//        }
-//        
-//        let writeObjects = WriteSwiftObjects(deleteObjects: nil, insertObjects: allObjects)
-//        
-//        try await database.asyncWrite.objects(writeObjects: writeObjects)
-//        
-//        let objects: [MockSwiftObject] = try database.read.objects(context: database.openContext(), query: nil)
-//                
-//        #expect(objects.first?.position == -9999)
-//        #expect(objects.last?.position == -9999)
-//    }
-//    
-//    @available(iOS 17.4, *)
-//    @Test()
-//    func deleteObjectsAsync() async throws {
-//                
-//        let database = try getDatabase()
-//                
-//        let allObjects: [MockSwiftObject] = try database.read.objects(context: database.openContext(), query: nil)
-//                
-//        #expect(allObjects.count == allObjectIds.count)
-//        
-//        let writeObjects = WriteSwiftObjects(deleteObjects: allObjects, insertObjects: nil)
-//        
-//        try await database.asyncWrite.objects(writeObjects: writeObjects)
-//        
-//        let objectsAfterDelete: [MockSwiftObject] = try database.read.objects(context: database.openContext(), query: nil)
-//                        
-//        #expect(objectsAfterDelete.count == 0)
-//    }
 }
 
 extension InMemorySwiftDatabaseTests {
@@ -302,7 +235,7 @@ extension InMemorySwiftDatabaseTests {
         
         let writeObjects = WriteSwiftObjects(deleteObjects: nil, insertObjects: objects)
         
-        try database.write.objects(
+        try database.write.context(
             context: context,
             writeObjects: writeObjects
         )

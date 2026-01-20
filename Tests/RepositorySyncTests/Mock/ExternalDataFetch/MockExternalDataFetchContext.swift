@@ -9,6 +9,6 @@
 import Foundation
 @testable import RepositorySync
 
-public final class MockExternalDataFetchContext {
+public final class MockExternalDataFetchContext: Sendable {
     
 }
