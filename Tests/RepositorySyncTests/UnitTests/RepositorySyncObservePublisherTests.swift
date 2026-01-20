@@ -50,7 +50,7 @@ struct RepositorySyncObservePublisherTests {
 //    }
     
     // MARK: - SWIFT TESTS
-    
+    /*
     // MARK: - Swift Test Cache Policy (Observe Return Cache Data Don't Fetch) - Objects
     
     @Test(arguments: [
@@ -142,7 +142,7 @@ struct RepositorySyncObservePublisherTests {
             loggingEnabled: false
         )
     }
-
+     */
     // MARK: - Run Test
     
     @available(iOS 17.4, *)

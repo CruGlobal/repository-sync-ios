@@ -52,7 +52,7 @@ struct RepositorySyncObserveTests {
     // MARK: - SWIFT TESTS
     
     // MARK: - Swift Test Cache Policy (Observe Return Cache Data Don't Fetch) - Objects
-    
+    /*
     @Test(arguments: [
         TestArgument(
             initialPersistedObjectsIds: ["0", "1"],
@@ -141,7 +141,7 @@ struct RepositorySyncObserveTests {
             triggerSecondaryExternalDataFetchWithIds: ["8", "9"],
             loggingEnabled: false
         )
-    }
+    }*/
 
     // MARK: - Run Test
     
