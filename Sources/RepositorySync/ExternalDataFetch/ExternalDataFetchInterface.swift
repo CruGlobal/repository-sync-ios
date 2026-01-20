@@ -9,7 +9,7 @@
 import Foundation
 import Combine
 
-public protocol ExternalDataFetchInterface: Sendable {
+public protocol ExternalDataFetchInterface {
     
     associatedtype ExternalObject: Sendable
     associatedtype ExternalDataFetchContext: Sendable
