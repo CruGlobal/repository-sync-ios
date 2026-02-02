@@ -1,0 +1,16 @@
+//
+//  SyncInvalidatorPersistenceInterface.swift
+//  RepositorySync
+//
+//  Created by Levi Eggert on 12/1/25.
+//  Copyright © 2025 Cru. All rights reserved.
+//
+
+import Foundation
+
+public protocol SyncInvalidatorPersistenceInterface {
+    
+    func getDate(id: String) -> Date?
+    func saveDate(id: String, date: Date?)
+    func deleteDate(id: String)
+}
