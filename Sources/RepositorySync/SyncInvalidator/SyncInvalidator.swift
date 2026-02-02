@@ -8,13 +8,13 @@
 
 import Foundation
 
-class SyncInvalidator {
+public final class SyncInvalidator {
     
     private let id: String
     private let timeInterval: SyncInvalidatorTimeInterval
     private let persistence: SyncInvalidatorPersistenceInterface
     
-    init(id: String, timeInterval: SyncInvalidatorTimeInterval, persistence: SyncInvalidatorPersistenceInterface) {
+    public init(id: String, timeInterval: SyncInvalidatorTimeInterval, persistence: SyncInvalidatorPersistenceInterface) {
         
         self.id = id
         self.timeInterval = timeInterval
@@ -25,7 +25,7 @@ class SyncInvalidator {
         return String(describing: SyncInvalidator.self) + ".keyLastSyncDate.\(id)"
     }
     
-    var shouldSync: Bool {
+    public var shouldSync: Bool {
         
         let shouldSync: Bool
         
@@ -53,11 +53,11 @@ class SyncInvalidator {
         return shouldSync
     }
     
-    func didSync(lastSyncDate: Date = Date()) {
+    public func didSync(lastSyncDate: Date = Date()) {
         storeLastSyncDate(date: lastSyncDate)
     }
     
-    func resetSync() {
+    public func resetSync() {
         persistence.deleteDate(id: keyLastSyncDate)
     }
     
