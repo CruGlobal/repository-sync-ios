@@ -214,41 +214,34 @@ struct InMemoryRealmDatabaseTests {
         ]
         
         var errorRef: Error?
-        
-        await confirmation(expectedCount: 1) { confirmation in
-            
-            await withCheckedContinuation { continuation in
                 
-                let timeoutTask = Task {
-                    try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+        await withCheckedContinuation { continuation in
+            
+            let timeoutTask = Task {
+                try await Task.defaultTestSleep()
+                continuation.resume(returning: ())
+            }
+            
+            database.write.async(
+                writeAsync: { (realm: Realm) in
+                    
+                    realm.add(newObjects)
+                    
+                    errorRef = nil
+                    
+                    // When finished be sure to call:
+                    timeoutTask.cancel()
+                    continuation.resume(returning: ())
+                },
+                writeError: { (error: Error) in
+                    
+                    errorRef = error
+                    
+                    // When finished be sure to call:
+                    timeoutTask.cancel()
                     continuation.resume(returning: ())
                 }
-                
-                database.write.async(
-                    writeAsync: { (realm: Realm) in
-                        
-                        realm.add(newObjects)
-                        
-                        // Place inside a sink or other async closure:
-                        confirmation()
-                        
-                        errorRef = nil
-                        
-                        timeoutTask.cancel()
-                        continuation.resume(returning: ())
-                    },
-                    writeError: { (error: Error) in
-                        
-                        // Place inside a sink or other async closure:
-                        confirmation()
-                        
-                        errorRef = error
-                        
-                        timeoutTask.cancel()
-                        continuation.resume(returning: ())
-                    }
-                )
-            }
+            )
         }
                                 
         #expect(errorRef != nil)

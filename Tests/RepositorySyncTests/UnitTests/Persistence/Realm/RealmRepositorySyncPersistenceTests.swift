@@ -47,33 +47,27 @@ struct RealmRepositorySyncPersistenceTests {
         var cancellables: Set<AnyCancellable> = Set()
         
         var dataModelsRef: [MockDataModel] = Array()
-        
-        await confirmation(expectedCount: 1) { confirmation in
-            
-            await withCheckedContinuation { continuation in
                 
-                let timeoutTask = Task {
-                    try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+        await withCheckedContinuation { continuation in
+            
+            let timeoutTask = Task {
+                try await Task.defaultTestSleep()
+                continuation.resume(returning: ())
+            }
+            
+            persistence
+                .getDataModelsPublisher(getOption: .allObjects)
+                .sink { completion in
+                    
+                } receiveValue: { (dataModels: [MockDataModel]) in
+                    
+                    dataModelsRef = dataModels
+                    
+                    // When finished be sure to call:
+                    timeoutTask.cancel()
                     continuation.resume(returning: ())
                 }
-                
-                persistence
-                    .getDataModelsPublisher(getOption: .allObjects)
-                    .sink { completion in
-                        
-                        // Place inside a sink or other async closure:
-                        confirmation()
-
-                        // When finished be sure to call:
-                        timeoutTask.cancel()
-                        continuation.resume(returning: ())
-                        
-                    } receiveValue: { (dataModels: [MockDataModel]) in
-                        
-                        dataModelsRef = dataModels
-                    }
-                    .store(in: &cancellables)
-            }
+                .store(in: &cancellables)
         }
         
         #expect(MockDataModel.getIdsSortedByPosition(dataModels: dataModelsRef) == allObjectIds)
@@ -93,36 +87,31 @@ struct RealmRepositorySyncPersistenceTests {
         var cancellables: Set<AnyCancellable> = Set()
         
         var mappedDataModels: [MockDataModel] = Array()
-        
-        await confirmation(expectedCount: 1) { confirmation in
+                
+        await withCheckedContinuation { continuation in
             
-            await withCheckedContinuation { continuation in
-                
-                let timeoutTask = Task {
-                    try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-                    continuation.resume(returning: ())
-                }
-                
-                persistence.writeObjectsPublisher(
-                    externalObjects: externalObjects,
-                    writeOption: nil,
-                    getOption: .allObjects
-                )
-                .sink { completion in
-                
-                    // Place inside a sink or other async closure:
-                    confirmation()
-                                    
-                    // When finished be sure to call:
-                    timeoutTask.cancel()
-                    continuation.resume(returning: ())
-                    
-                } receiveValue: { (dataModels: [MockDataModel]) in
-                    
-                    mappedDataModels = dataModels
-                }
-                .store(in: &cancellables)
+            let timeoutTask = Task {
+                try await Task.defaultTestSleep()
+                continuation.resume(returning: ())
             }
+            
+            persistence.writeObjectsPublisher(
+                externalObjects: externalObjects,
+                writeOption: nil,
+                getOption: .allObjects
+            )
+            .sink { completion in
+             
+                
+            } receiveValue: { (dataModels: [MockDataModel]) in
+                
+                mappedDataModels = dataModels
+                
+                // When finished be sure to call:
+                timeoutTask.cancel()
+                continuation.resume(returning: ())
+            }
+            .store(in: &cancellables)
         }
         
         let allIds: [String] = allObjectIds + newObjectIds
@@ -145,35 +134,29 @@ struct RealmRepositorySyncPersistenceTests {
         
         var mappedDataModelsRef: [MockDataModel] = Array()
         
-        await confirmation(expectedCount: 1) { confirmation in
+        await withCheckedContinuation { continuation in
             
-            await withCheckedContinuation { continuation in
-                
-                let timeoutTask = Task {
-                    try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-                    continuation.resume(returning: ())
-                }
-                
-                persistence.writeObjectsPublisher(
-                    externalObjects: externalObjects,
-                    writeOption: nil,
-                    getOption: nil
-                )
-                .sink { completion in
-                
-                    // Place inside a sink or other async closure:
-                    confirmation()
-                                    
-                    // When finished be sure to call:
-                    timeoutTask.cancel()
-                    continuation.resume(returning: ())
-                    
-                } receiveValue: { (dataModels: [MockDataModel]) in
-                    
-                    mappedDataModelsRef = dataModels
-                }
-                .store(in: &cancellables)
+            let timeoutTask = Task {
+                try await Task.defaultTestSleep()
+                continuation.resume(returning: ())
             }
+            
+            persistence.writeObjectsPublisher(
+                externalObjects: externalObjects,
+                writeOption: nil,
+                getOption: nil
+            )
+            .sink { completion in
+                
+            } receiveValue: { (dataModels: [MockDataModel]) in
+                
+                mappedDataModelsRef = dataModels
+                
+                // When finished be sure to call:
+                timeoutTask.cancel()
+                continuation.resume(returning: ())
+            }
+            .store(in: &cancellables)
         }
         
         #expect(mappedDataModelsRef.count == 0)
@@ -195,35 +178,29 @@ struct RealmRepositorySyncPersistenceTests {
         
         var mappedDataModelsRef: [MockDataModel] = Array()
         
-        await confirmation(expectedCount: 1) { confirmation in
+        await withCheckedContinuation { continuation in
             
-            await withCheckedContinuation { continuation in
-                
-                let timeoutTask = Task {
-                    try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-                    continuation.resume(returning: ())
-                }
-                
-                persistence.writeObjectsPublisher(
-                    externalObjects: externalObjects,
-                    writeOption: .deleteObjectsNotInExternal,
-                    getOption: .allObjects
-                )
-                .sink { completion in
-                
-                    // Place inside a sink or other async closure:
-                    confirmation()
-                                    
-                    // When finished be sure to call:
-                    timeoutTask.cancel()
-                    continuation.resume(returning: ())
-                    
-                } receiveValue: { (dataModels: [MockDataModel]) in
-                    
-                    mappedDataModelsRef = dataModels
-                }
-                .store(in: &cancellables)
+            let timeoutTask = Task {
+                try await Task.defaultTestSleep()
+                continuation.resume(returning: ())
             }
+            
+            persistence.writeObjectsPublisher(
+                externalObjects: externalObjects,
+                writeOption: .deleteObjectsNotInExternal,
+                getOption: .allObjects
+            )
+            .sink { completion in
+
+            } receiveValue: { (dataModels: [MockDataModel]) in
+                
+                mappedDataModelsRef = dataModels
+                
+                // When finished be sure to call:
+                timeoutTask.cancel()
+                continuation.resume(returning: ())
+            }
+            .store(in: &cancellables)
         }
                         
         #expect(MockDataModel.getIdsSortedByPosition(dataModels: mappedDataModelsRef) == newObjectIds)

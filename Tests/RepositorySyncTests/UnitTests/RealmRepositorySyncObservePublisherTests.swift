@@ -15,7 +15,6 @@ import Combine
 @Suite(.serialized)
 struct RealmRepositorySyncObservePublisherTests {
             
-    private let runTestWaitFor: UInt64 = 3_000_000_000 // 3 seconds
     private let mockExternalDataFetchDelayRequestForSeconds: TimeInterval = 1
     private let triggerSecondaryExternalDataFetchWithDelayForSeconds: TimeInterval = 1
     
@@ -485,79 +484,78 @@ struct RealmRepositorySyncObservePublisherTests {
         
         var cachedObjects: [MockDataModel] = Array()
         var responseObjects: [MockDataModel] = Array()
-                
-        await confirmation(expectedCount: expectedNumberOfChanges) { confirmation in
+        
+        await withCheckedContinuation { continuation in
             
-            await withCheckedContinuation { continuation in
-                
-                let timeoutTask = Task {
-                    try await Task.sleep(nanoseconds: self.runTestWaitFor)
-                    if loggingEnabled {
-                        print("\n TIMEOUT")
-                    }
-                    continuation.resume(returning: ())
+            let timeoutTask = Task {
+                try await Task.defaultTestSleep()
+                if loggingEnabled {
+                    print("\n TIMEOUT")
                 }
-                
-                repositorySync
-                    .observeDataModelsPublisher(
-                        getObjectsType: getObjectsType,
-                        cachePolicy: cachePolicy,
-                        context: MockExternalDataFetchContext()
-                    )
-                    .sink { completion in
-                        
-                        switch completion {
-                        case .finished:
-                            if loggingEnabled {
-                                print("\n DID COMPLETE")
-                                print("\n    CACHED OBJECTS: \(cachedObjects.map{$0.id})")
-                                print("\n    RESPONSE OBJECTS: \(responseObjects.map{$0.id})")
-                                print("\n WITH ABOVE RESPONSE")
-                            }
-                        case .failure(let error):
-                            if loggingEnabled {
-                                print("\n DID COMPLETE WITH ERROR: \(error)")
-                            }
+                continuation.resume(returning: ())
+            }
+            
+            repositorySync
+                .observeDataModelsPublisher(
+                    getObjectsType: getObjectsType,
+                    cachePolicy: cachePolicy,
+                    context: MockExternalDataFetchContext()
+                )
+                .sink { completion in
+                    
+                    switch completion {
+                    case .finished:
+                        if loggingEnabled {
+                            print("\n DID COMPLETE")
+                            print("\n    CACHED OBJECTS: \(cachedObjects.map{$0.id})")
+                            print("\n    RESPONSE OBJECTS: \(responseObjects.map{$0.id})")
+                            print("\n WITH ABOVE RESPONSE")
+                        }
+                    case .failure(let error):
+                        if loggingEnabled {
+                            print("\n DID COMPLETE WITH ERROR: \(error)")
                         }
                         
                         timeoutTask.cancel()
                         continuation.resume(returning: ())
-                        
-                    } receiveValue: { (objects: [MockDataModel]) in
+                    }
+
+                } receiveValue: { (objects: [MockDataModel]) in
+                    
+                    if loggingEnabled {
+                        print("\n DID SINK")
+                        print("  COUNT: \(sinkCount)")
+                        print("  RESPONSE: \(objects.map{$0.id})")
+                    }
+                                        
+                    sinkCount += 1
+                                            
+                    if sinkCount == 1 && expectedCachedResponseDataModelIds != nil {
                         
                         if loggingEnabled {
-                            print("\n DID SINK")
-                            print("  COUNT: \(sinkCount)")
-                            print("  RESPONSE: \(objects.map{$0.id})")
+                            print("\n CACHE RESPONSE RECORDED: \(objects.map{$0.id})")
                         }
                         
-                        confirmation()
-                        
-                        sinkCount += 1
-                                                
-                        if sinkCount == 1 && expectedCachedResponseDataModelIds != nil {
-                            
-                            if loggingEnabled {
-                                print("\n CACHE RESPONSE RECORDED: \(objects.map{$0.id})")
-                            }
-                            
-                            cachedObjects = objects
-                        }
-                        
-                        if sinkCount == expectedNumberOfChanges {
-                            
-                            if loggingEnabled {
-                                print("\n RESPONSE RECORDED: \(objects.map{$0.id})")
-                                print("\n SINK COMPLETE")
-                            }
-                            
-                            responseObjects = objects
-                        }
+                        cachedObjects = objects
                     }
-                    .store(in: &cancellables)
-            }
+                    
+                    if sinkCount == expectedNumberOfChanges {
+                        
+                        if loggingEnabled {
+                            print("\n RESPONSE RECORDED: \(objects.map{$0.id})")
+                            print("\n SINK COMPLETE")
+                        }
+                        
+                        responseObjects = objects
+                        
+                        // When finished be sure to call:
+                        timeoutTask.cancel()
+                        continuation.resume(returning: ())
+                    }
+                }
+                .store(in: &cancellables)
         }
-             
+          
         if let expectedCachedResponseDataModelIds = expectedCachedResponseDataModelIds {
             
             let cachedResponseDataModelIds: [String] = MockDataModel.getIdsSortedByPosition(dataModels: cachedObjects)
