@@ -113,27 +113,33 @@ extension RealmRepositorySyncPersistence {
     
     private func getDataModelsAsyncClosure(getOption: PersistenceGetOption, query: RealmDatabaseQuery?, completion: @escaping ((_ result: Result<[DataModelType], Error>) -> Void)) {
             
-        DispatchQueue.global().async {
+        database.write.serialAsync { (result: Result<Realm, Error>) in
             
-            do {
+            switch result {
+            
+            case .success(let realm):
                 
-                let realm: Realm = try self.database.openRealm()
-                
-                let getObjectsByType = RealmRepositorySyncGetObjects<PersistObjectType>()
-                
-                let persistObjects: [PersistObjectType] = try getObjectsByType.getObjects(
-                    realm: realm,
-                    getOption: getOption,
-                    query: query
-                )
+                do {
+                    
+                    let getObjectsByType = RealmRepositorySyncGetObjects<PersistObjectType>()
+                    
+                    let persistObjects: [PersistObjectType] = try getObjectsByType.getObjects(
+                        realm: realm,
+                        getOption: getOption,
+                        query: query
+                    )
 
-                let dataModels: [DataModelType] = persistObjects.compactMap { object in
-                    self.dataModelMapping.toDataModel(persistObject: object)
+                    let dataModels: [DataModelType] = persistObjects.compactMap { object in
+                        self.dataModelMapping.toDataModel(persistObject: object)
+                    }
+                    
+                    completion(.success(dataModels))
                 }
-                
-                completion(.success(dataModels))
-            }
-            catch let error {
+                catch let error {
+                    completion(.failure(error))
+                }
+            
+            case .failure(let error):
                 completion(.failure(error))
             }
         }
