@@ -14,7 +14,6 @@ import RealmSwift
 @Suite(.serialized)
 struct RealmRepositorySyncGetTests {
     
-    private let runTestWaitFor: UInt64 = 3_000_000_000 // 3 seconds
     private let mockExternalDataFetchDelayRequestForSeconds: TimeInterval = 1
     private let triggerSecondaryExternalDataFetchWithDelayForSeconds: TimeInterval = 1
     
