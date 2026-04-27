@@ -225,7 +225,7 @@ extension RealmRepositorySyncPersistenceTests {
                 return nil
             }
             
-            return MockRealmObject.createFrom(interface: dataModel)
+            return MockRealmObject.createFrom(model: dataModel)
         }
         
         return try MockRealmDatabase().createDatabase(

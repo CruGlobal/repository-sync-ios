@@ -224,7 +224,7 @@ extension InMemorySwiftDatabaseTests {
     private func getDatabase() throws -> SwiftDatabase {
         
         let objects: [MockSwiftObject] = allObjectIds.map {
-            MockSwiftObject.createFrom(interface: MockDataModel.createFromIntId(id: $0))
+            MockSwiftObject.createFrom(model: MockDataModel.createFromIntId(id: $0))
         }
         
         let database = SwiftDatabase(

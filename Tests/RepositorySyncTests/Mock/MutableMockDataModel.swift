@@ -8,7 +8,7 @@
 
 import Foundation
 
-public struct MutableMockDataModel: MockDataModelInterface {
+public struct MutableMockDataModel {
     
     public var id: String = ""
     public var name: String = ""
@@ -17,5 +17,14 @@ public struct MutableMockDataModel: MockDataModelInterface {
     
     public init() {
         
+    }
+    
+    func toModel() -> MockDataModel {
+        
+        return MockDataModel(
+            id: id,
+            name: name,
+            position: position
+        )
     }
 }

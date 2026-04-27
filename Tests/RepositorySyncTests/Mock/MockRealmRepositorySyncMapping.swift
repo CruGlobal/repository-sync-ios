@@ -16,10 +16,10 @@ public final class MockRealmRepositorySyncMapping: Mapping {
     }
     
     public func toDataModel(persistObject: MockRealmObject) -> MockDataModel? {
-        return MockDataModel(interface: persistObject)
+        return persistObject.toModel()
     }
     
     public func toPersistObject(externalObject: MockDataModel) -> MockRealmObject? {
-        return MockRealmObject.createFrom(interface: externalObject)
+        return MockRealmObject.createFrom(model: externalObject)
     }
 }
