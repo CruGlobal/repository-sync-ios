@@ -204,7 +204,7 @@ extension RealmDatabaseTests {
     private func getDatabase() throws -> RealmDatabase {
         
         let objects: [MockRealmObject] = allObjectIds.map {
-            MockRealmObject.createFrom(interface: MockDataModel.createFromIntId(id: $0))
+            MockRealmObject.createFrom(model: MockDataModel.createFromIntId(id: $0))
         }
                 
         let database = try MockRealmDatabase().createDatabase(

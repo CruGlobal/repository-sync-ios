@@ -8,7 +8,7 @@
 
 import Foundation
 
-public struct MockDataModel: MockDataModelInterface, Sendable {
+public struct MockDataModel: Sendable {
     
     public let id: String
     public let name: String
@@ -17,13 +17,7 @@ public struct MockDataModel: MockDataModelInterface, Sendable {
     public var isEvenPosition: Bool {
         return position % 2 == 0
     }
-        
-    public init(interface: MockDataModelInterface) {
-        self.id = interface.id
-        self.name = interface.name
-        self.position = interface.position
-    }
-    
+            
     public static func createFromStringId(id: String) -> MockDataModel? {
         guard let intId = Int(id) else {
             return nil
@@ -32,11 +26,14 @@ public struct MockDataModel: MockDataModelInterface, Sendable {
     }
     
     public static func createFromIntId(id: Int) -> MockDataModel {
+        
         var mutable = MutableMockDataModel()
+        
         mutable.id = String(id)
         mutable.name = "name_\(id)"
         mutable.position = id
-        return MockDataModel(interface: mutable)
+        
+        return mutable.toModel()
     }
     
     public static func createDataModelsFromIds(ids: [String]) -> [MockDataModel] {

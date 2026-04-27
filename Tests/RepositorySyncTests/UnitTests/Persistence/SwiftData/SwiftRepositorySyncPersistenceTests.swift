@@ -331,7 +331,7 @@ extension SwiftRepositorySyncPersistenceTests {
                 return nil
             }
             
-            return MockSwiftObject.createFrom(interface: dataModel)
+            return MockSwiftObject.createFrom(model: dataModel)
         }
         
         let database = try MockSwiftDatabase().createDatabase(

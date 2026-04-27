@@ -364,7 +364,7 @@ extension RepositorySyncGetTests {
         let persistence: any Persistence<MockDataModel, MockDataModel>
         
         let swiftObjects: [MockSwiftObject] = addObjectsToDatabase.map {
-            MockSwiftObject.createFrom(interface: $0)
+            MockSwiftObject.createFrom(model: $0)
         }
         
         let swiftDatabase: SwiftDatabase = try getSharedSwiftDatabase(

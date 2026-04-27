@@ -17,10 +17,10 @@ public final class MockSwiftRepositorySyncMapping: Mapping {
     }
     
     public func toDataModel(persistObject: MockSwiftObject) -> MockDataModel? {
-        return MockDataModel(interface: persistObject)
+        return persistObject.toModel()
     }
     
     public func toPersistObject(externalObject: MockDataModel) -> MockSwiftObject? {
-        return MockSwiftObject.createFrom(interface: externalObject)
+        return MockSwiftObject.createFrom(model: externalObject)
     }
 }

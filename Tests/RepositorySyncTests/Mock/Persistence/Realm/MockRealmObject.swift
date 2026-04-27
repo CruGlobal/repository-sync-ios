@@ -10,7 +10,7 @@ import Foundation
 import RealmSwift
 @testable import RepositorySync
 
-public class MockRealmObject: Object, IdentifiableRealmObject, MockDataModelInterface {
+public class MockRealmObject: Object, IdentifiableRealmObject {
     
     @objc dynamic public var id: String = ""
     @objc dynamic public var name: String = ""
@@ -20,17 +20,29 @@ public class MockRealmObject: Object, IdentifiableRealmObject, MockDataModelInte
     override public static func primaryKey() -> String? {
         return "id"
     }
+}
+
+extension MockRealmObject {
     
-    public func mapFrom(interface: MockDataModelInterface) {
-        id = interface.id
-        name = interface.name
-        position = interface.position
-        isEvenPosition = interface.isEvenPosition
+    public func mapFrom(model: MockDataModel) {
+        id = model.id
+        name = model.name
+        position = model.position
+        isEvenPosition = model.isEvenPosition
     }
     
-    public static func createFrom(interface: MockDataModelInterface) -> MockRealmObject {
+    public static func createFrom(model: MockDataModel) -> MockRealmObject {
         let realmObject = MockRealmObject()
-        realmObject.mapFrom(interface: interface)
+        realmObject.mapFrom(model: model)
         return realmObject
+    }
+    
+    public func toModel() -> MockDataModel {
+        
+        return MockDataModel(
+            id: id,
+            name: name,
+            position: position
+        )
     }
 }

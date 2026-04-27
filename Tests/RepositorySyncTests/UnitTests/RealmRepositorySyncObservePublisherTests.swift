@@ -601,7 +601,7 @@ extension RealmRepositorySyncObservePublisherTests {
         let persistence: any Persistence<MockDataModel, MockDataModel>
         
         let realmObjects: [MockRealmObject] = addObjectsToDatabase.map {
-            MockRealmObject.createFrom(interface: $0)
+            MockRealmObject.createFrom(model: $0)
         }
         
         let realmDatabase: RealmDatabase = try getSharedRealmDatabase(
