@@ -7,6 +7,7 @@
 //
 
 public enum PersistenceGetOption: Sendable {
+    
     case allObjects
     case object(id: String)
     case objectsByIds(ids: [String])

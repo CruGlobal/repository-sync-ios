@@ -61,18 +61,7 @@ extension RealmRepositorySyncPersistence {
         
         return results.count
     }
-    
-    @available(*, deprecated)
-    public func getDataModelNonThrowing(id: String) -> DataModelType? {
-        
-        do {
-            return try getDataModel(id: id)
-        }
-        catch _ {
-            return nil
-        }
-    }
-    
+
     public func getDataModel(id: String) throws -> DataModelType? {
         
         let realm: Realm = try database.openRealm()
@@ -143,28 +132,6 @@ extension RealmRepositorySyncPersistence {
                 completion(.failure(error))
             }
         }
-    }
-    
-    @available(*, deprecated)
-    public func getDataModelsPublisher(getOption: PersistenceGetOption) -> AnyPublisher<[DataModelType], Error> {
-        return getDataModelsPublisher(getOption: getOption, query: nil)
-    }
-    
-    @available(*, deprecated)
-    public func getDataModelsPublisher(getOption: PersistenceGetOption, query: RealmDatabaseQuery?) -> AnyPublisher<[DataModelType], Error> {
-        
-        return Future { promise in
-            self.getDataModelsAsyncClosure(getOption: getOption, query: query, completion: { (result: Result<[DataModelType], Error>) in
-                
-                switch result {
-                case .success(let dataModels):
-                    promise(.success(dataModels))
-                case .failure(let error):
-                    promise(.failure(error))
-                }
-            })
-        }
-        .eraseToAnyPublisher()
     }
 }
 
@@ -256,28 +223,5 @@ extension RealmRepositorySyncPersistence {
             
             completion(.failure(error))
         })
-    }
-    
-    @available(*, deprecated)
-    public func writeObjectsPublisher(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getOption: PersistenceGetOption?) -> AnyPublisher<[DataModelType], Error> {
-                        
-        return Future { promise in
-            
-            self.writeObjectsAsyncClosure(
-                externalObjects: externalObjects,
-                writeOption: writeOption,
-                getOption: getOption,
-                completion: { (result: Result<[DataModelType], Error>) in
-                    
-                    switch result {
-                    case .success(let dataModels):
-                        promise(.success(dataModels))
-                    case .failure(let error):
-                        promise(.failure(error))
-                    }
-                }
-            )
-        }
-        .eraseToAnyPublisher()
     }
 }

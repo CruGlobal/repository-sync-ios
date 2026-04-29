@@ -8,7 +8,6 @@
 
 import Foundation
 import SwiftData
-import Combine
 
 @available(iOS 17.4, *)
 public final class SwiftRepositorySyncPersistenceWriteOnContext<DataModelType: Sendable, ExternalObjectType: Sendable, PersistObjectType: IdentifiableSwiftDataObject>: Sendable {
