@@ -21,11 +21,6 @@ public final class RepositorySync<DataModelType: Sendable, ExternalDataFetchType
         self.externalDataFetch = externalDataFetch
         self.persistence = persistence
     }
-}
-
-// MARK: - Async Await
-
-extension RepositorySync {
     
     private func fetchExternalObjects(getObjectsType: GetObjectsType, context: ExternalDataFetchType.ExternalDataFetchContext) async throws -> [ExternalDataFetchType.ExternalObject]  {
         
@@ -103,124 +98,17 @@ extension RepositorySync {
             }
         }
     }
-}
+    
+    /*
 
-// MARK: - Combine Publisher
-
-extension RepositorySync {
-    
-    @available(*, deprecated)
-    private func fetchExternalObjectsPublisher(getObjectsType: GetObjectsType, context: ExternalDataFetchType.ExternalDataFetchContext) -> AnyPublisher<[ExternalDataFetchType.ExternalObject], Error>  {
-        
-        switch getObjectsType {
-        case .allObjects:
-            return externalDataFetch
-                .getObjectsPublisher(context: context)
-                .eraseToAnyPublisher()
-            
-        case .object(let id):
-            return externalDataFetch
-                .getObjectPublisher(id: id, context: context)
-                .eraseToAnyPublisher()
-        }
-    }
-    
-    @available(*, deprecated)
-    private func makeSinkingfetchAndStoreObjectsFromExternalDataFetch(getObjectsType: GetObjectsType, context: ExternalDataFetchType.ExternalDataFetchContext) {
-        
-        fetchAndStoreObjectsFromExternalDataFetchPublisher(
-            getObjectsType: getObjectsType,
-            context: context
-        )
-        .sink(receiveCompletion: { completion in
-            
-        }, receiveValue: { _ in
-            
-        })
-        .store(in: &cancellables)
-    }
-    
-    @available(*, deprecated)
-    private func fetchAndStoreObjectsFromExternalDataFetchPublisher(getObjectsType: GetObjectsType, context: ExternalDataFetchType.ExternalDataFetchContext) -> AnyPublisher<[DataModelType], Error> {
-                
-        return fetchExternalObjectsPublisher(
-            getObjectsType: getObjectsType,
-            context: context
-        )
-        .flatMap { (externalObjects: [ExternalDataFetchType.ExternalObject]) in
-            
-            return self.persistence.writeObjectsPublisher(
-                externalObjects: externalObjects,
-                writeOption: nil,
-                getOption: getObjectsType.toGetOption()
-            )
-        }
-        .eraseToAnyPublisher()
-    }
-    
-    @available(*, deprecated)
-    public func getDataModelsPublisher(getObjectsType: GetObjectsType, cachePolicy: GetCachePolicy, context: ExternalDataFetchType.ExternalDataFetchContext) -> AnyPublisher<[DataModelType], Error> {
-        
-        switch cachePolicy {
-            
-        case .ignoreCacheData:
-            
-            return fetchAndStoreObjectsFromExternalDataFetchPublisher(
-                getObjectsType: getObjectsType,
-                context: context
-            )
-            .eraseToAnyPublisher()
-            
-        case .returnCacheDataDontFetch:
-            
-            return persistence
-                .getDataModelsPublisher(getOption: getObjectsType.toGetOption())
-                .eraseToAnyPublisher()
-        
-        case .returnCacheDataElseFetch:
-            
-            let persistedObjectCount: Int
-            
-            do {
-                persistedObjectCount = try persistence.getObjectCount()
-            }
-            catch let error {
-                return Fail(error: error)
-                    .eraseToAnyPublisher()
-            }
-            
-            if persistedObjectCount == 0 {
-                
-                return getDataModelsPublisher(
-                    getObjectsType: getObjectsType,
-                    cachePolicy: .ignoreCacheData,
-                    context: context
-                )
-            }
-            else {
-                
-                return getDataModelsPublisher(
-                    getObjectsType: getObjectsType,
-                    cachePolicy: .returnCacheDataDontFetch,
-                    context: context
-                )
-            }
-        }
-    }
-    
     @MainActor public func observeDataModelsPublisher(getObjectsType: GetObjectsType, cachePolicy: ObserveCachePolicy, context: ExternalDataFetchType.ExternalDataFetchContext) -> AnyPublisher<[DataModelType], Error> {
-                
+        
         switch cachePolicy {
             
         case .returnCacheDataDontFetch:
             
             return persistence
                 .observeCollectionChangesPublisher()
-                .flatMap { _ in
-                    return self.persistence.getDataModelsPublisher(
-                        getOption: getObjectsType.toGetOption()
-                    )
-                }
                 .receive(on: DispatchQueue.main)
                 .eraseToAnyPublisher()
         
@@ -270,5 +158,5 @@ extension RepositorySync {
                 .receive(on: DispatchQueue.main)
                 .eraseToAnyPublisher()
         }
-    }
+    }*/
 }

@@ -9,7 +9,6 @@
 import Testing
 @testable import RepositorySync
 import Foundation
-import Combine
 
 @Suite(.serialized)
 struct RepositorySyncGetTests {

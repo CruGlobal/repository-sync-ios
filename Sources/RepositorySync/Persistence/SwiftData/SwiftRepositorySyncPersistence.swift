@@ -63,17 +63,6 @@ extension SwiftRepositorySyncPersistence {
             )
     }
     
-    @available(*, deprecated)
-    public func getDataModelNonThrowing(id: String) -> DataModelType? {
-        
-        do {
-            return try getDataModel(id: id)
-        }
-        catch _ {
-            return nil
-        }
-    }
-    
     public func getDataModel(id: String) throws -> DataModelType? {
         
         let context: ModelContext = database.openContext()
@@ -91,43 +80,6 @@ extension SwiftRepositorySyncPersistence {
         }
         
         return dataModelMapping.toDataModel(persistObject: persistObject)
-    }
-    
-    @available(*, deprecated)
-    public func getDataModelsPublisher(getOption: PersistenceGetOption) -> AnyPublisher<[DataModelType], Error> {
-        return getDataModelsPublisher(getOption: getOption, query: nil)
-    }
-    
-    @available(*, deprecated)
-    public func getDataModelsPublisher(getOption: PersistenceGetOption, query: SwiftDatabaseQuery<PersistObjectType>?) -> AnyPublisher<[DataModelType], Error> {
-        
-        return Future { promise in
-            DispatchQueue.global().async {
-                
-                do {
-                    
-                    let context: ModelContext = self.database.openContext()
-                    
-                    let getObjectsByType = SwiftRepositorySyncGetObjects<PersistObjectType>()
-                    
-                    let persistObjects: [PersistObjectType] = try getObjectsByType.getObjects(
-                        context: context,
-                        getOption: getOption,
-                        query: query
-                    )
-
-                    let dataModels: [DataModelType] = persistObjects.compactMap { object in
-                        self.dataModelMapping.toDataModel(persistObject: object)
-                    }
-                    
-                    promise(.success(dataModels))
-                }
-                catch let error {
-                    promise(.failure(error))
-                }
-            }
-        }
-        .eraseToAnyPublisher()
     }
     
     public func getDataModelsAsync(getOption: PersistenceGetOption) async throws -> [DataModelType] {
@@ -160,59 +112,5 @@ extension SwiftRepositorySyncPersistence {
             writeOption: writeOption,
             getOption: getOption
         )
-    }
-    
-    @available(*, deprecated)
-    public func writeObjectsPublisher(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getOption: PersistenceGetOption?) -> AnyPublisher<[DataModelType], Error> {
-        
-//        return Future { promise in
-//            
-//            Task {
-//                
-//                do {
-//                    
-//                    let dataModels = try await self.write
-//                        .writeObjects(
-//                            externalObjects: externalObjects,
-//                            writeOption: writeOption,
-//                            getOption: getOption
-//                        )
-//                    
-//                    promise(.success(dataModels))
-//                }
-//                catch let error {
-//                    promise(.failure(error))
-//                }
-//            }
-//        }
-//        .eraseToAnyPublisher()
-        
-        return Future { promise in
-            self.serialQueue.async {
-                autoreleasepool {
-                    do {
-                        let context: ModelContext = self.database.openContext()
-                        
-                        let writeOnContext = SwiftRepositorySyncPersistenceWriteOnContext(
-                            dataModelMapping: self.dataModelMapping
-                        )
-                        
-                        let dataModels = try writeOnContext.write(
-                            context: context,
-                            externalObjects: externalObjects,
-                            writeOption: writeOption,
-                            getOption: getOption
-                        )
-                        
-                        promise(.success(dataModels))
-                    }
-                    catch let error {
-                        print("\n DID CATCH ERROR: \(error)")
-                        promise(.failure(error))
-                    }
-                }
-            }
-        }
-        .eraseToAnyPublisher()
     }
 }
