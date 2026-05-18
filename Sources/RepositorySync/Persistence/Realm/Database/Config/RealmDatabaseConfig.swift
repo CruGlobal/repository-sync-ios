@@ -35,25 +35,27 @@ public final class RealmDatabaseConfig: Sendable {
         return RealmDatabaseConfig(config: config)
     }
     
-    public convenience init(fileName: String, schemaVersion: UInt64, migrationBlock: @escaping MigrationBlock) {
+    public convenience init(fileName: String, schemaVersion: UInt64, migrationBlock: @escaping MigrationBlock, objectTypes: [ObjectBase.Type]? = nil) {
         
         let fileUrl = URL(fileURLWithPath: RLMRealmPathForFile(fileName), isDirectory: false)
         
         let config = Realm.Configuration(
             fileURL: fileUrl,
             schemaVersion: schemaVersion,
-            migrationBlock: migrationBlock
+            migrationBlock: migrationBlock,
+            objectTypes: objectTypes
         )
         
         self.init(config: config)
     }
     
-    public convenience init(fileUrl: URL, schemaVersion: UInt64, migrationBlock: @escaping MigrationBlock) {
+    public convenience init(fileUrl: URL, schemaVersion: UInt64, migrationBlock: @escaping MigrationBlock, objectTypes: [ObjectBase.Type]? = nil) {
                 
         let config = Realm.Configuration(
             fileURL: fileUrl,
             schemaVersion: schemaVersion,
-            migrationBlock: migrationBlock
+            migrationBlock: migrationBlock,
+            objectTypes: objectTypes
         )
         
         self.init(config: config)
