@@ -11,14 +11,19 @@ import RealmSwift
 import Combine
 
 public final class RealmRepositorySyncPersistence<DataModelType: Sendable, ExternalObjectType: Sendable, PersistObjectType: IdentifiableRealmObject>: Persistence {
-                
+            
     public let database: RealmDatabase
-    public let dataModelMapping: any Mapping<DataModelType, ExternalObjectType, PersistObjectType>
+    public let mapping: any Mapping<DataModelType, ExternalObjectType, PersistObjectType>
+    public let readActor: RealmActorRead<DataModelType, ExternalObjectType, PersistObjectType>
+    public let writeActor: RealmActorWrite<DataModelType, ExternalObjectType, PersistObjectType>
     
-    public init(database: RealmDatabase, dataModelMapping: any Mapping<DataModelType, ExternalObjectType, PersistObjectType>) {
+    public init(database: RealmDatabase, mapping: any Mapping<DataModelType, ExternalObjectType, PersistObjectType>) async throws {
         
         self.database = database
-        self.dataModelMapping = dataModelMapping
+        self.mapping = mapping
+
+        readActor = try await RealmActorRead(config: database.config, mapping: mapping)
+        writeActor = try await RealmActorWrite(config: database.config, mapping: mapping)
     }
 }
 
@@ -54,7 +59,7 @@ extension RealmRepositorySyncPersistence {
         
         let realm: Realm = try database.openRealm()
         
-        let results: Results<PersistObjectType> = database.read.results(
+        let results: Results<PersistObjectType> = RealmDataRead().results(
             realm: realm,
             query: nil
         )
@@ -66,72 +71,20 @@ extension RealmRepositorySyncPersistence {
         
         let realm: Realm = try database.openRealm()
         
-        let getObjectsByType = RealmRepositorySyncGetObjects<PersistObjectType>()
-        
-        let persistObjects: [PersistObjectType] = try getObjectsByType.getObjects(
-            realm: realm,
-            getOption: .object(id: id),
-            query: nil
-        )
+        let persistObjects: [PersistObjectType] = try RealmDataRead()
+            .getObjects(realm: realm, readObjectsType: .object(id: id))
         
         guard let persistObject = persistObjects.first else {
             return nil
         }
         
-        return dataModelMapping.toDataModel(persistObject: persistObject)
+        return mapping.toDataModel(persistObject: persistObject)
     }
     
     public func getDataModelsAsync(getOption: PersistenceGetOption) async throws -> [DataModelType] {
-            
-        return try await getDataModelsAsync(getOption: getOption, query: nil)
-    }
-    
-    public func getDataModelsAsync(getOption: PersistenceGetOption, query: RealmDatabaseQuery?) async throws -> [DataModelType] {
-            
-        return try await withCheckedThrowingContinuation { continuation in
-            getDataModelsAsyncClosure(getOption: getOption, query: query) { (result: Result<[DataModelType], Error>) in
-                switch result {
-                case .success(let dataModels):
-                    continuation.resume(returning: dataModels)
-                case .failure(let error):
-                    continuation.resume(throwing: error)
-                }
-            }
-        }
-    }
-    
-    private func getDataModelsAsyncClosure(getOption: PersistenceGetOption, query: RealmDatabaseQuery?, completion: @escaping ((_ result: Result<[DataModelType], Error>) -> Void)) {
-            
-        database.write.serialAsync { (result: Result<Realm, Error>) in
-            
-            switch result {
-            
-            case .success(let realm):
-                
-                do {
-                    
-                    let getObjectsByType = RealmRepositorySyncGetObjects<PersistObjectType>()
-                    
-                    let persistObjects: [PersistObjectType] = try getObjectsByType.getObjects(
-                        realm: realm,
-                        getOption: getOption,
-                        query: query
-                    )
-
-                    let dataModels: [DataModelType] = persistObjects.compactMap { object in
-                        self.dataModelMapping.toDataModel(persistObject: object)
-                    }
-                    
-                    completion(.success(dataModels))
-                }
-                catch let error {
-                    completion(.failure(error))
-                }
-            
-            case .failure(let error):
-                completion(.failure(error))
-            }
-        }
+        
+        return try await readActor
+            .getDataModels(readObjectsType: getOption.toRealmReadObjectsType())
     }
 }
 
@@ -140,88 +93,11 @@ extension RealmRepositorySyncPersistence {
 extension RealmRepositorySyncPersistence {
     
     public func writeObjectsAsync(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getOption: PersistenceGetOption?) async throws -> [DataModelType] {
-            
-        return try await withCheckedThrowingContinuation { continuation in
-            self.writeObjectsAsyncClosure(externalObjects: externalObjects, writeOption: writeOption, getOption: getOption) { result in
-                switch result {
-                case .success(let dataModels):
-                    continuation.resume(returning: dataModels)
-                case .failure(let error):
-                    continuation.resume(throwing: error)
-                }
-            }
-        }
-    }
-    
-    private func writeObjectsAsyncClosure(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getOption: PersistenceGetOption?, completion: @escaping ((_ result: Result<[DataModelType], Error>) -> Void)) {
      
-        database.write.async(writeAsync: { (realm: Realm) in
-            
-            do {
-                
-                var objectsToDelete: [PersistObjectType] = Array()
-                var objectsToInsert: [PersistObjectType] = Array()
-                
-                if let writeOption = writeOption {
-                    
-                    switch writeOption {
-                    case .deleteObjectsNotInExternal:
-                        objectsToDelete = RealmDataRead().objects(realm: realm, query: nil)
-                    }
-                }
-                
-                for externalObject in externalObjects {
-                    
-                    guard let dataModel = self.dataModelMapping.toPersistObject(externalObject: externalObject) else {
-                        continue
-                    }
-                    
-                    if let index = objectsToDelete.firstIndex(where: { $0.id == dataModel.id }) {
-                        objectsToDelete.remove(at: index)
-                    }
-                    
-                    objectsToInsert.append(dataModel)
-                }
-
-                if objectsToDelete.count > 0 {
-                    for object in objectsToDelete {
-                        realm.delete(object)
-                    }
-                }
-                
-                if objectsToInsert.count > 0 {
-                    for object in objectsToInsert {
-                        realm.add(object, update: .modified)
-                    }
-                }
-                
-                guard let getOption = getOption else {
-                    completion(.success(Array()))
-                    return
-                }
-                  
-                let getObjectsByType = RealmRepositorySyncGetObjects<PersistObjectType>()
-                
-                let getObjects: [PersistObjectType] = try getObjectsByType.getObjects(
-                    realm: realm,
-                    getOption: getOption,
-                    query: nil
-                )
-                
-                let dataModels: [DataModelType] = getObjects.compactMap { object in
-                    self.dataModelMapping.toDataModel(persistObject: object)
-                }
-                
-                completion(.success(dataModels))
-            }
-            catch let error {
-                
-                completion(.failure(error))
-            }
-            
-        }, writeError: { (error: Error) in
-            
-            completion(.failure(error))
-        })
+        return try await writeActor.writeObjects(
+            externalObjects: externalObjects,
+            writeOption: writeOption,
+            readObjectsType: getOption?.toRealmReadObjectsType()
+        )
     }
 }

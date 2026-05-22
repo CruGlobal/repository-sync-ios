@@ -19,7 +19,7 @@ struct RealmRepositorySyncPersistenceTests {
     @Test()
     func getObjectCount() async throws {
         
-        let persistence = try getPersistence()
+        let persistence = try await getPersistence()
         
         let objectCount: Int = try persistence.getObjectCount()
                                 
@@ -29,7 +29,7 @@ struct RealmRepositorySyncPersistenceTests {
     @Test()
     func getDataModel() async throws {
         
-        let persistence = try getPersistence()
+        let persistence = try await getPersistence()
         
         let dataModelId: String = "4"
         
@@ -41,11 +41,11 @@ struct RealmRepositorySyncPersistenceTests {
 
 extension RealmRepositorySyncPersistenceTests {
     
-    private func getPersistence() throws -> RealmRepositorySyncPersistence<MockDataModel, MockDataModel, MockRealmObject> {
+    private func getPersistence() async throws -> RealmRepositorySyncPersistence<MockDataModel, MockDataModel, MockRealmObject> {
         
-        return RealmRepositorySyncPersistence(
+        return try await RealmRepositorySyncPersistence(
             database: try getDatabase(),
-            dataModelMapping: MockRealmRepositorySyncMapping()
+            mapping: MockRealmRepositorySyncMapping()
         )
     }
     

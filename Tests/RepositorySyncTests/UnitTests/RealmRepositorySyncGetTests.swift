@@ -297,7 +297,7 @@ struct RealmRepositorySyncGetTests {
             print("  external data model ids: \(externalDataModelIds) ")
         }
                 
-        let repositorySync = try getRepositorySync(
+        let repositorySync = try await getRepositorySync(
             externalDataFetch: getExternalDataFetch(dataModels: MockDataModel.createDataModelsFromIds(ids: externalDataModelIds)),
             addObjectsToDatabase: MockDataModel.createDataModelsFromIds(ids: initialPersistedObjectsIds),
             shouldDeleteExistingObjectsInDatabase: true
@@ -350,7 +350,7 @@ extension RealmRepositorySyncGetTests {
         return try MockRealmDatabase().createDatabase(directoryName: directoryName, objects: addObjects, shouldDeleteExistingObjects: shouldDeleteExistingObjects)
     }
 
-    private func getRepositorySync(externalDataFetch: MockExternalDataFetch, addObjectsToDatabase: [MockDataModel], shouldDeleteExistingObjectsInDatabase: Bool) throws -> RepositorySync<MockDataModel, MockExternalDataFetch> {
+    private func getRepositorySync(externalDataFetch: MockExternalDataFetch, addObjectsToDatabase: [MockDataModel], shouldDeleteExistingObjectsInDatabase: Bool) async throws -> RepositorySync<MockDataModel, MockExternalDataFetch> {
         
         let persistence: any Persistence<MockDataModel, MockDataModel>
         
@@ -363,9 +363,9 @@ extension RealmRepositorySyncGetTests {
             shouldDeleteExistingObjects: shouldDeleteExistingObjectsInDatabase
         )
         
-        persistence = RealmRepositorySyncPersistence(
+        persistence = try await RealmRepositorySyncPersistence(
             database: realmDatabase,
-            dataModelMapping: MockRealmRepositorySyncMapping()
+            mapping: MockRealmRepositorySyncMapping()
         )
         
         let repositorySync = RepositorySync(

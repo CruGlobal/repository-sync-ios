@@ -22,7 +22,7 @@ public final class RealmDataRead: Sendable {
         return realmObject
     }
     
-    public func objects<T: IdentifiableRealmObject>(realm: Realm, ids: [String], sortBykeyPath: SortByKeyPath?) -> [T] {
+    public func objects<T: IdentifiableRealmObject>(realm: Realm, ids: Set<String>, sortBykeyPath: SortByKeyPath?) -> [T] {
                 
         let query = RealmDatabaseQuery(
             filter: NSPredicate(format: "id IN %@", ids),
@@ -58,5 +58,35 @@ public final class RealmDataRead: Sendable {
         }
         
         return results
+    }
+    
+    public func getObjects<T: IdentifiableRealmObject>(realm: Realm, readObjectsType: RealmReadObjectsType) throws -> [T] {
+                
+        let persistObjects: [T]
+                
+        switch readObjectsType {
+            
+        case .allObjects:
+            persistObjects = objects(realm: realm, query: nil)
+            
+        case .object(let id):
+            
+            let object: T? = object(realm: realm, id: id)
+            
+            if let object = object {
+                persistObjects = [object]
+            }
+            else {
+                persistObjects = []
+            }
+            
+        case .objectsByIds(let ids, let sortByKeyPath):
+            persistObjects = objects(realm: realm, ids: ids, sortBykeyPath: sortByKeyPath)
+            
+        case .objectsByQuery(let query):
+            persistObjects = objects(realm: realm, query: query)
+        }
+        
+        return persistObjects
     }
 }
