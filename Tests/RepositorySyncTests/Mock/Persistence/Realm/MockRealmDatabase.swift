@@ -35,19 +35,15 @@ public class MockRealmDatabase {
         
         let database = try createDatabase(directoryName: directoryName)
         
-        try database.write.realm(
-            realm: try database.openRealm(),
-            writeClosure: { (realm: Realm) in
-                
-                let existingObjects: [MockRealmObject] = shouldDeleteExistingObjects ? database.read.objects(realm: realm, query: nil) : Array()
-                
-                return WriteRealmObjects(
-                    deleteObjects: existingObjects,
-                    addObjects: objects
-                )
-            },
-            updatePolicy: .modified
-        )
+        let realm: Realm = try database.openRealm()
+        
+        let existingObjects: [MockRealmObject] = shouldDeleteExistingObjects ? database.read.objects(realm: realm, query: nil) : Array()
+        
+        try realm.write {
+            
+            realm.delete(existingObjects)
+            realm.add(objects, update: .modified)
+        }
         
         return database
     }

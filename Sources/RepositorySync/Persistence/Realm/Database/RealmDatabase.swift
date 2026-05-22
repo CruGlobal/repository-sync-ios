@@ -13,6 +13,7 @@ import Realm
 public final class RealmDatabase: Sendable {
                 
     public let databaseConfig: RealmDatabaseConfig
+    public let read: RealmDataRead = RealmDataRead()
     
     public var config: Realm.Configuration {
         return databaseConfig.config
