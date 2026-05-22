@@ -10,7 +10,7 @@ import Foundation
 import RealmSwift
 @testable import RepositorySync
 
-public class MockRealmDatabase {
+public final class MockRealmDatabase {
     
     private let fileManager: FileManager = FileManager.default
     
