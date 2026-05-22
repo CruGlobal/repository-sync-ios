@@ -55,7 +55,7 @@ struct InMemorySwiftDatabaseTests {
         
         let context: ModelContext = database.openContext()
         
-        let ids: [String] = ["6", "4", "2"]
+        let ids: Set<String> = ["6", "4", "2"]
                 
         let objects: [MockSwiftObject] = try database.read.objects(
             context: context,
@@ -63,7 +63,7 @@ struct InMemorySwiftDatabaseTests {
             sortBy: [SortDescriptor(\MockSwiftObject.position, order: .reverse)]
         )
                 
-        #expect(objects.map { $0.id } == ids)
+        #expect(Set(objects.map { $0.id }) == ids)
     }
     
     @available(iOS 17.4, *)

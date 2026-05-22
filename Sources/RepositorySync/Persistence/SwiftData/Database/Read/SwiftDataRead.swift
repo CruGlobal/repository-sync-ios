@@ -38,7 +38,7 @@ public final class SwiftDataRead: Sendable {
         return try objects(context: context, query: query).first
     }
     
-    public func objects<T: IdentifiableSwiftDataObject>(context: ModelContext, ids: [String], sortBy: [SortDescriptor<T>]?) throws -> [T] {
+    public func objects<T: IdentifiableSwiftDataObject>(context: ModelContext, ids: Set<String>, sortBy: [SortDescriptor<T>]?) throws -> [T] {
         
         let filter = #Predicate<T> { object in
             ids.contains(object.id)
