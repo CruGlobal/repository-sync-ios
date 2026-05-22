@@ -11,8 +11,8 @@ import Combine
 
 public protocol Persistence<DataModelType, ExternalObjectType> {
     
-    associatedtype DataModelType
-    associatedtype ExternalObjectType
+    associatedtype DataModelType: Sendable
+    associatedtype ExternalObjectType: Sendable
     
     func getObjectCount() throws -> Int
     func getDataModel(id: String) throws -> DataModelType?
