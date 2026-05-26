@@ -223,7 +223,7 @@ extension RealmRepositorySyncPersistenceTests {
         let databaseConfig = try RealmDatabaseConfig.createInMemoryConfig()
         
         let repositorySync = RealmRepositorySyncPersistence(
-            databaseConfig: databaseConfig,
+            database: RealmDatabase(databaseConfig: databaseConfig),
             mapping: MockRealmRepositorySyncMapping()
         )
         
