@@ -24,14 +24,14 @@ public final class SwiftRepositorySyncPersistence<DataModelType: Sendable, Exter
         self.mapping = mapping
     }
     
-    public func createSwiftDataActorRead() -> SwiftDataActorRead<DataModelType, ExternalObjectType, PersistObjectType> {
+    public func createActorRead() -> SwiftDataActorRead<DataModelType, ExternalObjectType, PersistObjectType> {
         return SwiftDataActorRead(
             container: database.container.modelContainer,
             mapping: mapping
         )
     }
     
-    public func createSwiftDataActorWrite() -> SwiftDataActorWrite<DataModelType, ExternalObjectType, PersistObjectType> {
+    public func createActorWrite() -> SwiftDataActorWrite<DataModelType, ExternalObjectType, PersistObjectType> {
         return SwiftDataActorWrite(
             container: database.container.modelContainer,
             mapping: mapping
@@ -86,7 +86,7 @@ extension SwiftRepositorySyncPersistence {
     
     public func getDataModels(getOption: PersistenceGetOption) async throws -> [DataModelType] {
         
-        let readActor = createSwiftDataActorRead()
+        let readActor = createActorRead()
         
         return try await readActor.getDataModels(
             readObjectsType: getOption.toSwiftDataReadObjectsType()
@@ -101,11 +101,28 @@ extension SwiftRepositorySyncPersistence {
 
     public func writeObjects(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getOption: PersistenceGetOption?) async throws -> [DataModelType] {
         
-        let writeActor = createSwiftDataActorWrite()
+        let writeActor = createActorWrite()
         
         return try await writeActor.writeObjects(
             externalObjects: externalObjects,
             writeOption: writeOption,
+            readObjectsType: getOption?.toSwiftDataReadObjectsType()
+        )
+    }
+    
+    public func deleteCollection() async throws {
+        
+        let writeActor = createActorWrite()
+        
+        _ = try await writeActor.deleteObjects()
+    }
+    
+    public func deleteObjectsByIds(ids: Set<String>, getOption: PersistenceGetOption?) async throws -> [DataModelType] {
+        
+        let writeActor = createActorWrite()
+        
+        return try await writeActor.deleteObjectsByIds(
+            ids: ids,
             readObjectsType: getOption?.toSwiftDataReadObjectsType()
         )
     }

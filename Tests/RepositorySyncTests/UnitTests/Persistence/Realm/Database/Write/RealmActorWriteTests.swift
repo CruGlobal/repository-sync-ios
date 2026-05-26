@@ -60,7 +60,7 @@ struct RealmActorWriteTests {
     }
     
     @Test()
-    func deleteObjects() async throws {
+    func deleteObjectsByIds() async throws {
         
         let realmActorWrite: RealmActorWrite = try await getRealmActorWrite()
                         

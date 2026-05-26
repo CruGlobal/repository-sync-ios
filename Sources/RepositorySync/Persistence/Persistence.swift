@@ -18,6 +18,8 @@ public protocol Persistence<DataModelType, ExternalObjectType>: Sendable {
     func getDataModel(id: String) throws -> DataModelType?
     func getDataModels(getOption: PersistenceGetOption) async throws -> [DataModelType]
     func writeObjects(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getOption: PersistenceGetOption?) async throws -> [DataModelType]
+    func deleteCollection() async throws
+    func deleteObjectsByIds(ids: Set<String>, getOption: PersistenceGetOption?) async throws -> [DataModelType]
     
     @MainActor func observeCollectionChangesPublisher() -> AnyPublisher<Void, Error>
 }
