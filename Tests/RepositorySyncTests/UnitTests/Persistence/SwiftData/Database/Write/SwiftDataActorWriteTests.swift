@@ -1,5 +1,5 @@
 //
-//  RealmActorWriteTests.swift
+//  SwiftDataActorWriteTests.swift
 //  RepositorySync
 //
 //  Created by Levi Eggert on 5/22/26.
@@ -9,24 +9,24 @@
 import Foundation
 import Testing
 @testable import RepositorySync
-import RealmSwift
+import SwiftData
 
-struct RealmActorWriteTests {
+struct SwiftDataActorWriteTests {
     
     private let allObjectIds: Set<String> = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
     
+    @available(iOS 17.4, *)
     @Test()
     func addObjects() async throws {
         
-        let realmActorWrite: RealmActorWrite = try await getRealmActorWrite()
+        let actorWrite: SwiftDataActorWrite = try getSwiftDataActorWrite()
                                 
         let addObjectId: String = UUID().uuidString
         
         let objectToAdd = MockDataModel(id: addObjectId, name: "name", position: 0)
         
-        let objects: [MockDataModel] = try await realmActorWrite.addObjects(
+        let objects: [MockDataModel] = try await actorWrite.addObjects(
             externalObjects: [objectToAdd],
-            updatePolicy: .modified,
             readObjectsType: .object(id: addObjectId)
         )
         
@@ -35,10 +35,11 @@ struct RealmActorWriteTests {
         #expect(objectById.id == addObjectId)
     }
     
+    @available(iOS 17.4, *)
     @Test()
     func updateObjects() async throws {
         
-        let realmActorWrite: RealmActorWrite = try await getRealmActorWrite()
+        let actorWrite: SwiftDataActorWrite = try getSwiftDataActorWrite()
         
         let objectIdToUpdate: String = "3"
         let name: String = "Updated Object 3"
@@ -46,9 +47,8 @@ struct RealmActorWriteTests {
         
         let updateObject = MockDataModel(id: objectIdToUpdate, name: name, position: position)
                 
-        let objects: [MockDataModel] = try await realmActorWrite.addObjects(
+        let objects: [MockDataModel] = try await actorWrite.addObjects(
             externalObjects: [updateObject],
-            updatePolicy: .modified,
             readObjectsType: .object(id: objectIdToUpdate)
         )
         
@@ -59,12 +59,13 @@ struct RealmActorWriteTests {
         #expect(objectById.position == position)
     }
     
+    @available(iOS 17.4, *)
     @Test()
     func deleteObjectsByIds() async throws {
         
-        let realmActorWrite: RealmActorWrite = try await getRealmActorWrite()
+        let actorWrite: SwiftDataActorWrite = try getSwiftDataActorWrite()
                         
-        let objects: [MockDataModel] = try await realmActorWrite.deleteObjectsByIds(
+        let objects: [MockDataModel] = try await actorWrite.deleteObjectsByIds(
             ids: allObjectIds,
             readObjectsType: .allObjects
         )
@@ -72,22 +73,24 @@ struct RealmActorWriteTests {
         #expect(objects.count == 0)
     }
     
+    @available(iOS 17.4, *)
     @Test()
     func deleteCollection() async throws {
         
-        let realmActorWrite: RealmActorWrite = try await getRealmActorWrite()
+        let actorWrite: SwiftDataActorWrite = try getSwiftDataActorWrite()
                         
-        let objects: [MockDataModel] = try await realmActorWrite.deleteCollection(
+        let objects: [MockDataModel] = try await actorWrite.deleteCollection(
             readObjectsType: .allObjects
         )
                      
         #expect(objects.count == 0)
     }
     
+    @available(iOS 17.4, *)
     @Test()
     func writeObjectsDeletesNonExistingFromExternalObjects() async throws {
         
-        let realmActorWrite: RealmActorWrite = try await getRealmActorWrite()
+        let actorWrite: SwiftDataActorWrite = try getSwiftDataActorWrite()
         
         let externalObjectIds: Set<String> = ["1", "2", "25", "26", "27", "28", "29"]
         
@@ -98,7 +101,7 @@ struct RealmActorWriteTests {
             return MockDataModel(id: $0, name: "name - \($0)", position: position)
         }
         
-        let objects: [MockDataModel] = try await realmActorWrite.writeObjects(
+        let objects: [MockDataModel] = try await actorWrite.writeObjects(
             externalObjects: externalObjects,
             writeOption: .deleteObjectsNotInExternal,
             readObjectsType: .allObjects
@@ -112,33 +115,33 @@ struct RealmActorWriteTests {
     }
 }
 
-extension RealmActorWriteTests {
+extension SwiftDataActorWriteTests {
     
-    private func getRealmActorWrite() async throws -> RealmActorWrite<MockDataModel, MockDataModel, MockRealmObject> {
+    @available(iOS 17.4, *)
+    private func getSwiftDataActorWrite() throws -> SwiftDataActorWrite<MockDataModel, MockDataModel, MockSwiftObject> {
         
-        let config: Realm.Configuration = try RealmDatabaseConfig.createInMemoryConfig().config
+        let schema = Schema(versionedSchema: MockSwiftDatabaseSchema.self)
+        let container = try SwiftDataContainer.createInMemoryContainer(schema: schema)
+        let database = SwiftDatabase(container: container)
         
-        let realmActorWrite = try await RealmActorWrite(
-            config: config,
-            mapping: MockRealmRepositorySyncMapping()
-        )
+        let context: ModelContext = database.openContext()
         
-        let objects: [MockDataModel] = allObjectIds.compactMap {
-         
-            let id: String = $0
+        for id in allObjectIds {
             
             guard let position = Int(id) else {
-                return nil
+                continue
             }
             
-            return MockDataModel(id: id, name: "name - \(id)", position: position)
+            let object = MockSwiftObject.createFrom(model: MockDataModel(id: id, name: "name - \(id)", position: position))
+            
+            context.insert(object)
         }
         
-        _ = try await realmActorWrite.addObjects(
-            externalObjects: objects,
-            updatePolicy: .modified
+        try context.save()
+ 
+        return SwiftDataActorWrite(
+            container: container.modelContainer,
+            mapping: MockSwiftRepositorySyncMapping()
         )
-        
-        return realmActorWrite
     }
 }
