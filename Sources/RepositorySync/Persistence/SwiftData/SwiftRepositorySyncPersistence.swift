@@ -114,7 +114,7 @@ extension SwiftRepositorySyncPersistence {
         
         let writeActor = newActorWrite()
         
-        _ = try await writeActor.deleteObjects()
+        _ = try await writeActor.deleteCollection()
     }
     
     public func deleteObjectsByIds(ids: Set<String>, getOption: PersistenceGetOption?) async throws -> [DataModelType] {
