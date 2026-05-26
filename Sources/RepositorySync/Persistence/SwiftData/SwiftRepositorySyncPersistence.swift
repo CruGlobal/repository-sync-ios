@@ -84,6 +84,10 @@ extension SwiftRepositorySyncPersistence {
         return mapping.toDataModel(persistObject: persistObject)
     }
     
+    public func getDataModels() async throws -> [DataModelType] {
+        return try await getDataModels(getOption: .allObjects)
+    }
+    
     public func getDataModels(getOption: PersistenceGetOption) async throws -> [DataModelType] {
         
         let readActor = newActorRead()
@@ -99,6 +103,11 @@ extension SwiftRepositorySyncPersistence {
 @available(iOS 17.4, *)
 extension SwiftRepositorySyncPersistence {
 
+    public func writeObjects(externalObjects: [ExternalObjectType]) async throws {
+        
+        _ = try await writeObjects(externalObjects: externalObjects, writeOption: nil, getOption: nil)
+    }
+    
     public func writeObjects(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getOption: PersistenceGetOption?) async throws -> [DataModelType] {
         
         let writeActor = newActorWrite()
