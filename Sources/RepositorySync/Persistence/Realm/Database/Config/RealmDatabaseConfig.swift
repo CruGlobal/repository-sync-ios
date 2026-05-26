@@ -14,28 +14,33 @@ public final class RealmDatabaseConfig: Sendable {
     
     public let config: Realm.Configuration
     
-    public init(config: Realm.Configuration) {
+    public init(config: Realm.Configuration) throws {
         
         self.config = config
         
-        _ = checkForUnsupportedFileFormatVersionAndDeleteRealmFilesIfNeeded(config: config)
+        try checkForUnsupportedFileFormatVersionAndDeleteRealmFilesIfNeeded(config: config)
     }
     
     public var isInMemory: Bool {
         return config.isInMemory
     }
     
-    public static func createInMemoryConfig(inMemoryIdentifier: String = UUID().uuidString, schemaVersion: UInt64 = 1) -> RealmDatabaseConfig {
+    public func openRealm() throws -> Realm {
+        
+        return try Realm(configuration: config)
+    }
+    
+    public static func createInMemoryConfig(inMemoryIdentifier: String = UUID().uuidString, schemaVersion: UInt64 = 1) throws -> RealmDatabaseConfig {
         
         let config = Realm.Configuration(
             inMemoryIdentifier: inMemoryIdentifier,
             schemaVersion: schemaVersion
         )
         
-        return RealmDatabaseConfig(config: config)
+        return try RealmDatabaseConfig(config: config)
     }
     
-    public convenience init(fileName: String, schemaVersion: UInt64, migrationBlock: @escaping MigrationBlock, objectTypes: [ObjectBase.Type]? = nil) {
+    public convenience init(fileName: String, schemaVersion: UInt64, migrationBlock: @escaping MigrationBlock, objectTypes: [ObjectBase.Type]? = nil) throws {
         
         let fileUrl = URL(fileURLWithPath: RLMRealmPathForFile(fileName), isDirectory: false)
         
@@ -46,10 +51,10 @@ public final class RealmDatabaseConfig: Sendable {
             objectTypes: objectTypes
         )
         
-        self.init(config: config)
+        try self.init(config: config)
     }
     
-    public convenience init(fileUrl: URL, schemaVersion: UInt64, migrationBlock: @escaping MigrationBlock, objectTypes: [ObjectBase.Type]? = nil) {
+    public convenience init(fileUrl: URL, schemaVersion: UInt64, migrationBlock: @escaping MigrationBlock, objectTypes: [ObjectBase.Type]? = nil) throws {
                 
         let config = Realm.Configuration(
             fileURL: fileUrl,
@@ -58,30 +63,23 @@ public final class RealmDatabaseConfig: Sendable {
             objectTypes: objectTypes
         )
         
-        self.init(config: config)
+        try self.init(config: config)
     }
     
-    private func checkForUnsupportedFileFormatVersionAndDeleteRealmFilesIfNeeded(config: Realm.Configuration) -> Error? {
+    private func checkForUnsupportedFileFormatVersionAndDeleteRealmFilesIfNeeded(config: Realm.Configuration) throws {
         
         do {
             _ = try Realm(configuration: config)
         }
-        catch let realmConfigError as NSError {
+        catch let error {
             
-            if realmConfigError.code == Realm.Error.unsupportedFileFormatVersion.rawValue {
-                
-                do {
-                    _ = try Realm.deleteFiles(for: config)
-                }
-                catch let deleteFilesError {
-                    return deleteFilesError
-                }
+            let errorCode: Int = (error as NSError).code
+            
+            guard errorCode == Realm.Error.unsupportedFileFormatVersion.rawValue else {
+                throw error
             }
-            else {
-                return realmConfigError
-            }
+            
+            _ = try Realm.deleteFiles(for: config)
         }
-        
-        return nil
     }
 }
