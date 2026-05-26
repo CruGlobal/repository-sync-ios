@@ -71,6 +71,19 @@ public actor SwiftDataActorWrite<DataModelType: Sendable, ExternalObjectType: Se
         let objects: [PersistObjectType] = try SwiftDataRead()
             .getObjects(context: modelContext, readObjectsType: .objectsByIds(ids: ids, sortBy: nil))
         
+        return try deleteObjects(objects: objects, readObjectsType: readObjectsType)
+    }
+    
+    public func deleteObjects(readObjectsType: SwiftDataReadObjectsType<PersistObjectType>? = nil) throws -> [DataModelType] {
+        
+        let objects: [PersistObjectType] = try SwiftDataRead()
+            .getObjects(context: modelContext, readObjectsType: .allObjects)
+        
+        return try deleteObjects(objects: objects, readObjectsType: readObjectsType)
+    }
+    
+    private func deleteObjects(objects: [PersistObjectType], readObjectsType: SwiftDataReadObjectsType<PersistObjectType>?) throws -> [DataModelType] {
+        
         for object in objects {
             modelContext.delete(object)
         }

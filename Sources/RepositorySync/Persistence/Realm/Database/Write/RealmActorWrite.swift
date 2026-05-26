@@ -68,6 +68,20 @@ public actor RealmActorWrite<DataModelType: Sendable, ExternalObjectType: Sendab
         return try readObjects(readObjectsType: readObjectsType)
     }
     
+    public func deleteCollection() async throws {
+        
+        let objects: [PersistObjectType] = try RealmDataRead()
+            .getObjects(realm: realm, readObjectsType: .allObjects)
+        
+        guard !objects.isEmpty else {
+            return
+        }
+        
+        try await realm.asyncWrite {
+            realm.delete(objects)
+        }
+    }
+    
     public func writeObjects(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, readObjectsType: RealmReadObjectsType? = nil) async throws -> [DataModelType] {
      
         var objectIdsToDelete: Set<String> = Set()
