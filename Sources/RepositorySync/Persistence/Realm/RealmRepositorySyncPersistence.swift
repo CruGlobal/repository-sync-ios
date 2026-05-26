@@ -12,13 +12,21 @@ import Combine
 
 public final class RealmRepositorySyncPersistence<DataModelType: Sendable, ExternalObjectType: Sendable, PersistObjectType: IdentifiableRealmObject>: Persistence {
             
-    public let databaseConfig: RealmDatabaseConfig
+    public let database: RealmDatabase
     public let mapping: any Mapping<DataModelType, ExternalObjectType, PersistObjectType>
     
-    public init(databaseConfig: RealmDatabaseConfig, mapping: any Mapping<DataModelType, ExternalObjectType, PersistObjectType>) {
+    public init(database: RealmDatabase, mapping: any Mapping<DataModelType, ExternalObjectType, PersistObjectType>) {
         
-        self.databaseConfig = databaseConfig
+        self.database = database
         self.mapping = mapping
+    }
+    
+    public var databaseConfig: RealmDatabaseConfig {
+        return database.databaseConfig
+    }
+    
+    public func openRealm() throws -> Realm {
+        return try databaseConfig.openRealm()
     }
     
     public func newActorRead() async throws -> RealmActorRead<DataModelType, ExternalObjectType, PersistObjectType> {
@@ -44,7 +52,7 @@ extension RealmRepositorySyncPersistence {
         
         do {
             
-            let realm: Realm = try databaseConfig.openRealm()
+            let realm: Realm = try openRealm()
             
             return realm
                 .objects(PersistObjectType.self)
@@ -66,7 +74,7 @@ extension RealmRepositorySyncPersistence {
     
     public func getObjectCount() throws -> Int {
         
-        let realm: Realm = try databaseConfig.openRealm()
+        let realm: Realm = try openRealm()
         
         let results: Results<PersistObjectType> = RealmDataRead().results(
             realm: realm,
@@ -78,7 +86,7 @@ extension RealmRepositorySyncPersistence {
 
     public func getDataModel(id: String) throws -> DataModelType? {
         
-        let realm: Realm = try databaseConfig.openRealm()
+        let realm: Realm = try openRealm()
         
         let persistObjects: [PersistObjectType] = try RealmDataRead()
             .getObjects(realm: realm, readObjectsType: .object(id: id))
