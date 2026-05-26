@@ -8,7 +8,7 @@
 
 import Foundation
 
-public protocol ExternalDataFetchInterface {
+public protocol ExternalDataFetchInterface: Sendable {
     
     associatedtype ExternalObject: Sendable
     associatedtype ExternalDataFetchContext: Sendable

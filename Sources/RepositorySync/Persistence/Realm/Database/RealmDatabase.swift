@@ -10,17 +10,18 @@ import Foundation
 import RealmSwift
 import Realm
 
-public final class RealmDatabase {
+public final class RealmDatabase: Sendable {
                 
     public let databaseConfig: RealmDatabaseConfig
     public let read: RealmDataRead = RealmDataRead()
-    public let write: RealmDataWrite
-        
+    
+    public var config: Realm.Configuration {
+        return databaseConfig.config
+    }
+
     public init(databaseConfig: RealmDatabaseConfig) {
         
         self.databaseConfig = databaseConfig
-        
-        write = RealmDataWrite(config: databaseConfig.config)
     }
     
     public func openRealm() throws -> Realm {

@@ -27,13 +27,11 @@ public struct MockDataModel: Sendable {
     
     public static func createFromIntId(id: Int) -> MockDataModel {
         
-        var mutable = MutableMockDataModel()
-        
-        mutable.id = String(id)
-        mutable.name = "name_\(id)"
-        mutable.position = id
-        
-        return mutable.toModel()
+        return MockDataModel(
+            id: String(id),
+            name: "name_\(id)",
+            position: id
+        )
     }
     
     public static func createDataModelsFromIds(ids: [String]) -> [MockDataModel] {

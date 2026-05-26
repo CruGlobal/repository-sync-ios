@@ -38,7 +38,7 @@ public final class SwiftDataRead: Sendable {
         return try objects(context: context, query: query).first
     }
     
-    public func objects<T: IdentifiableSwiftDataObject>(context: ModelContext, ids: [String], sortBy: [SortDescriptor<T>]?) throws -> [T] {
+    public func objects<T: IdentifiableSwiftDataObject>(context: ModelContext, ids: Set<String>, sortBy: [SortDescriptor<T>]?) throws -> [T] {
         
         let filter = #Predicate<T> { object in
             ids.contains(object.id)
@@ -57,5 +57,35 @@ public final class SwiftDataRead: Sendable {
         let objects: [T] = try context.fetch(fetchDescriptor(query: query))
         
         return objects
+    }
+    
+    public func getObjects<T: IdentifiableSwiftDataObject>(context: ModelContext, readObjectsType: SwiftDataReadObjectsType<T>) throws -> [T] {
+                
+        let persistObjects: [T]
+                
+        switch readObjectsType {
+            
+        case .allObjects:
+            persistObjects = try objects(context: context, query: nil)
+            
+        case .object(let id):
+            
+            let object: T? = try object(context: context, id: id)
+            
+            if let object = object {
+                persistObjects = [object]
+            }
+            else {
+                persistObjects = []
+            }
+            
+        case .objectsByIds(let ids, let sortBy):
+            persistObjects = try objects(context: context, ids: ids, sortBy: sortBy)
+            
+        case .objectsByQuery(let query):
+            persistObjects = try objects(context: context, query: query)
+        }
+        
+        return persistObjects
     }
 }
