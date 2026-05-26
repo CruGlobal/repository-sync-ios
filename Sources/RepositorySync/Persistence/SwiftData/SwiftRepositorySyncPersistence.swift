@@ -11,23 +11,28 @@ import SwiftData
 import Combine
 
 @available(iOS 17.4, *)
-public final class SwiftRepositorySyncPersistence<DataModelType: Sendable, ExternalObjectType: Sendable, PersistObjectType: IdentifiableSwiftDataObject>: Persistence, Sendable {
-        
-    private let serialQueue: DispatchQueue = DispatchQueue(label: "swift.write.serial_queue")
-    
+public final class SwiftRepositorySyncPersistence<DataModelType: Sendable, ExternalObjectType: Sendable, PersistObjectType: IdentifiableSwiftDataObject>: Persistence {
+            
     private let collectionObserver: SwiftDataCollectionObserver<PersistObjectType> = SwiftDataCollectionObserver()
-    private let actorRead: SwiftDataActorRead<DataModelType, ExternalObjectType, PersistObjectType>
-    public let database: SwiftDatabase
-    public let dataModelMapping: any Mapping<DataModelType, ExternalObjectType, PersistObjectType>
     
-    public init(database: SwiftDatabase, dataModelMapping: any Mapping<DataModelType, ExternalObjectType, PersistObjectType>) {
+    public let database: SwiftDatabase
+    public let mapping: any Mapping<DataModelType, ExternalObjectType, PersistObjectType>
+    public let readActor: SwiftDataActorRead<DataModelType, ExternalObjectType, PersistObjectType>
+    public let writeActor: SwiftDataActorWrite<DataModelType, ExternalObjectType, PersistObjectType>
+    
+    public init(database: SwiftDatabase, mapping: any Mapping<DataModelType, ExternalObjectType, PersistObjectType>) {
         
         self.database = database
-        self.dataModelMapping = dataModelMapping
+        self.mapping = mapping
                 
-        self.actorRead = SwiftDataActorRead(
+        readActor = SwiftDataActorRead(
             container: database.container.modelContainer,
-            dataModelMapping: dataModelMapping
+            mapping: mapping
+        )
+        
+        writeActor = SwiftDataActorWrite(
+            container: database.container.modelContainer,
+            mapping: mapping
         )
     }
 }
@@ -67,31 +72,20 @@ extension SwiftRepositorySyncPersistence {
         
         let context: ModelContext = database.openContext()
         
-        let getObjectsByType = SwiftRepositorySyncGetObjects<PersistObjectType>()
-        
-        let persistObjects: [PersistObjectType] = try getObjectsByType.getObjects(
-            context: context,
-            getOption: .object(id: id),
-            query: nil
-        )
+        let persistObjects: [PersistObjectType] = try SwiftDataRead()
+            .getObjects(context: context, readObjectsType: .object(id: id))
         
         guard let persistObject = persistObjects.first else {
             return nil
         }
         
-        return dataModelMapping.toDataModel(persistObject: persistObject)
+        return mapping.toDataModel(persistObject: persistObject)
     }
     
-    public func getDataModelsAsync(getOption: PersistenceGetOption) async throws -> [DataModelType] {
-        return try await getDataModelsAsync(getOption: getOption, query: nil)
-    }
-    
-    public func getDataModelsAsync(getOption: PersistenceGetOption, query: SwiftDatabaseQuery<PersistObjectType>?) async throws -> [DataModelType] {
+    public func getDataModels(getOption: PersistenceGetOption) async throws -> [DataModelType] {
         
-        return try await actorRead.getDataModels(
-            getOption: getOption,
-            query: query
-        )
+        return try await readActor
+            .getDataModels(readObjectsType: getOption.toSwiftDataReadObjectsType())
     }
 }
 
@@ -100,17 +94,12 @@ extension SwiftRepositorySyncPersistence {
 @available(iOS 17.4, *)
 extension SwiftRepositorySyncPersistence {
 
-    public func writeObjectsAsync(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getOption: PersistenceGetOption?) async throws -> [DataModelType] {
+    public func writeObjects(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getOption: PersistenceGetOption?) async throws -> [DataModelType] {
         
-        let actorWrite = SwiftDataActorWrite<DataModelType, ExternalObjectType, PersistObjectType>(
-            container: database.container.modelContainer,
-            dataModelMapping: dataModelMapping
-        )
-        
-        return try await actorWrite.writeObjects(
+        return try await writeActor.writeObjects(
             externalObjects: externalObjects,
             writeOption: writeOption,
-            getOption: getOption
+            readObjectsType: getOption?.toSwiftDataReadObjectsType()
         )
     }
 }

@@ -29,6 +29,7 @@ public final class SwiftDataCollectionObserver<PersistObjectType: IdentifiableSw
         }
     }
 
+    @MainActor
     public func observeCollectionChangesPublisher(database: SwiftDatabase) -> AnyPublisher<Void, Error> {
         
         return observeSwiftDataCollectionChangesPublisher(database: database)

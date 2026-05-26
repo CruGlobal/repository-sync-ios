@@ -12,8 +12,7 @@ import RealmSwift
 public actor RealmActorWrite<DataModelType: Sendable, ExternalObjectType: Sendable, PersistObjectType: IdentifiableRealmObject> {
     
     private var realm: Realm!
-    
-    public let mapping: any Mapping<DataModelType, ExternalObjectType, PersistObjectType>
+    private let mapping: any Mapping<DataModelType, ExternalObjectType, PersistObjectType>
     
     public init(config: Realm.Configuration, mapping: any Mapping<DataModelType, ExternalObjectType, PersistObjectType>) async throws {
         

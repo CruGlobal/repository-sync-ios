@@ -12,8 +12,7 @@ import RealmSwift
 public actor RealmActorRead<DataModelType: Sendable, ExternalObjectType: Sendable, PersistObjectType: IdentifiableRealmObject> {
     
     private var realm: Realm!
-    
-    public let mapping: any Mapping<DataModelType, ExternalObjectType, PersistObjectType>
+    private let mapping: any Mapping<DataModelType, ExternalObjectType, PersistObjectType>
     
     public init(config: Realm.Configuration, mapping: any Mapping<DataModelType, ExternalObjectType, PersistObjectType>) async throws {
         
@@ -22,7 +21,7 @@ public actor RealmActorRead<DataModelType: Sendable, ExternalObjectType: Sendabl
         realm = try await Realm(configuration: config, actor: self)
     }
     
-    func getDataModel(id: String) -> DataModelType? {
+    public func getDataModel(id: String) -> DataModelType? {
         
         let object: PersistObjectType? = RealmDataRead()
             .object(realm: realm, id: id)
@@ -34,7 +33,7 @@ public actor RealmActorRead<DataModelType: Sendable, ExternalObjectType: Sendabl
         return mapping.toDataModel(persistObject: object)
     }
     
-    func getDataModels(ids: Set<String>, sortBykeyPath: SortByKeyPath?) -> [DataModelType] {
+    public func getDataModels(ids: Set<String>, sortBykeyPath: SortByKeyPath?) -> [DataModelType] {
         
         let objects: [PersistObjectType] = RealmDataRead()
             .objects(realm: realm, ids: ids, sortBykeyPath: sortBykeyPath)
@@ -44,7 +43,7 @@ public actor RealmActorRead<DataModelType: Sendable, ExternalObjectType: Sendabl
         }
     }
     
-    func getDataModels(query: RealmDatabaseQuery?) -> [DataModelType] {
+    public func getDataModels(query: RealmDatabaseQuery?) -> [DataModelType] {
         
         let objects: [PersistObjectType] = RealmDataRead()
             .objects(realm: realm, query: query)

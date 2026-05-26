@@ -202,7 +202,7 @@ extension RealmDataReadTests {
     
     private func getRealm() throws -> Realm {
         
-        let config: Realm.Configuration = RealmDatabaseConfig.createInMemoryConfig().config
+        let config: Realm.Configuration = try RealmDatabaseConfig.createInMemoryConfig().config
         
         let realm = try Realm(
             configuration: config

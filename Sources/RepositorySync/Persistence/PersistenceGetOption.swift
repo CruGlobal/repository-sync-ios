@@ -26,4 +26,17 @@ extension PersistenceGetOption {
             return .objectsByIds(ids: ids, sortByKeyPath: nil)
         }
     }
+    
+    @available(iOS 17.4, *)
+    public func toSwiftDataReadObjectsType<T: IdentifiableSwiftDataObject>() -> SwiftDataReadObjectsType<T> {
+        
+        switch self {
+        case .allObjects:
+            return .allObjects
+        case .object(let id):
+            return .object(id: id)
+        case .objectsByIds(let ids):
+            return .objectsByIds(ids: ids, sortBy: nil)
+        }
+    }
 }

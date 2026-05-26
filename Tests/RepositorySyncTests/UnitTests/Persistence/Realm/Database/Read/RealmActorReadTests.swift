@@ -212,7 +212,7 @@ extension RealmActorReadTests {
     
     private func getRealmActorRead() async throws -> RealmActorRead<MockDataModel, MockDataModel, MockRealmObject> {
         
-        let config: Realm.Configuration = RealmDatabaseConfig.createInMemoryConfig().config
+        let config: Realm.Configuration = try RealmDatabaseConfig.createInMemoryConfig().config
         
         let realmActorWrite = try await RealmActorWrite(
             config: config,

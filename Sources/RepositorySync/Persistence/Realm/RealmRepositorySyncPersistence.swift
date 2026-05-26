@@ -12,18 +12,18 @@ import Combine
 
 public final class RealmRepositorySyncPersistence<DataModelType: Sendable, ExternalObjectType: Sendable, PersistObjectType: IdentifiableRealmObject>: Persistence {
             
-    public let database: RealmDatabase
+    public let databaseConfig: RealmDatabaseConfig
     public let mapping: any Mapping<DataModelType, ExternalObjectType, PersistObjectType>
     public let readActor: RealmActorRead<DataModelType, ExternalObjectType, PersistObjectType>
     public let writeActor: RealmActorWrite<DataModelType, ExternalObjectType, PersistObjectType>
     
-    public init(database: RealmDatabase, mapping: any Mapping<DataModelType, ExternalObjectType, PersistObjectType>) async throws {
+    public init(databaseConfig: RealmDatabaseConfig, mapping: any Mapping<DataModelType, ExternalObjectType, PersistObjectType>) async throws {
         
-        self.database = database
+        self.databaseConfig = databaseConfig
         self.mapping = mapping
 
-        readActor = try await RealmActorRead(config: database.config, mapping: mapping)
-        writeActor = try await RealmActorWrite(config: database.config, mapping: mapping)
+        readActor = try await RealmActorRead(config: databaseConfig.config, mapping: mapping)
+        writeActor = try await RealmActorWrite(config: databaseConfig.config, mapping: mapping)
     }
 }
 
@@ -35,7 +35,7 @@ extension RealmRepositorySyncPersistence {
         
         do {
             
-            let realm: Realm = try database.openRealm()
+            let realm: Realm = try databaseConfig.openRealm()
             
             return realm
                 .objects(PersistObjectType.self)
@@ -57,7 +57,7 @@ extension RealmRepositorySyncPersistence {
     
     public func getObjectCount() throws -> Int {
         
-        let realm: Realm = try database.openRealm()
+        let realm: Realm = try databaseConfig.openRealm()
         
         let results: Results<PersistObjectType> = RealmDataRead().results(
             realm: realm,
@@ -69,7 +69,7 @@ extension RealmRepositorySyncPersistence {
 
     public func getDataModel(id: String) throws -> DataModelType? {
         
-        let realm: Realm = try database.openRealm()
+        let realm: Realm = try databaseConfig.openRealm()
         
         let persistObjects: [PersistObjectType] = try RealmDataRead()
             .getObjects(realm: realm, readObjectsType: .object(id: id))
@@ -81,7 +81,7 @@ extension RealmRepositorySyncPersistence {
         return mapping.toDataModel(persistObject: persistObject)
     }
     
-    public func getDataModelsAsync(getOption: PersistenceGetOption) async throws -> [DataModelType] {
+    public func getDataModels(getOption: PersistenceGetOption) async throws -> [DataModelType] {
         
         return try await readActor
             .getDataModels(readObjectsType: getOption.toRealmReadObjectsType())
@@ -92,7 +92,7 @@ extension RealmRepositorySyncPersistence {
 
 extension RealmRepositorySyncPersistence {
     
-    public func writeObjectsAsync(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getOption: PersistenceGetOption?) async throws -> [DataModelType] {
+    public func writeObjects(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getOption: PersistenceGetOption?) async throws -> [DataModelType] {
      
         return try await writeActor.writeObjects(
             externalObjects: externalObjects,

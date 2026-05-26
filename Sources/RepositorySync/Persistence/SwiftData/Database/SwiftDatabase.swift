@@ -14,7 +14,6 @@ public final class SwiftDatabase: Sendable {
     
     public let container: SwiftDataContainer
     public let read: SwiftDataRead = SwiftDataRead()
-    public let write: SwiftDataWrite = SwiftDataWrite()
     
     public init(container: SwiftDataContainer) {
         

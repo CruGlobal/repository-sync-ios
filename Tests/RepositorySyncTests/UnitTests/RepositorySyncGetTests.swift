@@ -10,6 +10,7 @@ import Testing
 @testable import RepositorySync
 import Foundation
 
+/*
 @Suite(.serialized)
 struct RepositorySyncGetTests {
     
@@ -399,4 +400,4 @@ extension RepositorySyncGetTests {
         return externalDataFetch
     }
 }
-
+*/

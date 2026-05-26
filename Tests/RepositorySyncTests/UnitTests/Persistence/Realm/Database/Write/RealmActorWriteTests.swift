@@ -71,13 +71,40 @@ struct RealmActorWriteTests {
                      
         #expect(objects.count == 0)
     }
+    
+    @Test()
+    func writeObjectsDeletesNonExistingFromExternalObjects() async throws {
+        
+        let realmActorWrite: RealmActorWrite = try await getRealmActorWrite()
+        
+        let externalObjectIds: Set<String> = ["1", "2", "25", "26", "27", "28", "29"]
+        
+        let externalObjects: [MockDataModel] = externalObjectIds.compactMap {
+            guard let position = Int($0) else {
+                return nil
+            }
+            return MockDataModel(id: $0, name: "name - \($0)", position: position)
+        }
+        
+        let objects: [MockDataModel] = try await realmActorWrite.writeObjects(
+            externalObjects: externalObjects,
+            writeOption: .deleteObjectsNotInExternal,
+            readObjectsType: .allObjects
+        )
+        
+        let objectIds: Set<String> = Set(objects.map {
+            $0.id
+        })
+        
+        #expect(objectIds == externalObjectIds)
+    }
 }
 
 extension RealmActorWriteTests {
     
     private func getRealmActorWrite() async throws -> RealmActorWrite<MockDataModel, MockDataModel, MockRealmObject> {
         
-        let config: Realm.Configuration = RealmDatabaseConfig.createInMemoryConfig().config
+        let config: Realm.Configuration = try RealmDatabaseConfig.createInMemoryConfig().config
         
         let realmActorWrite = try await RealmActorWrite(
             config: config,

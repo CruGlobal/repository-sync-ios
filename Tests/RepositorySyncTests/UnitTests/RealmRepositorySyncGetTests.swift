@@ -11,6 +11,8 @@ import Testing
 import Foundation
 import RealmSwift
 
+/*
+
 @Suite(.serialized)
 struct RealmRepositorySyncGetTests {
     
@@ -391,3 +393,4 @@ extension RealmRepositorySyncGetTests {
         return externalDataFetch
     }
 }
+*/

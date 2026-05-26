@@ -10,11 +10,110 @@ import Foundation
 import Testing
 @testable import RepositorySync
 import SwiftData
+import Combine
 
-@Suite(.serialized)
 struct SwiftRepositorySyncPersistenceTests {
     
-    private let allObjectIds: [String] = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+    private let allObjectIds: Set<String> = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+    
+    @available(iOS 17.4, *)
+    @Test()
+    @MainActor func observesCollectionChangesFiresOnceOnInitialSink() async throws {
+        
+        let persistence = try getPersistence()
+        
+        var cancellables: Set<AnyCancellable> = Set()
+        var triggerCount: Int = 0
+        
+        let expectedTriggerCount: Int = 1
+        
+        await withCheckedContinuation { continuation in
+            
+            let timeoutTask = Task {
+                try await Task.defaultTestSleep()
+                continuation.resume(returning: ())
+            }
+            
+            persistence
+                .observeCollectionChangesPublisher()
+                .sink { _ in
+                    
+                } receiveValue: { _ in
+                    
+                    triggerCount += 1
+                    
+                    if triggerCount == expectedTriggerCount {
+                        
+                        // When finished be sure to call:
+                        timeoutTask.cancel()
+                        continuation.resume(returning: ())
+                    }
+                }
+                .store(in: &cancellables)
+        }
+        
+        #expect(triggerCount == expectedTriggerCount)
+    }
+    
+    @available(iOS 17.4, *)
+    @Test()
+    @MainActor func observesCollectionChangesFiresWhenWritingObjects() async throws {
+        
+        let persistence = try getPersistence()
+        
+        var cancellables: Set<AnyCancellable> = Set()
+        var triggerCount: Int = 0
+        
+        let expectedTriggerCount: Int = 2
+        
+        Task {
+            
+            try await Task.sleep(nanoseconds: 3_000_000_000) // 3 seconds
+            
+            let externalObjectIds: Set<String> = ["100"]
+            
+            let externalObjects: [MockDataModel] = externalObjectIds.compactMap {
+                guard let position = Int($0) else {
+                    return nil
+                }
+                return MockDataModel(id: $0, name: "name - \($0)", position: position)
+            }
+            
+            _ = try await persistence.writeObjects(
+                externalObjects: externalObjects,
+                writeOption: nil,
+                getOption: nil
+            )
+        }
+                
+        await withCheckedContinuation { continuation in
+            
+            let timeoutTask = Task {
+                try await Task.defaultTestSleep()
+                continuation.resume(returning: ())
+            }
+            
+            persistence
+                .observeCollectionChangesPublisher()
+                .receive(on: DispatchQueue.main)
+                .sink { _ in
+                    
+                } receiveValue: { _ in
+                    
+                    triggerCount += 1
+                    
+                    if triggerCount == expectedTriggerCount {
+                        
+                        // When finished be sure to call:
+                        timeoutTask.cancel()
+                        continuation.resume(returning: ())
+                    }
+                }
+                .store(in: &cancellables)
+        }
+
+        #expect(triggerCount == expectedTriggerCount)
+    }
     
     @available(iOS 17.4, *)
     @Test()
@@ -42,102 +141,86 @@ struct SwiftRepositorySyncPersistenceTests {
     
     @available(iOS 17.4, *)
     @Test()
-    func getDataModelsAsync() async throws {
+    func readAllObjects() async throws {
         
         let persistence = try getPersistence()
         
-        let dataModels: [MockDataModel] = try await persistence.getDataModelsAsync(getOption: .allObjects)
+        let objects: [MockDataModel] =  try await persistence.getDataModels(getOption: .allObjects)
         
-        let sortedDataModels: [String] = MockDataModel.getIdsSortedByPosition(dataModels: dataModels)
-                                        
-        #expect(sortedDataModels == allObjectIds)
+        let objectIds: Set<String> = Set(objects.map { $0.id })
+        
+        #expect(objectIds == allObjectIds)
     }
     
     @available(iOS 17.4, *)
     @Test()
-    func getDataModelAsync() async throws {
+    func readObjectById() async throws {
         
         let persistence = try getPersistence()
         
-        let dataModels: [MockDataModel] = try await persistence.getDataModelsAsync(getOption: .object(id: "3"))
+        let objectId: String = "0"
         
-        let dataModel: MockDataModel = try #require(dataModels.first)
+        let objects: [MockDataModel] =  try await persistence.getDataModels(getOption: .object(id: objectId))
         
-        #expect(dataModel.id == "3")
+        let object: MockDataModel = try #require(objects.first)
+        
+        #expect(object.id == objectId)
     }
     
     @available(iOS 17.4, *)
     @Test()
-    func writeObjectsAsyncWithMapping() async throws {
+    func readObjectByIdIsEmptyWhenObjectDoesntExist() async throws {
         
         let persistence = try getPersistence()
         
-        let newObjectIds: [String] = ["10", "11", "12"]
+        let objectId: String = UUID().uuidString
         
-        let externalObjects: [MockDataModel] = newObjectIds.compactMap {
-            MockDataModel.createFromStringId(id: $0)
+        let objects: [MockDataModel] =  try await persistence.getDataModels(getOption: .object(id: objectId))
+                
+        #expect(objects.count == 0)
+    }
+    
+    @available(iOS 17.4, *)
+    @Test()
+    func readObjectsByIds() async throws {
+        
+        let persistence = try getPersistence()
+        
+        let getObjectIds: Set<String> = ["1", "4", "0"]
+        
+        let objects: [MockDataModel] =  try await persistence.getDataModels(getOption: .objectsByIds(ids: getObjectIds))
+        
+        let objectIds: Set<String> = Set(objects.map { $0.id })
+                
+        #expect(objectIds == getObjectIds)
+    }
+    
+    @available(iOS 17.4, *)
+    @Test()
+    func writeObjectsDeletesNonExistingFromExternalObjects() async throws {
+        
+        let persistence = try getPersistence()
+        
+        let externalObjectIds: Set<String> = ["1", "2", "25", "26", "27", "28", "29"]
+        
+        let externalObjects: [MockDataModel] = externalObjectIds.compactMap {
+            guard let position = Int($0) else {
+                return nil
+            }
+            return MockDataModel(id: $0, name: "name - \($0)", position: position)
         }
         
-        let mappedDataModels: [MockDataModel] = try await persistence.writeObjectsAsync(
+        let objects: [MockDataModel] = try await persistence.writeObjects(
             externalObjects: externalObjects,
-            writeOption: nil,
+            writeOption: .deleteObjectsNotInExternal,
             getOption: .allObjects
         )
         
-        let allIds: [String] = allObjectIds + newObjectIds
+        let objectIds: Set<String> = Set(objects.map {
+            $0.id
+        })
         
-        #expect(MockDataModel.getIdsSortedByPosition(dataModels: mappedDataModels) == allIds)
-    }
-    
-    @available(iOS 17.4, *)
-    @Test()
-    func writeObjectsAsyncWithoutMapping() async throws {
-        
-        let persistence = try getPersistence()
-        
-        let newObjectIds: [String] = ["10", "11", "12"]
-        
-        let externalObjects: [MockDataModel] = newObjectIds.compactMap {
-            MockDataModel.createFromStringId(id: $0)
-        }
-        
-        let mappedDataModels: [MockDataModel] = try await persistence.writeObjectsAsync(
-            externalObjects: externalObjects,
-            writeOption: nil,
-            getOption: nil
-        )
-        
-        #expect(mappedDataModels.count == 0)
-        
-        let allIds: [String] = allObjectIds + newObjectIds
-        let allDataModels: [MockDataModel] = try await persistence.getDataModelsAsync(getOption: .allObjects)
-        
-        #expect(MockDataModel.getIdsSortedByPosition(dataModels: allDataModels) == allIds)
-    }
-    
-    @available(iOS 17.4, *)
-    @Test()
-    func writeObjectsAsyncWithWriteOptionDeleteObjectsNotInExternal() async throws {
-        
-        let persistence = try getPersistence()
-        
-        let newObjectIds: [String] = ["10", "11", "12"]
-        
-        let externalObjects: [MockDataModel] = newObjectIds.compactMap {
-            MockDataModel.createFromStringId(id: $0)
-        }
-        
-        let mappedDataModels: [MockDataModel] = try await persistence.writeObjectsAsync(
-            externalObjects: externalObjects,
-            writeOption: .deleteObjectsNotInExternal,
-            getOption: nil
-        )
-        
-        #expect(mappedDataModels.count == 0)
-        
-        let allDataModels: [MockDataModel] = try await persistence.getDataModelsAsync(getOption: .allObjects)
-        
-        #expect(MockDataModel.getIdsSortedByPosition(dataModels: allDataModels) == newObjectIds)
+        #expect(objectIds == externalObjectIds)
     }
 }
 
@@ -146,30 +229,28 @@ extension SwiftRepositorySyncPersistenceTests {
     @available(iOS 17.4, *)
     private func getPersistence() throws -> SwiftRepositorySyncPersistence<MockDataModel, MockDataModel, MockSwiftObject> {
         
-        return SwiftRepositorySyncPersistence(
-            database: try getDatabase(),
-            dataModelMapping: MockSwiftRepositorySyncMapping()
-        )
-    }
-    
-    @available(iOS 17.4, *)
-    private func getDatabase() throws -> SwiftDatabase {
+        let schema = Schema(versionedSchema: MockSwiftDatabaseSchema.self)
+        let container = try SwiftDataContainer.createInMemoryContainer(schema: schema)
+        let database = SwiftDatabase(container: container)
         
-        let objects: [MockSwiftObject] = allObjectIds.compactMap {
+        let context: ModelContext = database.openContext()
+        
+        for id in allObjectIds {
             
-            guard let dataModel = MockDataModel.createFromStringId(id: $0) else {
-                return nil
+            guard let position = Int(id) else {
+                continue
             }
             
-            return MockSwiftObject.createFrom(model: dataModel)
+            let object = MockSwiftObject.createFrom(model: MockDataModel(id: id, name: "name - \(id)", position: position))
+            
+            context.insert(object)
         }
         
-        let database = try MockSwiftDatabase().createDatabase(
-            directoryName: "swift_\(String(describing: SwiftRepositorySyncPersistenceTests.self))",
-            objects: objects,
-            shouldDeleteExistingObjects: true
+        try context.save()
+
+        return SwiftRepositorySyncPersistence(
+            database: database,
+            mapping: MockSwiftRepositorySyncMapping()
         )
-        
-        return database
     }
 }
