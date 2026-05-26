@@ -20,6 +20,20 @@ public final class RealmRepositorySyncPersistence<DataModelType: Sendable, Exter
         self.databaseConfig = databaseConfig
         self.mapping = mapping
     }
+    
+    public func createRealmActorRead() async throws -> RealmActorRead<DataModelType, ExternalObjectType, PersistObjectType> {
+        return try await RealmActorRead(
+            config: databaseConfig.config,
+            mapping: mapping
+        )
+    }
+    
+    public func createRealmActorWrite() async throws -> RealmActorWrite<DataModelType, ExternalObjectType, PersistObjectType> {
+        return try await RealmActorWrite(
+            config: databaseConfig.config,
+            mapping: mapping
+        )
+    }
 }
 
 // MARK: - Observe
@@ -78,13 +92,11 @@ extension RealmRepositorySyncPersistence {
     
     public func getDataModels(getOption: PersistenceGetOption) async throws -> [DataModelType] {
         
-        let readActor: RealmActorRead<DataModelType, ExternalObjectType, PersistObjectType> = try await RealmActorRead(
-            config: databaseConfig.config,
-            mapping: mapping
-        )
+        let readActor = try await createRealmActorRead()
         
-        return try await readActor
-            .getDataModels(readObjectsType: getOption.toRealmReadObjectsType())
+        return try await readActor.getDataModels(
+            readObjectsType: getOption.toRealmReadObjectsType()
+        )
     }
 }
 
@@ -94,10 +106,7 @@ extension RealmRepositorySyncPersistence {
     
     public func writeObjects(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getOption: PersistenceGetOption?) async throws -> [DataModelType] {
      
-        let writeActor: RealmActorWrite<DataModelType, ExternalObjectType, PersistObjectType> = try await RealmActorWrite(
-            config: databaseConfig.config,
-            mapping: mapping
-        )
+        let writeActor = try await createRealmActorWrite()
         
         return try await writeActor.writeObjects(
             externalObjects: externalObjects,
