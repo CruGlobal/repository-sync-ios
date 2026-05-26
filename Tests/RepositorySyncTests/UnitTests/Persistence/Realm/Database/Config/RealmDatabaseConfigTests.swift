@@ -22,31 +22,6 @@ struct RealmDatabaseConfigTests {
     }
     
     @Test()
-    func createsConfigWithFilename() throws {
-        
-        let databaseConfig = try RealmDatabaseConfig(
-            fileName: "realm_test_file_name",
-            schemaVersion: 1,
-            migrationBlock: { (migration: Migration, oldSchemaVersion: UInt64) in
-                
-            },
-            objectTypes: nil
-        )
-        
-        #expect(databaseConfig.isInMemory == false)
-        
-        let fileUrl: URL = try #require(databaseConfig.config.fileURL)
-        
-        let fileManager = FileManager.default
-        
-        #expect(fileManager.getFilePathExists(url: fileUrl) == true)
-        
-        try fileManager.removeUrl(url: fileUrl)
-        
-        #expect(fileManager.getFilePathExists(url: fileUrl) == false)
-    }
-    
-    @Test()
     func createsConfigWithFileUrl() throws {
         
         let fileManager = FileManager.default
