@@ -21,14 +21,14 @@ public final class RealmRepositorySyncPersistence<DataModelType: Sendable, Exter
         self.mapping = mapping
     }
     
-    public func createActorRead() async throws -> RealmActorRead<DataModelType, ExternalObjectType, PersistObjectType> {
+    public func newActorRead() async throws -> RealmActorRead<DataModelType, ExternalObjectType, PersistObjectType> {
         return try await RealmActorRead(
             config: databaseConfig.config,
             mapping: mapping
         )
     }
     
-    public func createActorWrite() async throws -> RealmActorWrite<DataModelType, ExternalObjectType, PersistObjectType> {
+    public func newActorWrite() async throws -> RealmActorWrite<DataModelType, ExternalObjectType, PersistObjectType> {
         return try await RealmActorWrite(
             config: databaseConfig.config,
             mapping: mapping
@@ -92,7 +92,7 @@ extension RealmRepositorySyncPersistence {
     
     public func getDataModels(getOption: PersistenceGetOption) async throws -> [DataModelType] {
         
-        let readActor = try await createActorRead()
+        let readActor = try await newActorRead()
         
         return try await readActor.getDataModels(
             readObjectsType: getOption.toRealmReadObjectsType()
@@ -106,7 +106,7 @@ extension RealmRepositorySyncPersistence {
     
     public func writeObjects(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getOption: PersistenceGetOption?) async throws -> [DataModelType] {
      
-        let writeActor = try await createActorWrite()
+        let writeActor = try await newActorWrite()
         
         return try await writeActor.writeObjects(
             externalObjects: externalObjects,
@@ -117,14 +117,14 @@ extension RealmRepositorySyncPersistence {
     
     public func deleteCollection() async throws {
         
-        let writeActor = try await createActorWrite()
+        let writeActor = try await newActorWrite()
         
         _ = try await writeActor.deleteCollection()
     }
     
     public func deleteObjectsByIds(ids: Set<String>, getOption: PersistenceGetOption?) async throws -> [DataModelType] {
         
-        let writeActor = try await createActorWrite()
+        let writeActor = try await newActorWrite()
         
         return try await writeActor.deleteObjectsByIds(
             ids: ids,
