@@ -365,7 +365,7 @@ extension RealmRepositorySyncGetTests {
             shouldDeleteExistingObjects: shouldDeleteExistingObjectsInDatabase
         )
         
-        persistence = try await RealmRepositorySyncPersistence(
+        persistence = RealmRepositorySyncPersistence(
             database: realmDatabase,
             mapping: MockRealmRepositorySyncMapping()
         )

@@ -14,16 +14,11 @@ public final class RealmRepositorySyncPersistence<DataModelType: Sendable, Exter
             
     public let databaseConfig: RealmDatabaseConfig
     public let mapping: any Mapping<DataModelType, ExternalObjectType, PersistObjectType>
-    public let readActor: RealmActorRead<DataModelType, ExternalObjectType, PersistObjectType>
-    public let writeActor: RealmActorWrite<DataModelType, ExternalObjectType, PersistObjectType>
     
-    public init(databaseConfig: RealmDatabaseConfig, mapping: any Mapping<DataModelType, ExternalObjectType, PersistObjectType>) async throws {
+    public init(databaseConfig: RealmDatabaseConfig, mapping: any Mapping<DataModelType, ExternalObjectType, PersistObjectType>) {
         
         self.databaseConfig = databaseConfig
         self.mapping = mapping
-
-        readActor = try await RealmActorRead(config: databaseConfig.config, mapping: mapping)
-        writeActor = try await RealmActorWrite(config: databaseConfig.config, mapping: mapping)
     }
 }
 
@@ -83,6 +78,11 @@ extension RealmRepositorySyncPersistence {
     
     public func getDataModels(getOption: PersistenceGetOption) async throws -> [DataModelType] {
         
+        let readActor: RealmActorRead<DataModelType, ExternalObjectType, PersistObjectType> = try await RealmActorRead(
+            config: databaseConfig.config,
+            mapping: mapping
+        )
+        
         return try await readActor
             .getDataModels(readObjectsType: getOption.toRealmReadObjectsType())
     }
@@ -94,6 +94,11 @@ extension RealmRepositorySyncPersistence {
     
     public func writeObjects(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getOption: PersistenceGetOption?) async throws -> [DataModelType] {
      
+        let writeActor: RealmActorWrite<DataModelType, ExternalObjectType, PersistObjectType> = try await RealmActorWrite(
+            config: databaseConfig.config,
+            mapping: mapping
+        )
+        
         return try await writeActor.writeObjects(
             externalObjects: externalObjects,
             writeOption: writeOption,

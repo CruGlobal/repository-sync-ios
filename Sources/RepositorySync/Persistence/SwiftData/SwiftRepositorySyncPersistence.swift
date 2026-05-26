@@ -17,23 +17,11 @@ public final class SwiftRepositorySyncPersistence<DataModelType: Sendable, Exter
     
     public let database: SwiftDatabase
     public let mapping: any Mapping<DataModelType, ExternalObjectType, PersistObjectType>
-    public let readActor: SwiftDataActorRead<DataModelType, ExternalObjectType, PersistObjectType>
-    public let writeActor: SwiftDataActorWrite<DataModelType, ExternalObjectType, PersistObjectType>
     
     public init(database: SwiftDatabase, mapping: any Mapping<DataModelType, ExternalObjectType, PersistObjectType>) {
         
         self.database = database
         self.mapping = mapping
-                
-        readActor = SwiftDataActorRead(
-            container: database.container.modelContainer,
-            mapping: mapping
-        )
-        
-        writeActor = SwiftDataActorWrite(
-            container: database.container.modelContainer,
-            mapping: mapping
-        )
     }
 }
 
@@ -84,6 +72,12 @@ extension SwiftRepositorySyncPersistence {
     
     public func getDataModels(getOption: PersistenceGetOption) async throws -> [DataModelType] {
         
+        let readActor: SwiftDataActorRead<DataModelType, ExternalObjectType, PersistObjectType> = SwiftDataActorRead(
+            container: database.container.modelContainer,
+            mapping: mapping
+        )
+        
+        
         return try await readActor
             .getDataModels(readObjectsType: getOption.toSwiftDataReadObjectsType())
     }
@@ -95,6 +89,11 @@ extension SwiftRepositorySyncPersistence {
 extension SwiftRepositorySyncPersistence {
 
     public func writeObjects(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getOption: PersistenceGetOption?) async throws -> [DataModelType] {
+        
+        let writeActor: SwiftDataActorWrite<DataModelType, ExternalObjectType, PersistObjectType> = SwiftDataActorWrite(
+            container: database.container.modelContainer,
+            mapping: mapping
+        )
         
         return try await writeActor.writeObjects(
             externalObjects: externalObjects,
