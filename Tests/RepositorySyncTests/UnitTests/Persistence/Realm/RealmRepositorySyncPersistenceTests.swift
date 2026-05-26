@@ -222,7 +222,7 @@ extension RealmRepositorySyncPersistenceTests {
         
         let databaseConfig = try RealmDatabaseConfig.createInMemoryConfig()
         
-        let repositorySync = try await RealmRepositorySyncPersistence(
+        let repositorySync = RealmRepositorySyncPersistence(
             databaseConfig: databaseConfig,
             mapping: MockRealmRepositorySyncMapping()
         )
@@ -238,9 +238,10 @@ extension RealmRepositorySyncPersistenceTests {
             return MockDataModel(id: id, name: "name - \(id)", position: position)
         }
         
-        _ = try await repositorySync.writeActor.addObjects(
+        _ = try await repositorySync.writeObjects(
             externalObjects: objects,
-            updatePolicy: .modified
+            writeOption: nil,
+            getOption: nil
         )
         
         return repositorySync
