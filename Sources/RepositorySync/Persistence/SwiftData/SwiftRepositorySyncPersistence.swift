@@ -23,6 +23,20 @@ public final class SwiftRepositorySyncPersistence<DataModelType: Sendable, Exter
         self.database = database
         self.mapping = mapping
     }
+    
+    public func createSwiftDataActorRead() -> SwiftDataActorRead<DataModelType, ExternalObjectType, PersistObjectType> {
+        return SwiftDataActorRead(
+            container: database.container.modelContainer,
+            mapping: mapping
+        )
+    }
+    
+    public func createSwiftDataActorWrite() -> SwiftDataActorWrite<DataModelType, ExternalObjectType, PersistObjectType> {
+        return SwiftDataActorWrite(
+            container: database.container.modelContainer,
+            mapping: mapping
+        )
+    }
 }
 
 // MARK: - Observe
@@ -72,14 +86,11 @@ extension SwiftRepositorySyncPersistence {
     
     public func getDataModels(getOption: PersistenceGetOption) async throws -> [DataModelType] {
         
-        let readActor: SwiftDataActorRead<DataModelType, ExternalObjectType, PersistObjectType> = SwiftDataActorRead(
-            container: database.container.modelContainer,
-            mapping: mapping
+        let readActor = createSwiftDataActorRead()
+        
+        return try await readActor.getDataModels(
+            readObjectsType: getOption.toSwiftDataReadObjectsType()
         )
-        
-        
-        return try await readActor
-            .getDataModels(readObjectsType: getOption.toSwiftDataReadObjectsType())
     }
 }
 
@@ -90,10 +101,7 @@ extension SwiftRepositorySyncPersistence {
 
     public func writeObjects(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getOption: PersistenceGetOption?) async throws -> [DataModelType] {
         
-        let writeActor: SwiftDataActorWrite<DataModelType, ExternalObjectType, PersistObjectType> = SwiftDataActorWrite(
-            container: database.container.modelContainer,
-            mapping: mapping
-        )
+        let writeActor = createSwiftDataActorWrite()
         
         return try await writeActor.writeObjects(
             externalObjects: externalObjects,
