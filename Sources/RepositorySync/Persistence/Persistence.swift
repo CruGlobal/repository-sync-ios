@@ -9,15 +9,15 @@
 import Foundation
 import Combine
 
-public protocol Persistence<DataModelType, ExternalObjectType> {
+public protocol Persistence<DataModelType, ExternalObjectType>: Sendable {
     
     associatedtype DataModelType: Sendable
     associatedtype ExternalObjectType: Sendable
     
     func getObjectCount() throws -> Int
     func getDataModel(id: String) throws -> DataModelType?
-    func getDataModelsAsync(getOption: PersistenceGetOption) async throws -> [DataModelType]
-    func writeObjectsAsync(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getOption: PersistenceGetOption?) async throws -> [DataModelType]
+    func getDataModels(getOption: PersistenceGetOption) async throws -> [DataModelType]
+    func writeObjects(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, getOption: PersistenceGetOption?) async throws -> [DataModelType]
     
     @MainActor func observeCollectionChangesPublisher() -> AnyPublisher<Void, Error>
 }

@@ -42,7 +42,7 @@ public final class RepositorySync<DataModelType: Sendable, ExternalDataFetchType
             context: context
         )
         
-        let dataModels: [DataModelType] = try await persistence.writeObjectsAsync(
+        let dataModels: [DataModelType] = try await persistence.writeObjects(
             externalObjects: externalObjects,
             writeOption: nil,
             getOption: getObjectsType.toGetOption()
@@ -65,7 +65,7 @@ public final class RepositorySync<DataModelType: Sendable, ExternalDataFetchType
         case .returnCacheDataDontFetch:
             
             return try await persistence
-                .getDataModelsAsync(
+                .getDataModels(
                     getOption: getObjectsType.toGetOption()
                 )
 
