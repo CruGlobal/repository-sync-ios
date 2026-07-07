@@ -11,7 +11,7 @@ extension RealmRepositorySyncPersistence {
     
     public func newActorReadNonThrowing(
         shouldAssertWhenError: Bool = true
-    ) async throws -> RealmActorRead<DataModelType, ExternalObjectType, PersistObjectType>? {
+    ) async -> RealmActorRead<DataModelType, ExternalObjectType, PersistObjectType>? {
         do {
             return try await newActorRead()
         }
@@ -25,7 +25,7 @@ extension RealmRepositorySyncPersistence {
     
     public func newActorWriteNonThrowing(
         shouldAssertWhenError: Bool = true
-    ) async throws -> RealmActorWrite<DataModelType, ExternalObjectType, PersistObjectType>? {
+    ) async -> RealmActorWrite<DataModelType, ExternalObjectType, PersistObjectType>? {
         do {
             return try await newActorWrite()
         }
