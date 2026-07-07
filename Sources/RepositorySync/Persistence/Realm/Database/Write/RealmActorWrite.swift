@@ -21,13 +21,13 @@ public actor RealmActorWrite<DataModelType: Sendable, ExternalObjectType: Sendab
         realm = try await Realm(configuration: config, actor: self)
     }
     
-    private func readObjects(readObjectsType: RealmReadObjectsType?) throws -> [DataModelType] {
+    private func readObjects(readObjectsType: RealmReadObjectsType?) -> [DataModelType] {
         
         guard let readObjectsType = readObjectsType else {
             return Array()
         }
         
-        let objects: [PersistObjectType] = try RealmDataRead()
+        let objects: [PersistObjectType] = RealmDataRead()
             .getObjects(realm: realm, readObjectsType: readObjectsType)
         
         return objects.compactMap {
@@ -38,7 +38,7 @@ public actor RealmActorWrite<DataModelType: Sendable, ExternalObjectType: Sendab
     public func addObjects(externalObjects: [ExternalObjectType], updatePolicy: Realm.UpdatePolicy, readObjectsType: RealmReadObjectsType? = nil) async throws -> [DataModelType] {
         
         guard !externalObjects.isEmpty else {
-            return try readObjects(readObjectsType: readObjectsType)
+            return readObjects(readObjectsType: readObjectsType)
         }
         
         let objects: [PersistObjectType] = externalObjects.compactMap {
@@ -49,13 +49,13 @@ public actor RealmActorWrite<DataModelType: Sendable, ExternalObjectType: Sendab
             realm.add(objects, update: updatePolicy)
         }
         
-        return try readObjects(readObjectsType: readObjectsType)
+        return readObjects(readObjectsType: readObjectsType)
     }
     
     public func deleteObjectsByIds(ids: Set<String>, readObjectsType: RealmReadObjectsType? = nil) async throws -> [DataModelType] {
         
         guard !ids.isEmpty else {
-            return try readObjects(readObjectsType: readObjectsType)
+            return readObjects(readObjectsType: readObjectsType)
         }
         
         let objects: [PersistObjectType] = try RealmDataRead()
@@ -65,23 +65,23 @@ public actor RealmActorWrite<DataModelType: Sendable, ExternalObjectType: Sendab
             realm.delete(objects)
         }
         
-        return try readObjects(readObjectsType: readObjectsType)
+        return readObjects(readObjectsType: readObjectsType)
     }
     
     public func deleteCollection(readObjectsType: RealmReadObjectsType? = nil) async throws -> [DataModelType] {
         
-        let objects: [PersistObjectType] = try RealmDataRead()
+        let objects: [PersistObjectType] = RealmDataRead()
             .getObjects(realm: realm, readObjectsType: .allObjects)
         
         guard !objects.isEmpty else {
-            return try readObjects(readObjectsType: readObjectsType)
+            return readObjects(readObjectsType: readObjectsType)
         }
         
         try await realm.asyncWrite {
             realm.delete(objects)
         }
         
-        return try readObjects(readObjectsType: readObjectsType)
+        return readObjects(readObjectsType: readObjectsType)
     }
     
     public func writeObjects(externalObjects: [ExternalObjectType], writeOption: PersistenceWriteOption?, readObjectsType: RealmReadObjectsType? = nil) async throws -> [DataModelType] {
@@ -126,7 +126,7 @@ public actor RealmActorWrite<DataModelType: Sendable, ExternalObjectType: Sendab
             }
         }
         
-        return try readObjects(readObjectsType: readObjectsType)
+        return readObjects(readObjectsType: readObjectsType)
     }
     
     private func getAllObjectIds() -> Set<String> {

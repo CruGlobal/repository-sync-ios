@@ -88,7 +88,7 @@ extension RealmRepositorySyncPersistence {
         
         let realm: Realm = try openRealm()
         
-        let persistObjects: [PersistObjectType] = try RealmDataRead()
+        let persistObjects: [PersistObjectType] = RealmDataRead()
             .getObjects(realm: realm, readObjectsType: .object(id: id))
         
         guard let persistObject = persistObjects.first else {
@@ -106,7 +106,7 @@ extension RealmRepositorySyncPersistence {
         
         let readActor = try await newActorRead()
         
-        return try await readActor.getDataModels(
+        return await readActor.getDataModels(
             readObjectsType: getOption.toRealmReadObjectsType()
         )
     }
