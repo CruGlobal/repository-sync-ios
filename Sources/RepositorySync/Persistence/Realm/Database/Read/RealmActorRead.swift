@@ -53,9 +53,9 @@ public actor RealmActorRead<DataModelType: Sendable, ExternalObjectType: Sendabl
         }
     }
     
-    public func getDataModels(readObjectsType: RealmReadObjectsType) throws -> [DataModelType] {
+    public func getDataModels(readObjectsType: RealmReadObjectsType) -> [DataModelType] {
         
-        let objects: [PersistObjectType] = try RealmDataRead()
+        let objects: [PersistObjectType] = RealmDataRead()
             .getObjects(realm: realm, readObjectsType: readObjectsType)
         
         return objects.compactMap {

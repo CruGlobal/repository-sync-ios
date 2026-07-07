@@ -60,7 +60,7 @@ public final class RealmDataRead: Sendable {
         return results
     }
     
-    public func getObjects<T: IdentifiableRealmObject>(realm: Realm, readObjectsType: RealmReadObjectsType) throws -> [T] {
+    public func getObjects<T: IdentifiableRealmObject>(realm: Realm, readObjectsType: RealmReadObjectsType) -> [T] {
                 
         let persistObjects: [T]
                 
