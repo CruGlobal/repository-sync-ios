@@ -28,27 +28,19 @@ public final class SwiftDataRead: Sendable {
     }
     
     public func object<T: IdentifiableSwiftDataObject>(context: ModelContext, id: String) throws -> T? {
-        
-        let idPredicate = #Predicate<T> { object in
-            object.id == id
-        }
-        
-        let query = SwiftDatabaseQuery.filter(filter: idPredicate)
-        
+
+        let query = SwiftDatabaseQuery.filter(filter: T.idPredicate(id: id))
+
         return try objects(context: context, query: query).first
     }
-    
+
     public func objects<T: IdentifiableSwiftDataObject>(context: ModelContext, ids: Set<String>, sortBy: [SortDescriptor<T>]?) throws -> [T] {
-        
-        let filter = #Predicate<T> { object in
-            ids.contains(object.id)
-        }
-        
+
         let query = SwiftDatabaseQuery(
-            filter: filter,
+            filter: T.idsPredicate(ids: ids),
             sortBy: sortBy
         )
-        
+
         return try objects(context: context, query: query)
     }
     
