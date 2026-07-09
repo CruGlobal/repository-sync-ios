@@ -11,23 +11,41 @@ import SwiftData
 @testable import RepositorySync
 
 @available(iOS 17.4, *)
-@Model
-public class MockSwiftObject: IdentifiableSwiftDataObject {
+public typealias MockSwiftObject = MockSwiftObjectV1.MockSwiftObject
+
+@available(iOS 17.4, *)
+public enum MockSwiftObjectV1 {
     
-    public var name: String = ""
-    public var position: Int = -1
-    public var isEvenPosition: Bool = false
-    
-    @Attribute(.unique) public var id: String = ""
-    
-    public init() {
+    @Model
+    public class MockSwiftObject: IdentifiableSwiftDataObject {
         
+        public var name: String = ""
+        public var position: Int = -1
+        public var isEvenPosition: Bool = false
+        
+        @Attribute(.unique) public var id: String = ""
+        
+        public init() {
+            
+        }
     }
 }
 
 @available(iOS 17.4, *)
 extension MockSwiftObject {
-    
+
+    public static func idPredicate(id: String) -> Predicate<MockSwiftObject> {
+        return #Predicate<MockSwiftObject> { object in
+            object.id == id
+        }
+    }
+
+    public static func idsPredicate(ids: Set<String>) -> Predicate<MockSwiftObject> {
+        return #Predicate<MockSwiftObject> { object in
+            ids.contains(object.id)
+        }
+    }
+
     public func mapFrom(model: MockDataModel) {
         id = model.id
         name = model.name

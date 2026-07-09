@@ -11,8 +11,11 @@ import SwiftData
 
 @available(iOS 17.4, *)
 public protocol IdentifiableSwiftDataObject: PersistentModel {
-    
+
     var id: String { get set }
+
+    static func idPredicate(id: String) -> Predicate<Self>
+    static func idsPredicate(ids: Set<String>) -> Predicate<Self>
 }
 
 @available(iOS 17.4, *)
