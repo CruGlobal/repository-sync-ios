@@ -16,8 +16,8 @@ enum MockSwiftDatabaseSchema: VersionedSchema {
         
     static var models: [any PersistentModel.Type] {
         return [
-            MockSwiftObject.self,
-            MockOtherSwiftObject.self
+            MockSwiftObjectV1.MockSwiftObject.self,
+            MockOtherSwiftObjectV1.MockOtherSwiftObject.self
         ]
     }
 }
