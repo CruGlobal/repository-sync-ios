@@ -12,7 +12,7 @@ import SwiftData
 @available(iOS 17, *)
 extension ModelContext {
     
-    func insertObjects(objects: [any PersistentModel]) {
+    public func insertObjects(objects: [any PersistentModel]) {
         
         guard !objects.isEmpty else {
             return
@@ -23,7 +23,7 @@ extension ModelContext {
         }
     }
     
-    func deleteObjects(objects: [any PersistentModel]) {
+    public func deleteObjects(objects: [any PersistentModel]) {
         
         guard !objects.isEmpty else {
             return
@@ -34,7 +34,7 @@ extension ModelContext {
         }
     }
     
-    func saveIfHasChanges() throws {
+    public func saveIfHasChanges() throws {
         
         guard hasChanges else {
             return
